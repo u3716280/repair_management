@@ -14,7 +14,7 @@
         });
     };
 
-	frappe.ui.form.PrintView.prototype.render_jpg() = function() {
+	frappe.ui.form.PrintView.prototype.render_jpg = function() {
 	    let print_format = this.get_print_format();
 	    let params = new URLSearchParams({
 	        doctype: this.frm.doc.doctype,
