@@ -1,0 +1,259 @@
+import frappe
+from frappe import _
+import requests
+import json
+
+@frappe.whitelist()
+def send_image_to_line(doctype, name, format_name, letterhead=None, no_letterhead=0, user_id=None):
+    """Send document as JPG image to LINE using Messaging API"""
+    
+    try:
+        # Get LINE settings from site config or custom doctype
+        line_channel_access_token = frappe.conf.get('line_channel_access_token')
+        
+        # If not in site config, try to get from LINE Settings doctype
+        if not line_channel_access_token:
+            if frappe.db.exists('DocType', 'LINE Settings'):
+                line_channel_access_token = frappe.db.get_single_value('LINE Settings', 'channel_access_token')
+        
+        # Get user ID if not provided
+        if not user_id:
+            user_id = frappe.conf.get('line_user_id')
+            if not user_id and frappe.db.exists('DocType', 'LINE Settings'):
+                user_id = frappe.db.get_single_value('LINE Settings', 'default_user_id')
+        
+        # Validate configuration
+        if not line_channel_access_token:
+            frappe.throw(_("LINE Channel Access Token not configured. Please configure it in LINE Settings or site_config.json"))
+        
+        if not user_id:
+            frappe.throw(_("LINE User ID not configured. Please configure default_user_id in LINE Settings or site_config.json"))
+        
+        # Remove any whitespace from token
+        line_channel_access_token = line_channel_access_token.strip()
+        
+        frappe.logger().info(f"Using User ID: {user_id}")
+        frappe.logger().info(f"Token length: {len(line_channel_access_token)}")
+        
+        # Get and validate document
+        doc = frappe.get_doc(doctype, name)
+        
+        # Validate permissions
+        if not frappe.has_permission(doctype, "print", doc):
+            frappe.throw(_("No permission to print"), frappe.PermissionError)
+        
+        # Generate PDF
+        pdf_file = frappe.get_print(
+            doctype,
+            name,
+            format_name,
+            doc=doc,
+            as_pdf=True,
+            letterhead=letterhead,
+            no_letterhead=no_letterhead,
+        )
+        
+        # Convert PDF to JPG
+        from pdf2image import convert_from_bytes
+        images = convert_from_bytes(pdf_file, first_page=1, last_page=1, dpi=300)
+        
+        # Convert PIL Image to JPG bytes
+        from io import BytesIO
+        img_byte_arr = BytesIO()
+        images[0].save(img_byte_arr, format='JPEG', quality=95)
+        jpg_file = img_byte_arr.getvalue()
+        
+        # Save JPG to a File doctype for hosting
+        file_name = f'{name.replace(" ", "-").replace("/", "-")}.jpg'
+        
+        # Check if file already exists and delete it
+        existing_files = frappe.get_all('File', 
+            filters={
+                'file_name': file_name,
+                'attached_to_doctype': doctype,
+                'attached_to_name': name
+            }
+        )
+        
+        for existing_file in existing_files:
+            frappe.delete_doc('File', existing_file.name, ignore_permissions=True)
+        
+        file_doc = frappe.get_doc({
+            'doctype': 'File',
+            'file_name': file_name,
+            'attached_to_doctype': doctype,
+            'attached_to_name': name,
+            'content': jpg_file,
+            'is_private': 0,  # Make it public so LINE can access it
+            'folder': 'Home/Attachments'
+        })
+        file_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+        
+        # Get the full URL to the image
+        site_url = frappe.utils.get_url()
+        # Remove trailing slash if exists
+        site_url = site_url.rstrip('/')
+        image_url = f"{site_url}{file_doc.file_url}"
+        
+        frappe.logger().info(f"Image URL: {image_url}")
+        
+        # Send to LINE using Messaging API
+        result = send_line_image_message(line_channel_access_token, user_id, image_url)
+        
+        # Optionally clean up the file after sending
+        # frappe.delete_doc('File', file_doc.name, ignore_permissions=True)
+        # frappe.db.commit()
+        
+        return {
+            'success': True,
+            'message': _('Image sent to LINE successfully'),
+            'image_url': image_url
+        }
+        
+    except Exception as e:
+        error_message = str(e)
+        frappe.log_error(frappe.get_traceback(), _('LINE Send Error'))
+        frappe.throw(_('Error sending to LINE: {0}').format(error_message))
+
+
+def send_line_image_message(channel_access_token, user_id, image_url):
+    """
+    Send image message via LINE Messaging API
+    
+    Args:
+        channel_access_token: LINE Channel Access Token
+        user_id: LINE User ID to send message to
+        image_url: Public URL to the image
+    """
+    
+    # LINE Messaging API endpoint
+    url = 'https://api.line.me/v2/bot/message/push'
+    
+    # Headers - IMPORTANT: Token must not have any extra quotes or spaces
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {channel_access_token}'
+    }
+    
+    # Message payload
+    # LINE requires both original and preview URLs
+    # Both URLs must be HTTPS and publicly accessible
+    payload = {
+        'to': user_id,
+        'messages': [
+            {
+                'type': 'image',
+                'originalContentUrl': image_url,
+                'previewImageUrl': image_url
+            }
+        ]
+    }
+    
+    frappe.logger().info(f"Sending to LINE API: {url}")
+    frappe.logger().info(f"Payload: {json.dumps(payload, indent=2)}")
+    
+    # Send request
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=30)
+        
+        frappe.logger().info(f"LINE API Response Status: {response.status_code}")
+        frappe.logger().info(f"LINE API Response: {response.text}")
+        
+        if response.status_code != 200:
+            error_msg = f"LINE API Error: {response.status_code} - {response.text}"
+            frappe.log_error(error_msg, 'LINE API Error')
+            raise Exception(error_msg)
+        
+        return response.json() if response.text else {}
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Request Error: {str(e)}"
+        frappe.log_error(error_msg, 'LINE Request Error')
+        raise Exception(error_msg)
+
+
+@frappe.whitelist()
+def get_line_user_selection():
+    """
+    Get list of LINE users for selection dialog
+    Can be expanded to fetch from a custom LINE Users doctype
+    """
+    
+    # Option 1: Get from site config
+    default_user = frappe.conf.get('line_user_id')
+    
+    # Option 2: Get from LINE Settings
+    if not default_user and frappe.db.exists('DocType', 'LINE Settings'):
+        default_user = frappe.db.get_single_value('LINE Settings', 'default_user_id')
+    
+    # Option 3: Get from custom doctype (you can create a LINE Contacts doctype)
+    users = []
+    if frappe.db.exists('DocType', 'LINE Contact'):
+        users = frappe.get_all('LINE Contact', 
+                               fields=['name', 'line_user_id', 'display_name'],
+                               filters={'enabled': 1})
+    
+    if not users and default_user:
+        users = [{
+            'name': 'Default User',
+            'line_user_id': default_user,
+            'display_name': 'Default User'
+        }]
+    
+    return users
+
+
+@frappe.whitelist()
+def test_line_connection():
+    """
+    Test LINE API connection and configuration
+    Use this to debug authentication issues
+    """
+    
+    try:
+        # Get LINE settings
+        line_channel_access_token = frappe.conf.get('line_channel_access_token')
+        
+        if not line_channel_access_token:
+            if frappe.db.exists('DocType', 'LINE Settings'):
+                line_channel_access_token = frappe.db.get_single_value('LINE Settings', 'channel_access_token')
+        
+        if not line_channel_access_token:
+            return {
+                'success': False,
+                'message': 'Channel Access Token not configured'
+            }
+        
+        # Remove whitespace
+        line_channel_access_token = line_channel_access_token.strip()
+        
+        # Test the token by calling the profile API
+        url = 'https://api.line.me/v2/bot/info'
+        headers = {
+            'Authorization': f'Bearer {line_channel_access_token}'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            bot_info = response.json()
+            return {
+                'success': True,
+                'message': 'Connection successful',
+                'bot_info': bot_info
+            }
+        else:
+            return {
+                'success': False,
+                'message': f'API Error: {response.status_code} - {response.text}',
+                'status_code': response.status_code
+            }
+            
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), 'LINE Connection Test Error')
+        return {
+            'success': False,
+            'message': str(e)
+        }
+

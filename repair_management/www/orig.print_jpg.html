@@ -1,0 +1,71 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ doc_name }}{% endblock %}
+
+{% block page_content %}
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        background-color: #525252;
+    }
+    .print-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    .container {
+        max-width: 1200px;
+        width: 100%;
+    }
+    .controls {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .btn {
+        background: #2490ef;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin: 0 5px;
+    }
+    .btn:hover {
+        background: #1a7bc7;
+    }
+    img {
+        width: 100%;
+        height: auto;
+        display: block;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        background: white;
+    }
+</style>
+
+<div class="print-container">
+    <div class="container">
+        <div class="controls">
+            <button class="btn" onclick="downloadImage()">Download JPG</button>
+            <button class="btn" onclick="window.print()">Print</button>
+            <button class="btn" onclick="window.close()">Close</button>
+        </div>
+        <img id="mainImage" src="data:image/jpeg;base64,{{ img_base64 }}" alt="{{ doc_name }}">
+    </div>
+</div>
+
+<script>
+    function downloadImage() {
+        const link = document.createElement('a');
+        link.href = document.getElementById('mainImage').src;
+        link.download = '{{ doc_name }}'.replace(/ /g, '-').replace(/\//g, '-') + '.jpg';
+        link.click();
+    }
+</script>
+{% endblock %}
