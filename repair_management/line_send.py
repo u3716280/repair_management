@@ -8,11 +8,16 @@ def send_image_to_line(doctype, name, format_name, letterhead=None, no_letterhea
     """Send document as JPG image to LINE using Messaging API"""
     
     try:
+        # Get current user = user@domain.com
+        current_user = frappe.session.user
+        user_token = f"line_channel_access_token_{current_user}"
+        
         # Get LINE settings from site config or custom doctype
-        line_channel_access_token = frappe.conf.get('line_channel_access_token') or \
+        line_channel_access_token = frappe.conf.get(user_token) or \
+                                    frappe.conf.get('line_channel_access_token') or \
                                    frappe.db.get_single_value('LINE Settings', 'channel_access_token')
         
-        line_user_id = frappe.conf.get('line_user_id') or \
+        line_user_id = frappe.conf.get(f'line_user_id_{current_user}') or \
                       frappe.db.get_single_value('LINE Settings', 'default_user_id')
         
         if not line_channel_access_token:
@@ -53,8 +58,8 @@ def send_image_to_line(doctype, name, format_name, letterhead=None, no_letterhea
         file_doc = frappe.get_doc({
             'doctype': 'File',
             'file_name': f'{name.replace(" ", "-")}.jpg',
-            'attached_to_doctype': doctype,
-            'attached_to_name': name,
+           # 'attached_to_doctype': doctype,
+           # 'attached_to_name': name,
             'content': jpg_file,
             'is_private': 0  # Make it public so LINE can access it
         })
@@ -78,7 +83,7 @@ def send_image_to_line(doctype, name, format_name, letterhead=None, no_letterhea
         }
         
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), _('LINE Send Error'))
+        frappe.log_error(frappe.get_traceback(), _(f'LINE Send Error {user_token}') )
         frappe.throw(_('Error sending to LINE: {0}').format(str(e)))
 
 
