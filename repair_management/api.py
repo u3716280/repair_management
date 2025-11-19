@@ -31,3 +31,43 @@ def custom_print_action(doctype, docname):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Custom Print Action Error")
         frappe.throw(str(e))
+
+import frappe
+
+@frappe.whitelist()
+def get_customer_addresses(customer_name):
+    """Get all addresses linked to a customer"""
+    
+    # Get address names linked to this customer
+    address_links = frappe.get_all(
+        "Dynamic Link",
+        filters={
+            "link_doctype": "Customer",
+            "link_name": customer_name,
+            "parenttype": "Address"
+        },
+        fields=["parent"],
+        ignore_permissions=True  # Run with elevated permissions
+    )
+    
+    address_names = [link.parent for link in address_links]
+    
+    if not address_names:
+        return []
+    
+    # Get full address details
+    addresses = frappe.get_all(
+        "Address",
+        filters={"name": ["in", address_names]},
+        fields=[
+            "name",
+            "address_title",
+            "address_line1",
+            "city",
+            "country",
+            "latitude",
+            "longitude"
+        ]
+    )
+    
+    return addresses

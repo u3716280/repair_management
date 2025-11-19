@@ -27,6 +27,9 @@ app_license = "mit"
 # include js, css files in header of desk.html
 #app_include_css = "/assets/repair_management/css/print_jpg_button.css"
 #app_include_js = "/assets/repair_management/js/print_btn1.js"
+app_include_js = [
+	"https://maps.googleapis.com/maps/api/js?key=AIzaSyAnAQeOunGXOEO_fXa1tvQbeFaVjJKIgBM&libraries=marker"
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/repair_management/css/repair_management.css"
