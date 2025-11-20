@@ -255,3 +255,8 @@ doctype_list_js = {
 #doctypr_js = {
 #	"Repair List": "public/js/repair_list.js"
 #}
+
+
+def boot_session(bootinfo):
+    bootinfo.google_maps_api_key = "AIzaSyAnAQeOunGXOEO_fXa1tvQbeFaVjJKIgBM"
+
