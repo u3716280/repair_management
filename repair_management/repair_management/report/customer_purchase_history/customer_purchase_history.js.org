@@ -1,0 +1,71 @@
+// Copyright (c) 2025, Chirayut D. and contributors
+// For license information, please see license.txt
+
+// frappe.query_reports["Customer Purchase History"] = {
+//	"filters": [
+
+//	]
+// };
+
+frappe.query_reports["Customer Purchase History"] = {
+    "filters": [
+        {
+            fieldname: "customer",
+            label: "Customer",
+            fieldtype: "Link",
+            options: "Customer",
+ 	    reqd: 1,
+        },
+        {
+            fieldname: "from_date",
+            label: "From Date",
+            fieldtype: "Date",
+            default: frappe.datetime.year_start(),
+            reqd: 1,
+        },
+        {
+            fieldname: "to_date",
+            label: "To Date",
+            fieldtype: "Date",
+            default: frappe.datetime.get_today(),
+            reqd: 1,
+        }
+    ],
+
+    onload: function(report) {
+        // Calendar View Button
+        report.page.add_inner_button(__("Calendar View"), () => {
+            let data = report.data || [];
+
+            if (data.length === 0) {
+                frappe.msgprint("No data to display in calendar.");
+                return;
+            }
+
+            // Map data → calendar events
+            const events = data.map(d => ({
+                title: `${d["Item Code"]} (${d["Qty"]})`,
+                start: d["Event Date"],
+                description: `
+                    <b>${d["Item Name"]}</b><br>
+                    Qty: ${d["Qty"]}<br>
+                    Item Group: ${d["Item Group"] || "-"}<br>
+                    Brand: ${d["Brand"] || "-"}<br>
+                    Invoice: ${d["Sales Invoice No"]}
+                `
+            }));
+	    
+	    console.log(events)
+
+            // Show Calendar Popup
+            frappe.views.calendar.show_event_calendar(events, {
+                view_name: "Customer Purchase Calendar",
+                title: "Customer Purchase Timeline",
+                primary_action_label: "Close",
+                enable_add: false,
+                enable_edit: false,
+                enable_delete: false
+            });
+        });
+    }
+};
