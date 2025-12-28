@@ -1,0 +1,99 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-28 16:38:15.207623",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "posting_date",
+  "column_break_jdxw",
+  "effective_date",
+  "section_break_9xni",
+  "amended_from",
+  "stock_name",
+  "event_type",
+  "price",
+  "unit_of_stock"
+ ],
+ "fields": [
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "column_break_jdxw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "effective_date",
+   "fieldtype": "Date",
+   "label": "Effective Date"
+  },
+  {
+   "fieldname": "section_break_9xni",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Portfolio Stock Event",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "stock_name",
+   "fieldtype": "Link",
+   "label": "Stock Name",
+   "options": "Portfolio Stock Name"
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Select",
+   "label": "Event Type",
+   "options": "\nBuy\nSell\nDividend"
+  },
+  {
+   "fieldname": "price",
+   "fieldtype": "Currency",
+   "label": "Price"
+  },
+  {
+   "fieldname": "unit_of_stock",
+   "fieldtype": "Float",
+   "label": "Unit of Stock "
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-28 16:49:58.886145",
+ "modified_by": "Administrator",
+ "module": "Portfolio",
+ "name": "Portfolio Stock Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
