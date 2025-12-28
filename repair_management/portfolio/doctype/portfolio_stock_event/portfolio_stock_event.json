@@ -1,7 +1,9 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:{stock_name}-{MM}-{###}",
  "creation": "2025-12-28 16:38:15.207623",
+ "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -17,15 +19,19 @@
  ],
  "fields": [
   {
+   "allow_on_submit": 1,
    "fieldname": "posting_date",
    "fieldtype": "Date",
-   "label": "Date"
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_jdxw",
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "effective_date",
    "fieldtype": "Date",
    "label": "Effective Date"
@@ -45,10 +51,14 @@
    "search_index": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "stock_name",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Stock Name",
-   "options": "Portfolio Stock Name"
+   "options": "Portfolio Stock Name",
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "event_type",
@@ -71,10 +81,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-28 16:49:58.886145",
+ "modified": "2025-12-28 17:07:05.714601",
  "modified_by": "Administrator",
  "module": "Portfolio",
  "name": "Portfolio Stock Event",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -93,7 +104,9 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "search_fields": "posting_date,stock_name",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "stock_name"
 }
