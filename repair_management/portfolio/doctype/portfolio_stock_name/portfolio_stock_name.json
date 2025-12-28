@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:stock_name",
+ "creation": "2025-12-28 15:39:42.469205",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "stock_and_etf_section",
+  "stock_name",
+  "full_stock_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "stock_and_etf_section",
+   "fieldtype": "Section Break",
+   "label": "Stock and ETF"
+  },
+  {
+   "fieldname": "stock_name",
+   "fieldtype": "Data",
+   "label": "Stock Name",
+   "unique": 1
+  },
+  {
+   "fieldname": "full_stock_name",
+   "fieldtype": "Data",
+   "label": "Full Stock Name"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-28 16:36:02.145372",
+ "modified_by": "Administrator",
+ "module": "Portfolio",
+ "name": "Portfolio Stock Name",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_views": 1
+}
