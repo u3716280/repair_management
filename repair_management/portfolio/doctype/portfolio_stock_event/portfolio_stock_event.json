@@ -81,7 +81,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-28 17:07:05.714601",
+ "modified": "2025-12-28 17:07:52.624881",
  "modified_by": "Administrator",
  "module": "Portfolio",
  "name": "Portfolio Stock Event",
@@ -108,5 +108,7 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "title_field": "stock_name"
+ "title_field": "stock_name",
+ "track_changes": 1,
+ "track_views": 1
 }
