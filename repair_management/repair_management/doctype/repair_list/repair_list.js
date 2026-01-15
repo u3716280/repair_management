@@ -8,8 +8,9 @@ frappe.ui.form.on('Repair List', {
     if (!can_return) return;
 
     // กันปุ่มซ้ำเมื่อ refresh หลายรอบ
-    if (frm.__return_btn_added) return;
-    frm.__return_btn_added = true;
+    // if (frm.__return_btn_added) return;
+    // frm.__return_btn_added = true;
+    frm.clear_custom_buttons();
 
     frm.add_custom_button(
       __('Return'),
