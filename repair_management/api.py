@@ -71,3 +71,41 @@ def get_customer_addresses(customer_name):
     )
     
     return addresses
+
+import frappe
+from frappe.utils import getdate, cint, get_datetime
+
+@frappe.whitelist()
+def get_customer_purchase_heatmap(customer, year=None):
+    year = cint(year) or getdate().year
+
+    rows = frappe.db.sql("""
+        SELECT
+            posting_date,
+            COUNT(name) AS invoice_count,
+            SUM(grand_total) AS total_amount
+        FROM `tabSales Invoice`
+        WHERE
+            customer = %(customer)s
+            AND docstatus = 1
+            AND YEAR(posting_date) = %(year)s
+        GROUP BY posting_date
+        ORDER BY posting_date
+    """, {
+        "customer": customer,
+        "year": year
+    }, as_dict=True)
+
+    data_points = {}
+
+    for r in rows:
+        ts = int(get_datetime(r.posting_date).timestamp())
+        data_points[ts] = r.invoice_count
+
+    return {
+        "year": year,
+        "dataPoints": data_points,
+        "total_invoice_days": len(rows),
+        "total_invoices": sum(r.invoice_count for r in rows),
+        "total_amount": sum(r.total_amount or 0 for r in rows)
+    }

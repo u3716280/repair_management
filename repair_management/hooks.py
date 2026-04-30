@@ -53,6 +53,10 @@ page_js = {
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
+doctype_js = {
+    "Customer": "public/js/customer_heatmap.js"
+}
+
 
 # Svg Icons
 # ------------------
@@ -260,3 +264,5 @@ doctype_list_js = {
 def boot_session(bootinfo):
     bootinfo.google_maps_api_key = "AIzaSyAnAQeOunGXOEO_fXa1tvQbeFaVjJKIgBM"
 
+# Custom Fields
+fixtures = ["Custom Field"]
