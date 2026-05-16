@@ -265,4 +265,36 @@ def boot_session(bootinfo):
     bootinfo.google_maps_api_key = "AIzaSyAnAQeOunGXOEO_fXa1tvQbeFaVjJKIgBM"
 
 # Custom Fields
-fixtures = ["Custom Field"]
+#fixtures = ["Custom Field"]
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    # Address Map
+                    "Address-custom_map",
+                    "Address-custom_latitude",
+                    "Address-custom_longtitude",
+                    "Address-custom_map_html",
+		    # Auto Generate T&C to Sales Order
+                    "Customer-tc_name",
+		    # Serial No. Keep Record
+                    "Stock Entry-custom_serial_no_text",
+		    # Delivery Note Reference
+                    "Delivery Note-custom_payment_date",
+                    "Delivery Note-custom_section_break_ci1mq",
+                    "Delivery Note-custom_refer_customer",
+                    "Delivery Note-custom_customer_name",
+		    # Sales Order Map
+                    "Sales Order-custom_map",
+                    "Sales Order-custom_latitude",
+                    "Sales Order-custom_longitude",
+                    "Sales Order-custom_map_html",
+                ],
+            ]
+        ],
+    }
+]
