@@ -34,6 +34,7 @@ app_include_js = [
 # include js, css files in header of web template
 # web_include_css = "/assets/repair_management/css/repair_management.css"
 # web_include_js = "/assets/repair_management/js/repair_management.js"
+web_include_js = ["test_vue.bundle.js"]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "repair_management/public/scss/website"
