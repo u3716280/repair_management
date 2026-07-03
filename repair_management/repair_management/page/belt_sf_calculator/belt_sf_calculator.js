@@ -1,0 +1,651 @@
+frappe.pages["belt-sf-calculator"].on_page_load = function(wrapper) {
+	const page = frappe.ui.make_app_page({
+		parent: wrapper,
+		title: __("Belt SF Calculator"),
+		single_column: true
+	});
+
+	new BeltSFCalculator(page);
+};
+
+class BeltSFCalculator {
+	constructor(page) {
+		this.page = page;
+		this.wrapper = $(page.body);
+
+		this.belt_profiles = {
+			SPZ: {
+				min_d: 63,
+				ref_d: 100,
+				ref_rpm: 1450,
+				ref_kw: 1.05,
+				max_speed: 30
+			},
+			SPA: {
+				min_d: 90,
+				ref_d: 140,
+				ref_rpm: 1450,
+				ref_kw: 2.2,
+				max_speed: 30
+			},
+			SPB: {
+				min_d: 140,
+				ref_d: 200,
+				ref_rpm: 1450,
+				ref_kw: 5.2,
+				max_speed: 30
+			},
+			SPC: {
+				min_d: 224,
+				ref_d: 315,
+				ref_rpm: 1450,
+				ref_kw: 13,
+				max_speed: 30
+			},
+			A: {
+				min_d: 75,
+				ref_d: 120,
+				ref_rpm: 1450,
+				ref_kw: 1.25,
+				max_speed: 25
+			},
+			B: {
+				min_d: 125,
+				ref_d: 180,
+				ref_rpm: 1450,
+				ref_kw: 3.2,
+				max_speed: 25
+			}
+		};
+
+		this.syncing_power = false;
+
+		this.render();
+		this.bind_events();
+		this.set_defaults();
+		this.calculate();
+	}
+
+	render() {
+		this.wrapper.html(`
+			<div class="belt-sf-page">
+
+				<div class="belt-action-row">
+					<button class="belt-btn belt-btn-back" data-action="back">
+						<i class="fa fa-arrow-left"></i>
+						Back to Menu
+					</button>
+
+					<button class="belt-btn belt-btn-calculate" data-action="calculate">
+						<i class="fa fa-calculator"></i>
+						Calculate
+					</button>
+				</div>
+
+				<div class="belt-section">
+					<div class="belt-section-title">Input - Driver</div>
+
+					<div class="belt-section-body">
+						<div class="belt-form-grid">
+							<div class="belt-field">
+								<label>Motor Power</label>
+								<input type="number" step="0.01" data-field="motor_kw" placeholder="kW">
+								<span>kW</span>
+							</div>
+
+							<div class="belt-field">
+								<label>Motor Power</label>
+								<input type="number" step="0.01" data-field="motor_hp" placeholder="HP">
+								<span>HP</span>
+							</div>
+
+							<div class="belt-field">
+								<label>Driver RPM</label>
+								<input type="number" step="1" data-field="driver_rpm" placeholder="1450">
+								<span>RPM</span>
+							</div>
+
+							<div class="belt-field">
+								<label>Target SF</label>
+								<input type="number" step="0.01" data-field="target_sf" placeholder="1.40">
+								<span>SF</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="belt-section">
+					<div class="belt-section-title">Belt Info</div>
+
+					<div class="belt-section-body">
+						<div class="belt-form-grid">
+							<div class="belt-field">
+								<label># Belts</label>
+								<input type="number" step="1" data-field="belt_count" placeholder="1">
+								<span>เส้น</span>
+							</div>
+
+							<div class="belt-field">
+								<label>Belt Length</label>
+								<input type="number" step="1" data-field="belt_length_mm" placeholder="1500">
+								<span>mm</span>
+							</div>
+
+							<div class="belt-field">
+								<label>Belt Profile</label>
+								<select data-field="belt_profile">
+									<option value="SPZ">SPZ</option>
+									<option value="SPA">SPA</option>
+									<option value="SPB">SPB</option>
+									<option value="SPC">SPC</option>
+									<option value="A">A</option>
+									<option value="B">B</option>
+								</select>
+							</div>
+
+							<div class="belt-field">
+								<label>Product</label>
+								<select data-field="product">
+									<option value="standard">Standard V-Belt</option>
+									<option value="optibelt_sk">optibelt SK S=C PLUS</option>
+									<option value="cogged">Raw Edge Cogged</option>
+								</select>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="belt-section">
+					<div class="belt-section-title">Pulleys</div>
+
+					<div class="belt-section-body">
+						<div class="belt-form-grid">
+							<div class="belt-sub-box">
+								<div class="belt-sub-title">Driver Pulley</div>
+
+								<div class="belt-field">
+									<label>Diameter</label>
+									<input type="number" step="1" data-field="driver_pulley_mm" placeholder="100">
+									<span>mm</span>
+								</div>
+							</div>
+
+							<div class="belt-sub-box">
+								<div class="belt-sub-title">Driven Pulley</div>
+
+								<div class="belt-field">
+									<label>Diameter</label>
+									<input type="number" step="1" data-field="driven_pulley_mm" placeholder="200">
+									<span>mm</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="belt-section">
+					<div class="belt-section-title">Result</div>
+
+					<div class="belt-section-body">
+						<div class="belt-result-grid">
+
+							<div class="belt-result-card">
+								<div class="belt-result-label">Actual SF</div>
+								<div class="belt-result-value" data-result="actual_sf">-</div>
+							</div>
+
+							<div class="belt-result-card">
+								<div class="belt-result-label">Required Belts</div>
+								<div class="belt-result-value" data-result="required_belts">-</div>
+							</div>
+
+							<div class="belt-result-card">
+								<div class="belt-result-label">Driven RPM</div>
+								<div class="belt-result-value" data-result="driven_rpm">-</div>
+							</div>
+
+							<div class="belt-result-card">
+								<div class="belt-result-label">Center Distance</div>
+								<div class="belt-result-value" data-result="center_distance">-</div>
+							</div>
+
+							<div class="belt-result-card">
+								<div class="belt-result-label">Belt Speed</div>
+								<div class="belt-result-value" data-result="belt_speed">-</div>
+							</div>
+
+							<div class="belt-result-card">
+								<div class="belt-result-label">Wrap Angle</div>
+								<div class="belt-result-value" data-result="wrap_angle">-</div>
+							</div>
+
+							<div class="belt-result-card">
+								<div class="belt-result-label">Capacity / Belt</div>
+								<div class="belt-result-value" data-result="capacity_per_belt">-</div>
+							</div>
+
+							<div class="belt-result-card">
+								<div class="belt-result-label">Total Capacity</div>
+								<div class="belt-result-value" data-result="total_capacity">-</div>
+							</div>
+
+						</div>
+
+						<div class="belt-status" data-result="status"></div>
+
+						<div class="belt-note">
+							หมายเหตุ: ค่ากำลังสายพานในหน้านี้เป็นค่า estimate สำหรับทำเครื่องมือภายในก่อน
+							ถ้าจะใช้ออกแบบจริง ควรเปลี่ยนเป็นตาราง catalog ของสายพานแต่ละยี่ห้อ
+						</div>
+					</div>
+				</div>
+
+			</div>
+		`);
+	}
+
+	bind_events() {
+		this.wrapper.on("click", '[data-action="back"]', () => {
+			frappe.set_route("Workspaces", "Repair Management");
+		});
+
+		this.wrapper.on("click", '[data-action="calculate"]', () => {
+			this.calculate(true);
+		});
+
+		this.wrapper.on("input change", "[data-field]", (e) => {
+			const fieldname = $(e.currentTarget).data("field");
+
+			if (fieldname === "motor_kw") {
+				this.sync_motor_power("kw");
+			}
+
+			if (fieldname === "motor_hp") {
+				this.sync_motor_power("hp");
+			}
+
+			this.calculate();
+		});
+	}
+
+	set_defaults() {
+		this.set_value("motor_kw", 1.5);
+		this.set_value("motor_hp", 2.01);
+		this.set_value("driver_rpm", 1450);
+		this.set_value("target_sf", 1.4);
+		this.set_value("belt_count", 1);
+		this.set_value("belt_length_mm", 1500);
+		this.set_value("belt_profile", "SPZ");
+		this.set_value("product", "optibelt_sk");
+		this.set_value("driver_pulley_mm", 100);
+		this.set_value("driven_pulley_mm", 200);
+	}
+
+	get_value(fieldname) {
+		const $el = this.wrapper.find(`[data-field="${fieldname}"]`);
+
+		if ($el.is("select")) {
+			return $el.val();
+		}
+
+		const value = parseFloat($el.val());
+		return Number.isFinite(value) ? value : 0;
+	}
+
+	set_value(fieldname, value) {
+		this.wrapper.find(`[data-field="${fieldname}"]`).val(value);
+	}
+
+	set_result(fieldname, value) {
+		this.wrapper.find(`[data-result="${fieldname}"]`).text(value);
+	}
+
+	sync_motor_power(source) {
+		if (this.syncing_power) return;
+
+		this.syncing_power = true;
+
+		if (source === "kw") {
+			const kw = this.get_value("motor_kw");
+			this.set_value("motor_hp", this.round(kw / 0.746, 2));
+		}
+
+		if (source === "hp") {
+			const hp = this.get_value("motor_hp");
+			this.set_value("motor_kw", this.round(hp * 0.746, 2));
+		}
+
+		this.syncing_power = false;
+	}
+
+	calculate(show_message = false) {
+		try {
+			const input = this.get_input();
+			const result = this.calculate_belt_sf(input);
+
+			this.render_result(result);
+
+			if (show_message) {
+				frappe.show_alert({
+					message: __("Calculated"),
+					indicator: result.pass ? "green" : "orange"
+				});
+			}
+		} catch (error) {
+			this.render_error(error.message);
+		}
+	}
+
+	get_input() {
+		return {
+			motor_kw: this.get_value("motor_kw"),
+			driver_rpm: this.get_value("driver_rpm"),
+			target_sf: this.get_value("target_sf"),
+			belt_count: Math.max(1, Math.floor(this.get_value("belt_count"))),
+			belt_length_mm: this.get_value("belt_length_mm"),
+			belt_profile: this.get_value("belt_profile"),
+			product: this.get_value("product"),
+			driver_pulley_mm: this.get_value("driver_pulley_mm"),
+			driven_pulley_mm: this.get_value("driven_pulley_mm")
+		};
+	}
+
+	calculate_belt_sf(input) {
+		this.validate_input(input);
+
+		const driver_d = input.driver_pulley_mm;
+		const driven_d = input.driven_pulley_mm;
+
+		const small_d = Math.min(driver_d, driven_d);
+		const large_d = Math.max(driver_d, driven_d);
+
+		const center_distance = this.calculate_center_distance(
+			input.belt_length_mm,
+			large_d,
+			small_d
+		);
+
+		const driven_rpm = input.driver_rpm * driver_d / driven_d;
+
+		const belt_speed = Math.PI * driver_d / 1000 * input.driver_rpm / 60;
+
+		const wrap_angle = 180 - (57.3 * (large_d - small_d) / center_distance);
+
+		const wrap_factor = this.get_wrap_factor(wrap_angle);
+		const length_factor = this.get_length_factor(input.belt_profile, input.belt_length_mm);
+		const product_factor = this.get_product_factor(input.product);
+
+		const base_capacity = this.estimate_base_capacity_kw(
+			input.belt_profile,
+			small_d,
+			input.driver_rpm,
+			belt_speed
+		);
+
+		const capacity_per_belt = base_capacity * wrap_factor * length_factor * product_factor;
+		const total_capacity = capacity_per_belt * input.belt_count;
+		const actual_sf = total_capacity / input.motor_kw;
+		const required_belts = Math.ceil((input.motor_kw * input.target_sf) / capacity_per_belt);
+
+		const warnings = this.get_warnings({
+			input,
+			small_d,
+			belt_speed,
+			wrap_angle
+		});
+
+		return {
+			driven_rpm,
+			center_distance,
+			belt_speed,
+			wrap_angle,
+			base_capacity,
+			wrap_factor,
+			length_factor,
+			product_factor,
+			capacity_per_belt,
+			total_capacity,
+			actual_sf,
+			required_belts,
+			pass: actual_sf >= input.target_sf,
+			warnings
+		};
+	}
+
+	validate_input(input) {
+		if (!input.motor_kw || input.motor_kw <= 0) {
+			throw new Error("กรุณาใส่ Motor Power");
+		}
+
+		if (!input.driver_rpm || input.driver_rpm <= 0) {
+			throw new Error("กรุณาใส่ Driver RPM");
+		}
+
+		if (!input.driver_pulley_mm || input.driver_pulley_mm <= 0) {
+			throw new Error("กรุณาใส่ขนาด Driver Pulley");
+		}
+
+		if (!input.driven_pulley_mm || input.driven_pulley_mm <= 0) {
+			throw new Error("กรุณาใส่ขนาด Driven Pulley");
+		}
+
+		if (!input.belt_length_mm || input.belt_length_mm <= 0) {
+			throw new Error("กรุณาใส่ Belt Length");
+		}
+
+		if (!input.target_sf || input.target_sf <= 0) {
+			throw new Error("กรุณาใส่ Target SF");
+		}
+	}
+
+	calculate_center_distance(belt_length_mm, large_d, small_d) {
+		const a = Math.PI / 2 * (large_d + small_d);
+		const b = belt_length_mm - a;
+		const diff = large_d - small_d;
+
+		const inside = Math.pow(b, 2) - 2 * Math.pow(diff, 2);
+
+		if (inside <= 0) {
+			throw new Error("Belt Length สั้นเกินไปเมื่อเทียบกับขนาดมู่เล่");
+		}
+
+		return (b + Math.sqrt(inside)) / 4;
+	}
+
+	estimate_base_capacity_kw(profile, small_d, rpm, belt_speed) {
+		const p = this.belt_profiles[profile] || this.belt_profiles.SPZ;
+
+		const diameter_factor = Math.pow(small_d / p.ref_d, 1.15);
+		const rpm_factor = Math.pow(rpm / p.ref_rpm, 0.9);
+
+		let speed_factor = 1;
+
+		if (belt_speed > p.max_speed) {
+			speed_factor = Math.max(0.55, 1 - ((belt_speed - p.max_speed) * 0.03));
+		}
+
+		return p.ref_kw * diameter_factor * rpm_factor * speed_factor;
+	}
+
+	get_wrap_factor(wrap_angle) {
+		const table = [
+			[90, 0.68],
+			[100, 0.73],
+			[110, 0.78],
+			[120, 0.82],
+			[130, 0.86],
+			[140, 0.89],
+			[150, 0.92],
+			[160, 0.95],
+			[170, 0.98],
+			[180, 1.00]
+		];
+
+		return this.interpolate(table, Math.max(90, Math.min(180, wrap_angle)));
+	}
+
+	get_length_factor(profile, belt_length_mm) {
+		const table_map = {
+			SPZ: [
+				[630, 0.86],
+				[800, 0.91],
+				[1000, 0.95],
+				[1250, 0.98],
+				[1600, 1.00],
+				[2000, 1.02],
+				[2500, 1.04]
+			],
+			SPA: [
+				[900, 0.88],
+				[1250, 0.94],
+				[1600, 0.98],
+				[2000, 1.00],
+				[2500, 1.02],
+				[3150, 1.04]
+			],
+			SPB: [
+				[1400, 0.90],
+				[1800, 0.95],
+				[2240, 0.98],
+				[2800, 1.00],
+				[3550, 1.02],
+				[4500, 1.04]
+			],
+			SPC: [
+				[2240, 0.90],
+				[2800, 0.94],
+				[3550, 0.98],
+				[4500, 1.00],
+				[5600, 1.02],
+				[7100, 1.04]
+			],
+			A: [
+				[800, 0.90],
+				[1000, 0.94],
+				[1250, 0.97],
+				[1600, 1.00],
+				[2000, 1.02]
+			],
+			B: [
+				[1250, 0.90],
+				[1600, 0.95],
+				[2000, 0.98],
+				[2500, 1.00],
+				[3150, 1.02]
+			]
+		};
+
+		return this.interpolate(table_map[profile] || table_map.SPZ, belt_length_mm);
+	}
+
+	get_product_factor(product) {
+		const map = {
+			standard: 1.00,
+			optibelt_sk: 1.05,
+			cogged: 1.10
+		};
+
+		return map[product] || 1.00;
+	}
+
+	interpolate(table, x) {
+		if (x <= table[0][0]) {
+			return table[0][1];
+		}
+
+		for (let i = 0; i < table.length - 1; i++) {
+			const x1 = table[i][0];
+			const y1 = table[i][1];
+			const x2 = table[i + 1][0];
+			const y2 = table[i + 1][1];
+
+			if (x >= x1 && x <= x2) {
+				const ratio = (x - x1) / (x2 - x1);
+				return y1 + ((y2 - y1) * ratio);
+			}
+		}
+
+		return table[table.length - 1][1];
+	}
+
+	get_warnings({ input, small_d, belt_speed, wrap_angle }) {
+		const warnings = [];
+		const profile_data = this.belt_profiles[input.belt_profile] || this.belt_profiles.SPZ;
+
+		if (small_d < profile_data.min_d) {
+			warnings.push(
+				`มู่เล่เล็ก ${small_d} mm ต่ำกว่าค่าขั้นต่ำของ ${input.belt_profile} ประมาณ ${profile_data.min_d} mm`
+			);
+		}
+
+		if (belt_speed > profile_data.max_speed) {
+			warnings.push(
+				`Belt speed ${this.round(belt_speed, 2)} m/s สูงกว่าค่าที่ควรระวัง ${profile_data.max_speed} m/s`
+			);
+		}
+
+		if (wrap_angle < 120) {
+			warnings.push(
+				`Wrap angle ${this.round(wrap_angle, 1)}° ต่ำเกินไป ควรเพิ่ม center distance หรือเปลี่ยนอัตราทด`
+			);
+		}
+
+		return warnings;
+	}
+
+	render_result(result) {
+		this.set_result("actual_sf", this.round(result.actual_sf, 2));
+		this.set_result("required_belts", result.required_belts);
+		this.set_result("driven_rpm", `${this.round(result.driven_rpm, 0)} RPM`);
+		this.set_result("center_distance", `${this.round(result.center_distance, 0)} mm`);
+		this.set_result("belt_speed", `${this.round(result.belt_speed, 2)} m/s`);
+		this.set_result("wrap_angle", `${this.round(result.wrap_angle, 1)}°`);
+		this.set_result("capacity_per_belt", `${this.round(result.capacity_per_belt, 2)} kW`);
+		this.set_result("total_capacity", `${this.round(result.total_capacity, 2)} kW`);
+
+		const $status = this.wrapper.find('[data-result="status"]');
+		$status.removeClass("pass fail error");
+
+		let message = "";
+
+		if (result.pass) {
+			$status.addClass("pass");
+			message = `ผ่าน: Actual SF = ${this.round(result.actual_sf, 2)} มากกว่าหรือเท่ากับ Target SF`;
+		} else {
+			$status.addClass("fail");
+			message = `ไม่ผ่าน: Actual SF = ${this.round(result.actual_sf, 2)} ต่ำกว่า Target SF ควรใช้สายพานอย่างน้อย ${result.required_belts} เส้น`;
+		}
+
+		if (result.warnings.length) {
+			message += "<br>" + result.warnings.join("<br>");
+		}
+
+		$status.html(message);
+	}
+
+	render_error(message) {
+		const fields = [
+			"actual_sf",
+			"required_belts",
+			"driven_rpm",
+			"center_distance",
+			"belt_speed",
+			"wrap_angle",
+			"capacity_per_belt",
+			"total_capacity"
+		];
+
+		fields.forEach((fieldname) => {
+			this.set_result(fieldname, "-");
+		});
+
+		const $status = this.wrapper.find('[data-result="status"]');
+		$status.removeClass("pass fail").addClass("error");
+		$status.text(message);
+	}
+
+	round(value, digits = 2) {
+		const factor = Math.pow(10, digits);
+		return Math.round((value + Number.EPSILON) * factor) / factor;
+	}
+}
