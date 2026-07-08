@@ -25,12 +25,6 @@ const BELT_DATA = {
 			345, 391, 406, 467, 508, 635, 762, 965] },
 };
 
-/* ขนาดพูลเลย์เพิ่มเติม (อนุกรม R20) — เพิ่มให้เลือกได้ทุกรุ่นสายพาน */
-const EXTRA_DIA = [85, 95, 106, 118, 132, 150, 170, 190, 212, 236, 300, 355];
-Object.values(BELT_DATA).forEach(b => {
-	b.std_dia = [...new Set([...b.std_dia, ...EXTRA_DIA])].sort((x, y) => x - y);
-});
-
 /* Bando Table 1 — Typical Service Factors */
 const SF_TABLE = [
 	{ label: __('เครื่องกวนของเหลว, โบลเวอร์, ปั๊ม/คอมเพรสเซอร์แบบแรงเหวี่ยง, พัดลม ≤10 HP, สายพานลำเลียงเบา'),
@@ -335,7 +329,6 @@ class BeltSFCalculator {
 
 			<div class="bsf-toolbar">
 				<button class="btn bsf-btn-back">← ${__('Back to Menu')}</button>
-				<button class="btn bsf-btn-clear">✕ ${__('Clear')}</button>
 				<button class="btn bsf-btn-calc">🖩 ${__('Calculate')}</button>
 			</div>
 
@@ -457,40 +450,7 @@ class BeltSFCalculator {
 		});
 		this.$page.find('.bsf-btn-sf').on('click', () => this.open_sf_dialog());
 		this.$page.find('.bsf-btn-calc').on('click', () => this.calculate());
-		this.$page.find('.bsf-btn-clear').on('click', () => this.clear_form());
 		this.$page.find('.bsf-btn-back').on('click', () => frappe.set_route('app'));
-	}
-
-	/* ล้างข้อมูลทั้งหมดกลับค่าเริ่มต้น */
-	clear_form() {
-		const $p = this.$page;
-		['power', 'rpm', 'length', 'driver_dia_custom', 'driven_dia_custom']
-			.forEach(f => $p.find(`[data-field="${f}"]`).val(''));
-		$p.find('[data-field="belts"]').val(1);
-		$p.find('[data-field="sf"]').val('1.40');
-		$p.find('[data-field="profile"]').val('SPA');
-		$p.find('[data-field="driver_class"]').val('normal');
-		this.state.profile = 'SPA';
-		this.state.driver_class = 'normal';
-		// unit toggles → ค่าเริ่มต้น kW / mm
-		$p.find('[data-toggle="power_unit"] button').removeClass('active')
-			.filter('[data-val="kW"]').addClass('active');
-		$p.find('[data-toggle="length_unit"] button').removeClass('active')
-			.filter('[data-val="mm"]').addClass('active');
-		this.state.power_unit = 'kW';
-		this.state.length_unit = 'mm';
-		// pulleys → Standard
-		$p.find('.bsf-pulley').each(function () {
-			$(this).find('.bsf-pulley-mode button').removeClass('active')
-				.filter('[data-mode="standard"]').addClass('active');
-			$(this).find('.std-block').show();
-			$(this).find('.custom-block').hide();
-		});
-		this.state.driver_mode = 'standard';
-		this.state.driven_mode = 'standard';
-		this.fill_std_diameters();
-		$p.find('.bsf-results').hide();
-		frappe.show_alert({ message: __('ล้างข้อมูลแล้ว'), indicator: 'green' });
 	}
 
 	fill_std_diameters() {
@@ -599,10 +559,6 @@ class BeltSFCalculator {
 		const design_hp = PB / 0.7457;
 		const belts_needed = Math.max(1, Math.ceil(design_hp / rate.corrected_hp));
 
-		// SF จริงที่ได้ = กำลังส่งได้รวมของสายพานที่เลือก ÷ กำลังมอเตอร์
-		const motor_hp = v.power_kw / 0.7457;
-		const actual_sf = (v.belts * rate.corrected_hp) / motor_hp;
-
 		const warns = [];
 		if (d < belt.min_dia)
 			warns.push(__('พูลเลย์เล็กกว่าค่าต่ำสุดของ Bando รุ่น {0} ({1} mm)', [this.state.profile, belt.min_dia]));
@@ -617,13 +573,9 @@ class BeltSFCalculator {
 		if (this.state.profile === 'SPA')
 			warns.push(__('SPA ประมาณจากตาราง AX ซึ่งเป็นหน้าตัดใกล้เคียงที่สุดในคู่มือ Bando USA — ตรวจสอบกับแคตตาล็อก Bando SP ก่อนใช้จริง'));
 
-		if (actual_sf < v.sf)
-			warns.push(__('SF จริงที่ได้ ({0}) ต่ำกว่า SF ที่ตั้งไว้ ({1}) — ควรเพิ่มจำนวนเส้นหรือขยายพูลเลย์',
-				[actual_sf.toFixed(2), v.sf.toFixed(2)]));
-
 		this.show_results(v, {
 			PB, speed, C, theta, FA, T1, T2, Ts, span, defl_mm, defl_force,
-			ratio, rpm_out, rate, design_hp, belts_needed, actual_sf, warns,
+			ratio, rpm_out, rate, design_hp, belts_needed, warns,
 		});
 	}
 
@@ -631,18 +583,6 @@ class BeltSFCalculator {
 		const row = (l, val) => `<div class="bsf-res-row"><span>${l}</span><b>${val}</b></div>`;
 		const kgf = (n) => (n / 9.80665).toFixed(1);
 		let html = '';
-		const sf_ok = r.actual_sf >= v.sf;
-		html += `<div class="bsf-sf-compare ${sf_ok ? 'ok' : 'fail'}">
-			<div class="bsf-sf-col">
-				<div>${__('SF ที่ตั้งไว้')}</div>
-				<div class="val">${v.sf.toFixed(2)}</div>
-			</div>
-			<div class="bsf-sf-vs">${sf_ok ? '✓' : '✗'}</div>
-			<div class="bsf-sf-col">
-				<div>${__('SF จริงที่ได้ ({0} เส้น)', [v.belts])}</div>
-				<div class="val">${r.actual_sf.toFixed(2)}</div>
-			</div>
-		</div>`;
 		html += row(__('กำลังออกแบบ (P × SF)'), `${r.PB.toFixed(2)} kW (${r.design_hp.toFixed(2)} HP)`);
 		html += row(__('อัตราทด'), `1 : ${r.ratio.toFixed(2)} (${r.rpm_out.toFixed(0)} RPM ขาออก)`);
 		html += row(__('ความเร็วสายพาน'), `${r.speed.toFixed(2)} m/s`);

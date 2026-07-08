@@ -1,0 +1,179 @@
+.belt-sf-page {
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 16px;
+	background: #f2f2f2;
+}
+
+.belt-action-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 28px;
+	margin-bottom: 16px;
+}
+
+.belt-btn {
+	height: 74px;
+	border: 1px solid #888;
+	font-size: 34px;
+	font-weight: 500;
+	background: #fff;
+}
+
+.belt-btn i {
+	margin-right: 10px;
+}
+
+.belt-btn-back {
+	background: #07548c;
+	color: #fff;
+}
+
+.belt-btn-calculate {
+	color: #15812b;
+	border-left: 8px solid #268b38;
+}
+
+.belt-section {
+	background: #e8e8e8;
+	border: 1px solid #777;
+	box-shadow: 0 2px 4px rgba(0,0,0,.25);
+	margin-bottom: 8px;
+}
+
+.belt-section-title {
+	background: #07548c;
+	color: #fff;
+	font-size: 28px;
+	padding: 10px 16px;
+	border-bottom: 4px solid #00385d;
+}
+
+.belt-section-body {
+	padding: 14px;
+}
+
+.belt-form-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+}
+
+.belt-field {
+	display: flex;
+	align-items: stretch;
+	min-height: 42px;
+}
+
+.belt-field label {
+	min-width: 120px;
+	padding: 8px 12px;
+	background: #ddd;
+	border: 1px solid #333;
+	border-right: 0;
+	font-size: 18px;
+	margin: 0;
+	color: #111;
+}
+
+.belt-field input,
+.belt-field select {
+	flex: 1;
+	border: 1px solid #333;
+	padding: 6px 10px;
+	font-size: 20px;
+	background: #fff;
+}
+
+.belt-field span {
+	min-width: 54px;
+	padding: 8px 10px;
+	border: 1px solid #333;
+	border-left: 0;
+	background: #ddd;
+	font-size: 18px;
+	text-align: center;
+}
+
+.belt-sub-box {
+	border: 1px solid #07548c;
+	background: #fff;
+	padding: 10px;
+}
+
+.belt-sub-title {
+	background: #236393;
+	color: #fff;
+	padding: 6px 10px;
+	font-size: 22px;
+	margin: -10px -10px 10px -10px;
+}
+
+.belt-result-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 10px;
+}
+
+.belt-result-card {
+	background: #fff;
+	border: 1px solid #999;
+	padding: 10px;
+}
+
+.belt-result-label {
+	font-size: 14px;
+	color: #666;
+}
+
+.belt-result-value {
+	font-size: 25px;
+	font-weight: 700;
+	color: #063f68;
+}
+
+.belt-status {
+	margin-top: 14px;
+	padding: 12px;
+	font-size: 18px;
+	display: none;
+}
+
+.belt-status.pass {
+	display: block;
+	background: #e4f5e8;
+	border: 1px solid #2f9e44;
+	color: #146c2e;
+}
+
+.belt-status.fail {
+	display: block;
+	background: #fff3cd;
+	border: 1px solid #d39e00;
+	color: #856404;
+}
+
+.belt-status.error {
+	display: block;
+	background: #f8d7da;
+	border: 1px solid #dc3545;
+	color: #842029;
+}
+
+.belt-note {
+	margin-top: 12px;
+	font-size: 14px;
+	color: #666;
+}
+
+@media (max-width: 900px) {
+	.belt-action-row,
+	.belt-form-grid,
+	.belt-result-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.belt-btn {
+		font-size: 25px;
+	}
+}

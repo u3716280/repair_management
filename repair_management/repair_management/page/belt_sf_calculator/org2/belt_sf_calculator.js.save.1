@@ -1,0 +1,311 @@
+/* ============================================================================
+ * Belt Service Factor & Tension Calculator  (Frappe/ERPNext Single Page App)
+ * ----------------------------------------------------------------------------
+ * ขอบเขต: V-belt สำหรับงานส่งกำลัง (motor -> driven pulley)
+ * อ้างอิงวิธีคำนวณจากตำรา Machine Design มาตรฐาน (เช่น Khurmi & Gupta)
+ * ตารางค่าทั้งหมด (service factor, ขนาดหน้าตัดสายพาน, มวลต่อเมตร) ฝังอยู่ในไฟล์นี้
+ * ----------------------------------------------------------------------------
+ * วิธีติดตั้ง:
+ *   1. สร้าง Page ใหม่ในแอปของท่าน:
+ *        bench new-page belt_service_calculator --app your_app
+ *   2. แทนที่ไฟล์ .json และ .js ที่ถูกสร้างขึ้นด้วยไฟล์สองไฟล์นี้
+ *   3. bench build && bench clear-cache
+ *   4. เข้าถึงหน้าเว็บที่ /app/belt-service-calculator
+ * ============================================================================ */
+
+frappe.pages['belt-service-calculator'].on_page_load = function (wrapper) {
+	const page = frappe.ui.make_app_page({
+		parent: wrapper,
+		title: 'Belt Service Factor & Tension Calculator',
+		single_column: true
+	});
+
+	new BeltCalculator(page);
+};
+
+class BeltCalculator {
+	constructor(page) {
+		this.page = page;
+
+		/* ---------------- ตารางข้อมูลอ้างอิง (ฝังในโค้ดตามที่ระบุ) ---------------- */
+
+		// Service factor (Ks) : [ประเภทมอเตอร์/ต้นกำลัง][ประเภทโหลด][ชั่วโมงทำงาน/วัน]
+		this.serviceFactorTable = {
+			soft: { // มอเตอร์ AC เหนี่ยวนำทั่วไป / start แบบ normal torque
+				light:  { upto10: 1.0, t10to16: 1.1, above16: 1.2 },
+				medium: { upto10: 1.1, t10to16: 1.2, above16: 1.3 },
+				heavy:  { upto10: 1.2, t10to16: 1.3, above16: 1.4 }
+			},
+			heavy: { // มอเตอร์ slip-ring / high starting torque / เครื่องยนต์สันดาป
+				light:  { upto10: 1.1, t10to16: 1.2, above16: 1.3 },
+				medium: { upto10: 1.2, t10to16: 1.3, above16: 1.4 },
+				heavy:  { upto10: 1.3, t10to16: 1.4, above16: 1.5 }
+			}
+		};
+
+		// คุณสมบัติหน้าตัดสายพาน มาตรฐาน V-belt (A, B, C, D, E)
+		// mass: kg/m, area: mm^2 (ใช้กับ Tmax = sigma * area), minPulleyDia: mm (พิกัดขั้นต่ำที่แนะนำ)
+		this.beltSections = {
+			A: { mass: 0.106, area: 81,  minPulleyDia: 75,  designPowerMax: 4 },
+			B: { mass: 0.189, area: 143, minPulleyDia: 125, designPowerMax: 15 },
+			C: { mass: 0.343, area: 237, minPulleyDia: 200, designPowerMax: 45 },
+			D: { mass: 0.596, area: 476, minPulleyDia: 355, designPowerMax: 100 },
+			E: { mass: 0.879, area: 692, minPulleyDia: 500, designPowerMax: Infinity }
+		};
+
+		this.build_ui();
+	}
+
+	/* ---------------------------- ส่วนสร้างหน้าจอ ---------------------------- */
+	build_ui() {
+		const $body = $(`
+			<div class="belt-calc-wrapper" style="max-width: 960px; margin: 0 auto; padding: 15px 0;">
+				<div class="alert alert-info" style="margin-bottom:20px;">
+					คำนวณสำหรับ <b>V-belt งานส่งกำลัง (motor → driven pulley)</b> เท่านั้น
+					ค่าที่คำนวณได้เป็นค่าประมาณตามหลักวิศวกรรมมาตรฐาน โปรดตรวจสอบกับแคตตาล็อกของผู้ผลิตสายพานก่อนนำไปใช้งานจริง
+				</div>
+
+				<div class="row">
+					<div class="col-sm-6">
+						<h5>1) ข้อมูลกำลังและรอบหมุน</h5>
+						<div id="field-rated-power"></div>
+						<div id="field-n1"></div>
+						<div id="field-n2"></div>
+					</div>
+					<div class="col-sm-6">
+						<h5>2) เงื่อนไขการใช้งาน (สำหรับหา Service Factor)</h5>
+						<div id="field-driving-type"></div>
+						<div id="field-load-type"></div>
+						<div id="field-duty-hours"></div>
+					</div>
+				</div>
+
+				<div class="row" style="margin-top:15px;">
+					<div class="col-sm-6">
+						<h5>3) ขนาดพูลเลย์และระยะห่างศูนย์กลาง</h5>
+						<div id="field-d1"></div>
+						<div id="field-d2"></div>
+						<div id="field-center-distance"></div>
+					</div>
+					<div class="col-sm-6">
+						<h5>4) พารามิเตอร์สายพาน</h5>
+						<div id="field-belt-section"></div>
+						<div id="field-friction"></div>
+						<div id="field-groove-angle"></div>
+						<div id="field-sigma"></div>
+					</div>
+				</div>
+
+				<div style="margin: 20px 0;">
+					<button class="btn btn-primary btn-sm" id="btn-calculate">คำนวณ</button>
+					<button class="btn btn-default btn-sm" id="btn-reset">ล้างค่า</button>
+				</div>
+
+				<div id="result-area"></div>
+			</div>
+		`);
+		this.page.main.append($body);
+		this.$wrapper = $body;
+
+		this.make_fields();
+
+		this.$wrapper.find('#btn-calculate').on('click', () => this.calculate());
+		this.$wrapper.find('#btn-reset').on('click', () => this.reset_fields());
+	}
+
+	make_control(parent, df) {
+		const ctrl = frappe.ui.form.make_control({
+			parent: this.$wrapper.find(parent),
+			df: df,
+			render_input: true
+		});
+		ctrl.refresh();
+		return ctrl;
+	}
+
+	make_fields() {
+		this.f_rated_power = this.make_control('#field-rated-power', {
+			label: 'กำลังมอเตอร์ที่ติดตั้ง (kW)', fieldtype: 'Float', fieldname: 'rated_power', default: 7.5, reqd: 1
+		});
+		this.f_n1 = this.make_control('#field-n1', {
+			label: 'รอบมอเตอร์ N1 (rpm)', fieldtype: 'Float', fieldname: 'n1', default: 1440, reqd: 1
+		});
+		this.f_n2 = this.make_control('#field-n2', {
+			label: 'รอบเพลาขับ N2 (rpm)', fieldtype: 'Float', fieldname: 'n2', default: 720, reqd: 1
+		});
+
+		this.f_driving_type = this.make_control('#field-driving-type', {
+			label: 'ประเภทต้นกำลัง', fieldtype: 'Select',
+			options: 'มอเตอร์ AC ทั่วไป (soft start)\nสตาร์ทแรงบิดสูง / เครื่องยนต์ (heavy start)',
+			fieldname: 'driving_type', default: 'มอเตอร์ AC ทั่วไป (soft start)'
+		});
+		this.f_load_type = this.make_control('#field-load-type', {
+			label: 'ลักษณะโหลด', fieldtype: 'Select',
+			options: 'เบา (Light)\nปานกลาง (Medium)\nหนัก / มีแรงกระแทก (Heavy)',
+			fieldname: 'load_type', default: 'ปานกลาง (Medium)'
+		});
+		this.f_duty_hours = this.make_control('#field-duty-hours', {
+			label: 'ชั่วโมงทำงานต่อวัน', fieldtype: 'Select',
+			options: 'น้อยกว่า 10 ชม.\n10-16 ชม.\nมากกว่า 16 ชม.',
+			fieldname: 'duty_hours', default: '10-16 ชม.'
+		});
+
+		this.f_d1 = this.make_control('#field-d1', {
+			label: 'เส้นผ่านศูนย์กลางพูลเลย์เล็ก D1 (mm)', fieldtype: 'Float', fieldname: 'd1', default: 125, reqd: 1
+		});
+		this.f_d2 = this.make_control('#field-d2', {
+			label: 'เส้นผ่านศูนย์กลางพูลเลย์ใหญ่ D2 (mm)', fieldtype: 'Float', fieldname: 'd2', default: 250, reqd: 1
+		});
+		this.f_center_distance = this.make_control('#field-center-distance', {
+			label: 'ระยะห่างศูนย์กลาง C (mm) — เว้นว่างเพื่อประมาณอัตโนมัติ',
+			fieldtype: 'Float', fieldname: 'center_distance'
+		});
+
+		this.f_belt_section = this.make_control('#field-belt-section', {
+			label: 'หน้าตัดสายพาน (เว้นว่าง = ให้ระบบแนะนำอัตโนมัติ)', fieldtype: 'Select',
+			options: '\nA\nB\nC\nD\nE', fieldname: 'belt_section', default: ''
+		});
+		this.f_friction = this.make_control('#field-friction', {
+			label: 'สัมประสิทธิ์แรงเสียดทาน μ', fieldtype: 'Float', fieldname: 'friction', default: 0.3
+		});
+		this.f_groove_angle = this.make_control('#field-groove-angle', {
+			label: 'มุมร่องพูลเลย์ (องศา, มาตรฐาน 38°)', fieldtype: 'Float', fieldname: 'groove_angle', default: 38
+		});
+		this.f_sigma = this.make_control('#field-sigma', {
+			label: 'ค่าความเค้นใช้งานปลอดภัยของสายพาน σ (N/mm², ค่าเริ่มต้นอนุรักษ์นิยม ควรตรวจกับผู้ผลิต)',
+			fieldtype: 'Float', fieldname: 'sigma', default: 1.5
+		});
+	}
+
+	reset_fields() {
+		this.$wrapper.find('#result-area').empty();
+	}
+
+	get_service_factor(driving, load, duty) {
+		const dKey = driving.indexOf('soft') === 0 || driving.includes('soft') ? 'soft' : 'heavy';
+		let lKey = 'medium';
+		if (load.includes('เบา')) lKey = 'light';
+		else if (load.includes('หนัก')) lKey = 'heavy';
+		let hKey = 't10to16';
+		if (duty.includes('น้อยกว่า')) hKey = 'upto10';
+		else if (duty.includes('มากกว่า')) hKey = 'above16';
+		return this.serviceFactorTable[dKey][lKey][hKey];
+	}
+
+	choose_belt_section(designPower) {
+		const order = ['A', 'B', 'C', 'D', 'E'];
+		for (const s of order) {
+			if (designPower <= this.beltSections[s].designPowerMax) return s;
+		}
+		return 'E';
+	}
+
+	calculate() {
+		const P_rated = flt(this.f_rated_power.get_value());
+		const N1 = flt(this.f_n1.get_value());
+		const N2 = flt(this.f_n2.get_value());
+		const D1 = flt(this.f_d1.get_value());
+		const D2 = flt(this.f_d2.get_value());
+		let C = flt(this.f_center_distance.get_value());
+		const mu = flt(this.f_friction.get_value());
+		const grooveAngleDeg = flt(this.f_groove_angle.get_value());
+		const sigma = flt(this.f_sigma.get_value());
+		let section = this.f_belt_section.get_value();
+
+		if (!P_rated || !N1 || !N2 || !D1 || !D2) {
+			frappe.msgprint('กรุณากรอกข้อมูลกำลัง, รอบหมุน และขนาดพูลเลย์ให้ครบถ้วน');
+			return;
+		}
+
+		// 1) Service factor & design power
+		const Ks = this.get_service_factor(
+			this.f_driving_type.get_value(), this.f_load_type.get_value(), this.f_duty_hours.get_value()
+		);
+		const P_design = P_rated * Ks;
+
+		// 2) เลือกหน้าตัดสายพาน (ถ้าไม่ระบุเอง)
+		if (!section) section = this.choose_belt_section(P_design);
+		const sec = this.beltSections[section];
+
+		// 3) ระยะห่างศูนย์กลาง (ประมาณถ้าไม่กรอก): กฎง่าย ๆ C ~ 1.5*(D1+D2) โดยไม่น้อยกว่า D2
+		if (!C) {
+			C = Math.max(1.5 * (D1 + D2), D2 + D1 / 2);
+		}
+
+		// 4) ความเร็วสายพาน v (m/s)
+		const v = (Math.PI * D1 * N1) / 60000; // D1 in mm -> m/s
+
+		// 5) มุมโอบ (angle of contact) บนพูลเลย์เล็ก, radian
+		const ratioTerm = (D2 - D1) / (2 * C);
+		let theta;
+		if (Math.abs(ratioTerm) >= 1) {
+			frappe.msgprint('ระยะห่างศูนย์กลางน้อยเกินไปเมื่อเทียบกับขนาดพูลเลย์ กรุณาตรวจสอบค่า C, D1, D2');
+			return;
+		}
+		theta = Math.PI - 2 * Math.asin(ratioTerm); // radians
+
+		// 6) ความยาวสายพาน (mm)
+		const L = 2 * C + (Math.PI / 2) * (D1 + D2) + Math.pow(D2 - D1, 2) / (4 * C);
+
+		// 7) แรงตึงสายพาน
+		const beta = (grooveAngleDeg / 2) * (Math.PI / 180); // half groove angle, rad
+		const Tc = sec.mass * v * v; // centrifugal tension, N
+		const Tmax = sigma * sec.area; // N (max permissible tension for this section)
+		const T1 = Tmax - Tc;
+
+		if (T1 <= 0) {
+			frappe.msgprint('ความเร็วสายพานสูงเกินไปสำหรับหน้าตัดที่เลือก (แรงตึงจากแรงเหวี่ยงเกินค่าที่ยอมให้) กรุณาเลือกหน้าตัดที่ใหญ่ขึ้น หรือลดความเร็ว');
+			return;
+		}
+
+		const R = Math.exp((mu * theta) / Math.sin(beta)); // T1/T2
+		const T2 = T1 / R;
+		const powerPerBelt_kW = ((T1 - T2) * v) / 1000;
+		const numBelts = Math.max(1, Math.ceil(P_design / powerPerBelt_kW));
+
+		const velocityRatio = N1 / N2;
+
+		this.render_results({
+			Ks, P_design, section, C, v, theta, L, Tc, Tmax, T1, T2, R,
+			powerPerBelt_kW, numBelts, velocityRatio, sec
+		});
+	}
+
+	render_results(r) {
+		const thetaDeg = r.theta * 180 / Math.PI;
+		const html = `
+			<div class="panel panel-default" style="margin-top:10px;">
+				<div class="panel-heading" style="background:#f5f6f8; font-weight:600; padding:10px 15px;">
+					ผลการคำนวณ
+				</div>
+				<div class="panel-body" style="padding:15px;">
+					<table class="table table-bordered" style="margin-bottom:0;">
+						<tbody>
+							<tr><td>Service Factor (Ks)</td><td><b>${r.Ks.toFixed(2)}</b></td></tr>
+							<tr><td>กำลังออกแบบ (Design Power)</td><td><b>${r.P_design.toFixed(2)} kW</b></td></tr>
+							<tr><td>หน้าตัดสายพานที่แนะนำ/เลือก</td><td><b>${r.section}</b> (mass ${r.sec.mass} kg/m, area ${r.sec.area} mm²)</td></tr>
+							<tr><td>อัตราทดความเร็ว (N1/N2)</td><td>${r.velocityRatio.toFixed(3)}</td></tr>
+							<tr><td>ระยะห่างศูนย์กลาง C ที่ใช้คำนวณ</td><td>${r.C.toFixed(1)} mm</td></tr>
+							<tr><td>ความเร็วสายพาน (v)</td><td>${r.v.toFixed(2)} m/s</td></tr>
+							<tr><td>มุมโอบ (Angle of Contact, พูลเลย์เล็ก)</td><td>${thetaDeg.toFixed(1)}°</td></tr>
+							<tr><td>ความยาวสายพานโดยประมาณ (L)</td><td>${r.L.toFixed(0)} mm (${(r.L/1000).toFixed(2)} m)</td></tr>
+							<tr><td>แรงตึงจากแรงเหวี่ยง (Tc)</td><td>${r.Tc.toFixed(1)} N</td></tr>
+							<tr><td>แรงตึงสูงสุดที่ยอมให้ (Tmax = σ×a)</td><td>${r.Tmax.toFixed(1)} N</td></tr>
+							<tr><td>แรงตึงฝั่งตึง (T1)</td><td><b>${r.T1.toFixed(1)} N</b></td></tr>
+							<tr><td>แรงตึงฝั่งหย่อน (T2)</td><td><b>${r.T2.toFixed(1)} N</b></td></tr>
+							<tr><td>อัตราส่วน T1/T2</td><td>${r.R.toFixed(3)}</td></tr>
+							<tr><td>กำลังที่ส่งได้ต่อเส้น (Power per belt)</td><td>${r.powerPerBelt_kW.toFixed(3)} kW</td></tr>
+							<tr style="background:#eef7ee;"><td><b>จำนวนสายพานที่ต้องใช้ (แนะนำ)</b></td><td><b style="font-size:16px;">${r.numBelts} เส้น</b></td></tr>
+						</tbody>
+					</table>
+					<p style="margin-top:12px; color:#888; font-size:12px;">
+						หมายเหตุ: ค่า Tmax ใช้ค่าความเค้นใช้งานปลอดภัย (σ) ที่ตั้งไว้แบบอนุรักษ์นิยม
+						และตารางหน้าตัดสายพาน/มวลต่อเมตรเป็นค่าอ้างอิงมาตรฐานทั่วไป
+						ควรตรวจสอบค่ากำลังต่อเส้นจริงและมุมโอบขั้นต่ำของพูลเลย์กับแคตตาล็อกผู้ผลิตก่อนใช้งานจริง
+					</p>
+				</div>
+			</div>
+		`;
+		this.$wrapper.find('#result-area').html(html);
+	}
+}
