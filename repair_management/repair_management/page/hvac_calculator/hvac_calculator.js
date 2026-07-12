@@ -84,11 +84,8 @@ const FILTER_TYPES = [
 ];
 
 const SP_COMPONENTS = {
-	hood_entry: 0.375,      // ฮู้ด + baffle filter สะอาด ~0.25–0.5
-	filter_dirty_allow: 0.25, // เผื่อฟิลเตอร์สกปรก
-	exhaust_cap: 0.15,      // หัวจ่าย/ตะแกรงปล่อยทิ้ง
-	fitting_each: 0.08,     // ข้องอ 90° ต่อจุด (โดยประมาณที่ ~1500-1800 fpm)
-	grille: 0.10,           // หน้ากากดูด/จ่าย (ระบบระบายอากาศทั่วไป)
+	exhaust_cap: 0.15, // หัวจ่าย/ตะแกรงปล่อยทิ้ง
+	grille: 0.10,      // หน้ากากดูด/จ่าย (ระบบระบายอากาศทั่วไป)
 };
 
 const CFM_PER_M2 = 10.7639; // ft² ต่อ m²
@@ -109,6 +106,7 @@ class HVACCalculator {
 		this.render_room_options();
 		this.render_hood_options();
 		this.render_filter_options();
+		this.toggle_hood_shape();
 		this.switch_mode('room');
 	}
 
@@ -181,8 +179,28 @@ class HVACCalculator {
 						<select class="form-control" id="hood_duty"></select>
 					</div>
 					<div class="col-sm-2 mb-3">
-						<label>ยาว (m)</label>
+						<label>รูปทรงฝาชี</label>
+						<select class="form-control" id="hood_shape">
+							<option value="I">ตรง (I)</option>
+							<option value="L">รูปตัว L</option>
+							<option value="U">รูปตัว U</option>
+						</select>
+					</div>
+					<div class="col-sm-2 mb-3">
+						<label><span class="hood-leg-a-label">ยาว</span> A (m)</label>
 						<input type="number" class="form-control" id="hood_length" value="2.0" step="0.1" min="0.3">
+					</div>
+					<div class="col-sm-2 mb-3 hood-leg-b" style="display:none;">
+						<label>ด้าน B (m)</label>
+						<input type="number" class="form-control" id="hood_len_b" value="1.5" step="0.1" min="0.3">
+					</div>
+					<div class="col-sm-2 mb-3 hood-leg-c" style="display:none;">
+						<label>ด้าน C (m)</label>
+						<input type="number" class="form-control" id="hood_len_c" value="1.5" step="0.1" min="0.3">
+					</div>
+					<div class="col-sm-3 mb-3">
+						<label>รูปประกอบ</label>
+						<div id="hood_shape_guide"></div>
 					</div>
 					<div class="col-sm-2 mb-3">
 						<label>กว้าง/ลึก (m)</label>
@@ -255,8 +273,21 @@ class HVACCalculator {
 						<input type="number" class="form-control" id="dt_heat_dt" value="5" step="0.5" min="1">
 					</div>
 					<div class="col-sm-2 mb-3">
-						<label>จำนวนหัวดูด (จุด)</label>
+						<label>จำนวนแถวท่อเมน</label>
+						<input type="number" class="form-control" id="dt_rows" value="1" min="1" max="10">
+						<small class="text-muted">เมนขนานหลายแถว รวมกันก่อนถึงพัดลม</small>
+					</div>
+					<div class="col-sm-2 mb-3">
+						<label>หัวดูดต่อแถว (จุด)</label>
 						<input type="number" class="form-control" id="dt_n" value="4" min="1" max="30">
+					</div>
+					<div class="col-sm-2 mb-3">
+						<label>แนวท่อเมน</label>
+						<select class="form-control" id="dt_axis">
+							<option value="l">ตามด้านยาว</option>
+							<option value="w">ตามด้านกว้าง</option>
+						</select>
+						<small class="text-muted">แนวกระจายหัวดูด/ภาพผัง</small>
 					</div>
 					<div class="col-sm-3 mb-3">
 						<label>ความเร็วหน้าหัวดูด (m/s)</label>
@@ -355,6 +386,7 @@ class HVACCalculator {
 		this.$body.on('click', '#btn_calc', () => this.calculate());
 		this.$body.on('change', '#room_type', () => this.update_room_hint());
 		this.$body.on('change', '#hood_type', () => this.render_duty_options());
+		this.$body.on('change', '#hood_shape', () => this.toggle_hood_shape());
 		this.$body.on('input', '#room_w, #room_l', () => this.update_area_hint());
 		this.$body.on('change', '#dt_room_type', () => this.update_dt_hint());
 		this.$body.on('input', '#dt_w, #dt_l', () => this.update_dt_area_hint());
@@ -368,6 +400,59 @@ class HVACCalculator {
 		const round = this.$body.find('#duct_shape').val() === 'round';
 		this.$body.find('.duct-round').toggle(round);
 		this.$body.find('.duct-rect').toggle(!round);
+	}
+
+	toggle_hood_shape() {
+		const s = this.$body.find('#hood_shape').val();
+		this.$body.find('.hood-leg-b').toggle(s === 'L' || s === 'U');
+		this.$body.find('.hood-leg-c').toggle(s === 'U');
+		this.$body.find('.hood-leg-a-label').text(s === 'I' ? 'ยาว' : 'ด้าน');
+		this.$body.find('#hood_shape_guide').html(this.hood_shape_guide_svg(s));
+	}
+
+	// รูปประกอบเล็กๆ อธิบายว่าด้าน A / B / C / กว้าง อยู่ตรงไหน (มุมมองด้านบน)
+	hood_shape_guide_svg(shape) {
+		const dim = (x1, y1, x2, y2, txt, tx, ty, color = '#c33') => `
+			<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1" marker-start="url(#arr)" marker-end="url(#arr)"/>
+			<text x="${tx}" y="${ty}" font-size="13" font-weight="bold" fill="${color}" text-anchor="middle">${txt}</text>`;
+		const defs = `<defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+			<path d="M0,0 L6,3 L0,6 z" fill="#c33"/></marker></defs>`;
+		const style = 'fill:#f0f4f8; stroke:#333; stroke-width:1.5';
+
+		if (shape === 'L') {
+			// ขา A แนวนอนล่าง + ขา B แนวตั้งขวา
+			return `<svg width="220" height="140" viewBox="0 0 220 140" style="border:1px solid #ddd; background:#fff;">${defs}
+				<path d="M 20 100 L 20 130 L 180 130 L 180 20 L 140 20 L 140 100 Z" style="${style}"/>
+				${dim(20, 112, 180, 112, '', 0, 0)}<text x="90" y="108" font-size="13" font-weight="bold" fill="#c33" text-anchor="middle">A</text>
+				${dim(192, 20, 192, 130, '', 0, 0)}<text x="205" y="78" font-size="13" font-weight="bold" fill="#c33">B</text>
+				<line x1="20" y1="136" x2="20" y2="124" stroke="#36c" stroke-width="1"/><line x1="20" y1="136" x2="46" y2="136" stroke="#36c" stroke-width="0"/>
+				<text x="8" y="120" font-size="10" fill="#36c">กว้าง</text>
+				<text x="65" y="55" font-size="10" fill="#888">มุมมองด้านบน</text>
+			</svg>`;
+		}
+		if (shape === 'U') {
+			// ขา A ตั้งซ้าย + ขา B นอนล่าง + ขา C ตั้งขวา
+			return `<svg width="220" height="140" viewBox="0 0 220 140" style="border:1px solid #ddd; background:#fff;">${defs}
+				<path d="M 20 15 L 60 15 L 60 95 L 160 95 L 160 15 L 200 15 L 200 130 L 20 130 Z" style="${style}"/>
+				<line x1="8" y1="15" x2="8" y2="130" stroke="#c33" stroke-width="1" marker-start="url(#arr)" marker-end="url(#arr)"/>
+				<text x="3" y="78" font-size="13" font-weight="bold" fill="#c33">A</text>
+				<line x1="20" y1="138" x2="200" y2="138" stroke="#c33" stroke-width="1" marker-start="url(#arr)" marker-end="url(#arr)"/>
+				<text x="110" y="125" font-size="13" font-weight="bold" fill="#c33" text-anchor="middle">B</text>
+				<line x1="212" y1="15" x2="212" y2="130" stroke="#c33" stroke-width="1" marker-start="url(#arr)" marker-end="url(#arr)"/>
+				<text x="211" y="78" font-size="13" font-weight="bold" fill="#c33">C</text>
+				<text x="26" y="28" font-size="10" fill="#36c">กว้าง→</text>
+				<text x="80" y="55" font-size="10" fill="#888">มุมมองด้านบน</text>
+			</svg>`;
+		}
+		// I ตรง
+		return `<svg width="220" height="140" viewBox="0 0 220 140" style="border:1px solid #ddd; background:#fff;">${defs}
+			<rect x="25" y="45" width="170" height="50" style="${style}"/>
+			<line x1="25" y1="32" x2="195" y2="32" stroke="#c33" stroke-width="1" marker-start="url(#arr)" marker-end="url(#arr)"/>
+			<text x="110" y="26" font-size="13" font-weight="bold" fill="#c33" text-anchor="middle">A (ยาว)</text>
+			<line x1="208" y1="45" x2="208" y2="95" stroke="#36c" stroke-width="1"/>
+			<text x="204" y="115" font-size="10" fill="#36c" text-anchor="end">กว้าง/ลึก</text>
+			<text x="80" y="75" font-size="10" fill="#888">มุมมองด้านบน</text>
+		</svg>`;
 	}
 
 	update_duct_unit() {
@@ -532,36 +617,53 @@ class HVACCalculator {
 	calc_hood() {
 		const hood = HOOD_RATES[this.$body.find('#hood_type').val()];
 		const duty = this.$body.find('#hood_duty').val();
-		const L_m = this.num('hood_length');
+		const shape = this.$body.find('#hood_shape').val() || 'I';
+		const A = this.num('hood_length');
+		const B = (shape === 'L' || shape === 'U') ? this.num('hood_len_b') : 0;
+		const C = (shape === 'U') ? this.num('hood_len_c') : 0;
 		const W_m = this.num('hood_width');
-		if (L_m <= 0 || W_m <= 0) { frappe.msgprint(__('กรุณากรอกขนาดฮู้ด')); return null; }
+		if (A <= 0 || W_m <= 0 || ((shape === 'L' || shape === 'U') && B <= 0) || (shape === 'U' && C <= 0)) {
+			frappe.msgprint(__('กรุณากรอกขนาดฮู้ดให้ครบทุกด้าน')); return null;
+		}
 
-		const L_ft = L_m * M_TO_FT;
-		const W_ft = W_m * M_TO_FT;
+		const corners = shape === 'L' ? 1 : shape === 'U' ? 2 : 0;
+		const total_len_m = A + B + C;                       // ความยาวรวมทุกด้าน (วัดขอบนอก)
+		const centerline_m = total_len_m - corners * W_m;    // เส้นกึ่งกลางจริง (หักมุมทับซ้อน)
+		if (centerline_m <= 0) { frappe.msgprint(__('ขนาดด้านสั้นเกินไปเมื่อเทียบความกว้างฮู้ด')); return null; }
+
+		const L_ft = total_len_m * M_TO_FT;
 		const rate = hood[duty];
 
-		// วิธี 1: CFM ต่อฟุตความยาว (IMC / ASHRAE 154)
+		// วิธี 1: CFM ต่อฟุตความยาวรวมทุกด้าน (IMC / ASHRAE 154) — conservative สำหรับ L/U
 		const cfm_linear = L_ft * rate;
 
-		// วิธี 2: Face velocity 85 fpm บนพื้นที่หน้าฮู้ด (ตรวจสอบขั้นต่ำ)
+		// วิธี 2: Face velocity 85 fpm บนพื้นที่หน้าฮู้ดจริง (หักมุมทับซ้อน ${corners} มุม)
 		const face_v = 85;
-		const cfm_face = L_ft * W_ft * face_v;
+		const face_area_ft2 = (centerline_m * W_m) * CFM_PER_M2;
+		const cfm_face = face_area_ft2 * face_v;
 
 		const design_cfm = Math.max(cfm_linear, cfm_face);
 
 		// Makeup air ~80% ของ exhaust
 		const makeup_cfm = design_cfm * 0.8;
 
-		// รูเจาะฝาชี (duct collar) — เปรียบเทียบทางเลือก
-		const holes = this.calc_hood_holes(design_cfm, L_m, W_m);
+		// รูเจาะ: กระจายตามเส้นกึ่งกลางจริง
+		const holes = this.calc_hood_holes(design_cfm, centerline_m, W_m);
+		if (holes) { holes.shape = shape; holes.legs = { A, B, C }; }
+
+		const shape_th = shape === 'L' ? 'รูปตัว L' : shape === 'U' ? 'รูปตัว U' : 'ตรง';
+		const dims_th = shape === 'I' ? `${A}×${W_m} m`
+			: shape === 'L' ? `L: A${A} + B${B} m (กว้าง ${W_m})`
+			: `U: A${A} + B${B} + C${C} m (กว้าง ${W_m})`;
 
 		return {
 			mode_th: 'จากขนาดฝาชี',
 			hood_th: hood.th, duty_th: DUTY_TH[duty],
-			L_m, W_m, L_ft, W_ft, rate,
+			L_m: centerline_m, W_m, L_ft, rate,
+			shape, dims_th, shape_th,
 			rows: [
-				{ label: `วิธี Linear (${L_ft.toFixed(1)} ft × ${rate} CFM/ft) — IMC 507.13`, cfm: cfm_linear },
-				{ label: `วิธี Face Velocity (${L_ft.toFixed(1)} × ${W_ft.toFixed(1)} ft × ${face_v} fpm)`, cfm: cfm_face },
+				{ label: `วิธี Linear (ยาวรวม ${total_len_m.toFixed(1)} m = ${L_ft.toFixed(1)} ft × ${rate} CFM/ft) — IMC 507.13`, cfm: cfm_linear },
+				{ label: `วิธี Face Velocity (พื้นที่จริง ${(centerline_m * W_m).toFixed(1)} m²${corners ? ` หัก ${corners} มุม` : ''} × ${face_v} fpm)`, cfm: cfm_face },
 			],
 			design_cfm,
 			makeup_cfm,
@@ -578,7 +680,7 @@ class HVACCalculator {
 		const height_m = this.num('dt_h');
 		const ach = this.num('dt_ach');
 		if (room_w <= 0 || room_l <= 0) { frappe.msgprint(__('กรุณากรอกความกว้างและความยาวห้อง')); return null; }
-		const n = Math.max(1, parseInt(this.$body.find('#dt_n').val()) || 1);
+		const n = Math.max(1, parseInt(this.$body.find('#dt_n').val()) || 1);         // หัวดูดต่อแถว
 		const face_ms = this.num('dt_face_v') || 2.5;
 		const fan_dist = this.num('dt_fan_dist');
 
@@ -602,8 +704,13 @@ class HVACCalculator {
 		const cfm_heat = heat_kw > 0 ? 1756 * heat_kw / heat_dt : 0;
 		const design_cfm = Math.max(cfm_ach, cfm_621, cfm_exhaust, cfm_heat);
 
-		// ---- กระจายลมผ่านหัวดูด n จุด ----
-		const q = design_cfm / n;
+		// ---- กระจายลมผ่านหัวดูด: หลายแถวท่อเมนขนาน ----
+		// n = หัวดูดต่อแถว, rows = จำนวนแถวท่อเมน → หัวรวม = n × rows
+		const rows_n = Math.max(1, parseInt(this.$body.find('#dt_rows').val()) || 1);
+		const n_total = n * rows_n;
+		const q = design_cfm / n_total;      // ลมต่อหัวดูด
+		const row_cfm = design_cfm / rows_n; // ลมต่อแถว
+
 		const face_fpm = face_ms * 196.85;
 		const a_req_ft2 = q / face_fpm;
 		let side_in = Math.sqrt(a_req_ft2) * 12;
@@ -611,41 +718,58 @@ class HVACCalculator {
 		const a_act_ft2 = Math.pow(side_in / 12, 2);
 		const v_act_ms = (q / a_act_ft2) / 196.85;
 
-		// ตำแหน่งหัวดูด: กระจายเท่ากันตามความยาวห้อง (แนวท่อเมน)
-		const spacing = room_l / n;
+		// แนวท่อเมน: กระจายหัวดูดตามด้านยาวหรือด้านกว้างของห้อง
+		const axis = this.$body.find('#dt_axis').val() || 'l';
+		const run_m = axis === 'w' ? room_w : room_l;   // ด้านที่ท่อเมนวิ่ง
+		const perp_m = axis === 'w' ? room_l : room_w;  // ด้านตั้งฉาก
+
+		// ตำแหน่งหัวดูดตามแนวท่อเมน (เหมือนกันทุกแถว)
+		const spacing = run_m / n;
 		const positions = [];
 		for (let i = 0; i < n; i++) positions.push((spacing / 2 + i * spacing).toFixed(2));
 
-		// ความยาวท่อรวม = ท่อเมนในห้อง (ยาวห้อง) + ระยะถึงเครื่องดูด
-		const duct_len_m = room_l + fan_dist;
+		// ตำแหน่งแถวท่อเมน (แนวตั้งฉาก) — แบ่งพื้นที่เท่ากันทุกแถว
+		const row_pitch = perp_m / rows_n;
+		const row_positions = [];
+		for (let i = 0; i < rows_n; i++) row_positions.push((row_pitch / 2 + i * row_pitch).toFixed(2));
 
-		// ---- Critical Path: แรงดันท่อเมนสะสมลมจริงทีละช่วง + ขนาดหัวดูดรายจุด (self-balancing) ----
+		// ความยาวท่อเส้นทางวิกฤต = ท่อเมนในห้อง + ระยะถึงเครื่องดูด
+		const duct_len_m = run_m + fan_dist;
+
+		// ---- Critical Path: แถวหนึ่ง (ลมสะสม k×q) + ท่อรวมหลังรวมแถว → พัดลม ----
 		const g = this.get_duct_geometry();
 		if (!g) return null;
-		const Cg = 2.5; // สัมประสิทธิ์ความดันตกหัวดูด (register + core, อิงความเร็วหน้าหัว)
+		const Cg = 2.5; // สัมประสิทธิ์ความดันตกหัวดูด (register + core)
 		const VP_face = Math.pow(face_fpm / 4005, 2);
 		const dPg_far = Cg * VP_face; // หัวไกลสุดกำหนดที่ความเร็วเป้าหมาย
 
-		// หัวที่ 1 = ไกลพัดลมสุด → หัวที่ n = ใกล้สุด; ช่วงหลังหัวที่ k มีลมสะสม k×q
+		// หัวที่ 1 = ไกลพัดลมสุด → หัวที่ n = ใกล้สุด (ต่อแถว)
 		const grilles = [];
-		let cum_duct = 0; // แรงดันท่อสะสมจากหัวไกลสุดมาถึงจุดปัจจุบัน
+		let cum_duct = 0; // แรงดันท่อสะสมภายในแถว
 		for (let k = 1; k <= n; k++) {
-			const suction_k = dPg_far + cum_duct;        // แรงดูดที่ junction หัวที่ k
-			const v_req_fpm = 4005 * Math.sqrt(suction_k / Cg); // ความเร็วหน้าหัวที่ทำให้ดูดได้ q พอดี
+			const suction_k = dPg_far + cum_duct;
+			const v_req_fpm = 4005 * Math.sqrt(suction_k / Cg);
 			const a_req = q / v_req_fpm;
-			const side = Math.max(4, Math.round(Math.sqrt(a_req) * 12)); // ปัดเป็นนิ้ว
+			const side = Math.max(4, Math.round(Math.sqrt(a_req) * 12));
 			const v_act = (q / Math.pow(side / 12, 2)) / 196.85;
 			grilles.push({ i: k, pos: positions[k - 1], dp: suction_k, side, v_ms: v_act });
-			// ช่วงท่อถัดไป: ระหว่างหัว (spacing) หรือช่วงสุดท้ายถึงพัดลม (spacing/2 + fan_dist)
-			const Lk_m = (k < n) ? spacing : (spacing / 2 + fan_dist);
+			// ช่วงท่อถัดไปในแถว: ระหว่างหัว (spacing) หรือช่วงสุดท้ายถึงขอบห้อง (spacing/2)
+			const Lk_m = (k < n) ? spacing : spacing / 2;
 			const Qk = k * q;
 			const f100 = 0.109136 * Math.pow(Qk, 1.9) / Math.pow(g.De_in, 5.02);
 			cum_duct += f100 * (Lk_m * M_TO_FT / 100);
 		}
+
+		// ท่อรวมหลังรวมทุกแถว → พัดลม: ลมเต็ม CFM, ขนาดท่อรวมแนะนำขยาย ≈ √แถว เท่า (คงความเร็วเดิม)
+		const De_col = g.De_in * Math.sqrt(rows_n);
+		const f_col = 0.109136 * Math.pow(design_cfm, 1.9) / Math.pow(De_col, 5.02);
+		const sp_collector = f_col * (fan_dist * M_TO_FT / 100);
+
 		const manifold = {
-			sp_main: cum_duct,        // ท่อเมนสะสมจริง (critical path หัวไกลสุด→พัดลม)
-			dPg_far, Cg,
-			uniformity: dPg_far / Math.max(0.0001, cum_duct), // อัตราส่วน ΔPหัว : ΔPท่อ
+			sp_main: cum_duct + sp_collector, // เส้นทางวิกฤต: ในแถว + ท่อรวมถึงพัดลม
+			sp_row: cum_duct, sp_collector,
+			dPg_far, Cg, rows_n, De_col,
+			uniformity: dPg_far / Math.max(0.0001, cum_duct + sp_collector),
 		};
 
 		const air_class = AIR_CLASS[r.id] || 1;
@@ -663,7 +787,7 @@ class HVACCalculator {
 			design_note: 'ใช้ค่ามากที่สุดของทุกวิธีเป็นค่าออกแบบ',
 			duct_len_m,
 			manifold,
-			dist: { n, q, side_in, face_ms, v_act_ms, spacing, positions, fan_dist, duct_len_m, air_class, grilles, manifold, room_w, room_l },
+			dist: { n, rows_n, n_total, q, row_cfm, side_in, face_ms, v_act_ms, spacing, positions, row_pitch, row_positions, fan_dist, duct_len_m, air_class, grilles, manifold, room_w, room_l, axis, run_m, perp_m },
 		};
 	}
 
@@ -673,13 +797,14 @@ class HVACCalculator {
 		const v_warn = d.v_act_ms > 3
 			? `<div class="alert alert-warning small py-2">⚠️ ความเร็วหน้าหัวดูด ${d.v_act_ms.toFixed(1)} m/s เกิน 3 m/s อาจมีเสียงดัง — เพิ่มขนาดหัวดูดหรือจำนวนจุด</div>` : '';
 		return `
-			<h6 class="mt-3">การกระจายหัวดูด (${d.n} จุด)</h6>
+			<h6 class="mt-3">การกระจายหัวดูด (${d.rows_n > 1 ? `${d.rows_n} แถว × ${d.n} จุด = ${d.n_total} จุด` : `${d.n} จุด`})</h6>
 			<table class="table table-sm table-bordered">
 				<tbody>
+					${d.rows_n > 1 ? `<tr><td>ลมต่อแถวท่อเมน</td><td class="text-right">${Math.round(d.row_cfm).toLocaleString()} CFM/แถว — ระยะห่างแถว ${d.row_pitch.toFixed(2)} m (ตำแหน่งแถว: ${d.row_positions.join(', ')} m)</td></tr>` : ''}
 					<tr><td>ลมต่อหัวดูด</td><td class="text-right"><b>${Math.round(d.q).toLocaleString()} CFM</b> (≈ ${Math.round(d.q * 1.699).toLocaleString()} m³/h)</td></tr>
 					<tr><td>ขนาดหัวดูดแนะนำ (คอ)</td><td class="text-right"><b>${d.side_in}" × ${d.side_in}"</b> (≈ ${(d.side_in * 2.54).toFixed(0)} × ${(d.side_in * 2.54).toFixed(0)} cm)</td></tr>
 					<tr><td>ความเร็วหน้าหัวดูดจริง</td><td class="text-right">${d.v_act_ms.toFixed(1)} m/s (เป้าหมาย ${d.face_ms} m/s)</td></tr>
-					<tr><td>ระยะห่างหัวดูด (ตามแนวยาวห้อง)</td><td class="text-right">${d.spacing.toFixed(2)} m — หัวแรก/สุดท้ายห่างขอบ ${(d.spacing / 2).toFixed(2)} m</td></tr>
+					<tr><td>ระยะห่างหัวดูด (ตามแนวท่อเมน — ด้าน${d.axis === 'w' ? 'กว้าง' : 'ยาว'} ${d.run_m} m)</td><td class="text-right">${d.spacing.toFixed(2)} m — หัวแรก/สุดท้ายห่างขอบ ${(d.spacing / 2).toFixed(2)} m</td></tr>
 					<tr><td>ตำแหน่งหัวดูดจากขอบห้อง (m)</td><td class="text-right">${d.positions.join(', ')}</td></tr>
 					<tr><td>ความยาวท่อรวมถึงเครื่องดูด</td><td class="text-right">${d.duct_len_m.toFixed(1)} m (ในห้อง ${(d.duct_len_m - d.fan_dist).toFixed(1)} + ถึงพัดลม ${d.fan_dist.toFixed(1)})</td></tr>
 				</tbody>
@@ -698,35 +823,58 @@ class HVACCalculator {
 	}
 
 	// ผังท่อคร่าวๆ (มุมมองด้านบน): ห้อง + ท่อเมน + หัวดูด n จุด + เครื่องดูด (วาดตามสัดส่วน)
+	// แกนนอนของภาพ = แนวท่อเมน (เลือกได้ว่าด้านกว้างหรือด้านยาว)
 	duct_layout_svg(d) {
 		const W = 700, mg = 45;
 		const fan_w_px = 46; // พื้นที่สัญลักษณ์พัดลม
 		const innerW = W - 2 * mg - fan_w_px;
-		const total_m = d.room_l + Math.max(0.5, d.fan_dist);
+		const run_m = d.run_m, perp_m = d.perp_m;
+		const total_m = run_m + Math.max(0.5, d.fan_dist);
 		const scale = innerW / total_m;
 		const room_y = 40;
-		const room_h = Math.max(50, d.room_w * scale);
+		const room_h = Math.max(50, perp_m * scale);
 		const cy = room_y + room_h / 2;
 		const H = Math.ceil(room_y + room_h + 66);
 		const x0 = mg;
-		const room_x1 = x0 + d.room_l * scale;
+		const room_x1 = x0 + run_m * scale;
 		const fan_x = room_x1 + Math.max(0.5, d.fan_dist) * scale;
 		const duct_h = 12;
+		const axis_th = d.axis === 'w' ? 'กว้าง' : 'ยาว';
+		const perp_th = d.axis === 'w' ? 'ยาว' : 'กว้าง';
 
-		// หัวดูด: ตำแหน่งวัดจากฝั่งไกลพัดลม (ซ้าย)
-		let grille_svg = '', pos_labels = '';
-		d.positions.forEach((p, i) => {
+		// หลายแถวท่อเมน: y ของแต่ละแถวตามตำแหน่งจริง (แนวตั้งฉาก)
+		const rows_n = d.rows_n || 1;
+		const row_ys = (d.row_positions && rows_n > 1)
+			? d.row_positions.map(p => room_y + parseFloat(p) * scale)
+			: [cy];
+		const first_x = x0 + parseFloat(d.positions[0]) * scale;
+
+		// ท่อเมนแต่ละแถว + หัวดูด
+		let duct_rows_svg = '', grille_svg = '', pos_labels = '';
+		row_ys.forEach((ry, ri) => {
+			duct_rows_svg += `<rect x="${first_x.toFixed(1)}" y="${(ry - duct_h / 2).toFixed(1)}" width="${(room_x1 - first_x).toFixed(1)}" height="${duct_h}"
+				fill="#e8f0fe" stroke="#36c" stroke-width="1.2"/>`;
+			d.positions.forEach(p => {
+				const cx = x0 + parseFloat(p) * scale;
+				grille_svg += `<rect x="${(cx - 8).toFixed(1)}" y="${(ry - 8).toFixed(1)}" width="16" height="16"
+					fill="#fff" stroke="#0a6" stroke-width="1.5"/>
+					<line x1="${(cx - 5).toFixed(1)}" y1="${ry.toFixed(1)}" x2="${(cx + 5).toFixed(1)}" y2="${ry.toFixed(1)}" stroke="#0a6" stroke-width="1"/>
+					<line x1="${cx.toFixed(1)}" y1="${(ry - 5).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(ry + 5).toFixed(1)}" stroke="#0a6" stroke-width="1"/>`;
+			});
+		});
+		// ป้ายตำแหน่ง (ใต้ห้อง ครั้งเดียว — ทุกแถวตำแหน่งเดียวกัน)
+		d.positions.forEach(p => {
 			const cx = x0 + parseFloat(p) * scale;
-			grille_svg += `<rect x="${(cx - 8).toFixed(1)}" y="${(cy - 8).toFixed(1)}" width="16" height="16"
-				fill="#fff" stroke="#0a6" stroke-width="1.5"/>
-				<line x1="${(cx - 5).toFixed(1)}" y1="${cy}" x2="${(cx + 5).toFixed(1)}" y2="${cy}" stroke="#0a6" stroke-width="1"/>
-				<line x1="${cx.toFixed(1)}" y1="${(cy - 5).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(cy + 5).toFixed(1)}" stroke="#0a6" stroke-width="1"/>`;
 			pos_labels += `<line x1="${cx.toFixed(1)}" y1="${(room_y + room_h).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(room_y + room_h + 12).toFixed(1)}"
 				stroke="#888" stroke-width="0.8" stroke-dasharray="3,2"/>
 				<text x="${cx.toFixed(1)}" y="${(room_y + room_h + 24).toFixed(1)}" text-anchor="middle" font-size="10">${p}</text>`;
 		});
-
-		const first_x = x0 + parseFloat(d.positions[0]) * scale;
+		// ท่อรวมแนวตั้งที่ขอบห้อง (เมื่อหลายแถว) เชื่อมทุกแถวเข้าแนวกลางก่อนไปพัดลม
+		const header_svg = rows_n > 1
+			? `<rect x="${(room_x1 - duct_h / 2).toFixed(1)}" y="${(Math.min(...row_ys) - duct_h / 2).toFixed(1)}"
+				width="${duct_h}" height="${(Math.max(...row_ys) - Math.min(...row_ys) + duct_h).toFixed(1)}"
+				fill="#e8f0fe" stroke="#36c" stroke-width="1.2"/>`
+			: '';
 
 		return `
 		<h6 class="mt-3">ผังท่อคร่าวๆ — มุมมองด้านบน (มาตราส่วนตามจริง)</h6>
@@ -736,11 +884,13 @@ class HVACCalculator {
 				<!-- ห้อง -->
 				<rect x="${x0}" y="${room_y}" width="${(room_x1 - x0).toFixed(1)}" height="${room_h.toFixed(1)}"
 					fill="#f8f8f8" stroke="#333" stroke-width="1.5"/>
-				<text x="${x0 + 5}" y="${room_y - 6}" font-size="11" fill="#666">ห้อง ${d.room_w} × ${d.room_l} m (ฝั่งซ้าย = ไกลพัดลม)</text>
-				<!-- ท่อเมน: หัวไกลสุด → พัดลม -->
-				<rect x="${first_x.toFixed(1)}" y="${(cy - duct_h / 2).toFixed(1)}" width="${(fan_x - first_x).toFixed(1)}" height="${duct_h}"
+				<text x="${x0 + 5}" y="${room_y - 6}" font-size="11" fill="#666">ห้อง ${d.room_w} × ${d.room_l} m — ท่อเมนตามด้าน${axis_th} (ฝั่งซ้าย = ไกลพัดลม)</text>
+				<!-- ท่อเมนแต่ละแถว + ท่อรวม + ท่อไปพัดลม -->
+				${duct_rows_svg}
+				${header_svg}
+				<rect x="${room_x1.toFixed(1)}" y="${(cy - duct_h / 2).toFixed(1)}" width="${(fan_x - room_x1).toFixed(1)}" height="${duct_h}"
 					fill="#e8f0fe" stroke="#36c" stroke-width="1.2"/>
-				<text x="${((first_x + room_x1) / 2).toFixed(1)}" y="${(cy - duct_h / 2 - 5).toFixed(1)}" text-anchor="middle" font-size="10" fill="#36c">ท่อเมน</text>
+				<text x="${((first_x + room_x1) / 2).toFixed(1)}" y="${(Math.min(...row_ys) - duct_h / 2 - 5).toFixed(1)}" text-anchor="middle" font-size="10" fill="#36c">ท่อเมน${rows_n > 1 ? ` × ${rows_n} แถว` : ''}</text>
 				<!-- หัวดูด -->
 				${grille_svg}
 				${pos_labels}
@@ -756,7 +906,7 @@ class HVACCalculator {
 				<line x1="${x0}" y1="${(H - 18).toFixed(1)}" x2="${room_x1.toFixed(1)}" y2="${(H - 18).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
 				<line x1="${x0}" y1="${(H - 23).toFixed(1)}" x2="${x0}" y2="${(H - 13).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
 				<line x1="${room_x1.toFixed(1)}" y1="${(H - 23).toFixed(1)}" x2="${room_x1.toFixed(1)}" y2="${(H - 13).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
-				<text x="${((x0 + room_x1) / 2).toFixed(1)}" y="${(H - 5).toFixed(1)}" text-anchor="middle" font-size="10">ยาวห้อง ${d.room_l} m — ตัวเลขใต้หัวดูด = ตำแหน่งจากฝั่งไกล (m)</text>
+				<text x="${((x0 + room_x1) / 2).toFixed(1)}" y="${(H - 5).toFixed(1)}" text-anchor="middle" font-size="10">ด้าน${axis_th} ${run_m} m (แนวท่อเมน) • ด้าน${perp_th} ${perp_m} m — ตัวเลขใต้หัวดูด = ตำแหน่งจากฝั่งไกล (m)</text>
 			</svg>
 		</div>`;
 	}
@@ -791,7 +941,7 @@ class HVACCalculator {
 			<p class="small text-muted mb-1">
 				หลักการ: หัวใกล้พัดลมเจอแรงดูดสูงกว่า จึงลดขนาดหัวให้ความต้านทานชดเชยพอดี →
 				ทุกหัวดูดได้ ${Math.round(d.q).toLocaleString()} CFM เท่ากันโดยไม่ต้องหรี่ damper มาก
-				(ΔP หัวดูดคิดจาก C=${m.Cg} × VP หน้าหัว, ท่อเมนคิดแบบ Critical Path สะสมลมทีละช่วง)
+				(ΔP หัวดูดคิดจาก C=${m.Cg} × VP หน้าหัว, ท่อเมนคิดแบบ Critical Path สะสมลมทีละช่วง${m.rows_n > 1 ? ` — ในแถว ${m.sp_row.toFixed(3)} + ท่อรวมถึงพัดลม ${m.sp_collector.toFixed(3)} in.wg, ท่อรวมแนะนำ Ø ≈ ${m.De_col.toFixed(0)}"` : ''})
 			</p>
 			<p class="small mb-2">${ratio_note}</p>`;
 	}
@@ -802,113 +952,203 @@ class HVACCalculator {
 	 * - ระยะห่างรูไม่เกิน ~2 m ต่อรู → ดูดสม่ำเสมอตลอดความยาวฮู้ด
 	 * - รูต้องไม่ใหญ่กว่าขนาดท่อลมที่กำหนด
 	 */
+	/* รูเจาะฝาชี — เปรียบเทียบทางเลือก (เกณฑ์ใหม่)
+	 * 1) ฮู้ดยาว ≤ 2 m: ใช้ปริมาณลมเป็นเกณฑ์ (CFM ÷ ลมสูงสุดต่อรู), สูงสุด 4 รู, ขยายขนาดรู +15%
+	 * 2) ฮู้ดยาว > 2 m: ใช้ปริมาณลมเป็นเกณฑ์ + ลมต่อรูไม่เกิน 1/3 ของลมรวม, เริ่มที่ 3 รู, ขยายขนาดรู +20%
+	 * ทุกกรณี: รูไม่เกินขนาดท่อ, ความเร็วผ่านรู 2.54–10 m/s (IMC ขั้นต่ำ – เพดานเสียง), ระยะห่างรู ≤ 2 m
+	 * แสดงสูงสุด 3 ตัวเลือก = ปกติ 2 + พิเศษ (จำนวนถัดไป, ขนาดฐานไม่ขยาย) 1
+	 */
 	calc_hood_holes(cfm, L_m, W_m) {
 		const STD_IN = [4, 5, 6, 8, 10, 12, 14, 16, 18, 20];
 		const fan_ms = this.num('fan_velocity') || 8;
 		const V_NOISE = 10;                              // เพดานเสียงดัง (m/s)
-		const V_MAX = Math.min(fan_ms * 1.2, V_NOISE);   // เพดานความเร็วผ่านรู
-		const V_LO = fan_ms * 0.875;
-		const V_HI = Math.min(fan_ms * 1.125, V_NOISE);  // แถบ ±12.5% รอบความเร็วพัดลม แต่ไม่เกิน 10 m/s
+		const V_MAX_BASE = Math.min(fan_ms * 1.2, V_NOISE);
+		const V_LO = 2.54, V_HI = V_NOISE;               // เกณฑ์ผ่าน (IMC 500 fpm – 10 m/s)
 		const SPACING_MAX = 2.0; // m
-		const n_max = Math.min(8, Math.max(4, Math.ceil(L_m / 1.0)));
+
+		// เกณฑ์ตามความยาวฮู้ด
+		const short_hood = L_m <= 2;
+		const boost = short_hood ? 1.15 : 1.20;          // ขยายขนาดรูลดเสียง: สั้น +15%, ยาว +20%
+		const n_cap = short_hood ? 4 : 99;               // ฮู้ดสั้นเจาะไม่เกิน 4 รู
+		const use_third_rule = !short_hood;              // ฮู้ดยาวเพิ่มเกณฑ์ 1/3
 
 		// ข้อจำกัด: รูเจาะต้องไม่ใหญ่กว่าขนาดท่อลมที่กำหนด
 		const duct_limit_in = this.get_duct_limit_in();
 		const usable_std = duct_limit_in > 0 ? STD_IN.filter(d => d <= duct_limit_in) : STD_IN;
+		if (!usable_std.length) return { options: [], duct_limit_in, fan_ms, V_LO, V_HI, cfm, L_m, W_m, n_cap, use_third_rule, boost, face_area_m2: L_m * W_m };
 
 		const v_of = (q_cfm, d_in) => {
 			const a = Math.PI / 4 * Math.pow(d_in / 12, 2); // ft²
 			return (q_cfm / a) / 196.85; // m/s
 		};
 
+		// เกณฑ์ปริมาณลม: ลมสูงสุดต่อรู = รูใหญ่สุดที่ท่อรองรับ × ความเร็วเพดาน
+		const d_big = usable_std[usable_std.length - 1];
+		const q_hole_max = (Math.PI / 4 * Math.pow(d_big / 12, 2)) * (V_MAX_BASE * 196.85);
+		const n_vol = Math.max(1, Math.ceil(cfm / q_hole_max));
+
+		// ตารางจำนวนรูแนะนำตามความยาวฝาชี (เส้นกึ่งกลาง)
+		const range_of = L => L <= 1.5 ? [2, 2] : L <= 2.5 ? [3, 3] : L <= 3.0 ? [4, 5]
+			: L <= 4.0 ? [5, 7] : L <= 5.0 ? [7, 8] : [9, 12];
+		const [tbl_min, tbl_max] = range_of(L_m);
+
+		const n_min = Math.max(tbl_min, n_vol);
+		const n_max = Math.min(n_cap, Math.max(tbl_max, n_min + 1));
+
+		// พื้นที่หน้าฝาชี (ใช้คิดสัดส่วนพื้นที่รูรวม)
+		const face_area_m2 = L_m * W_m;
+
 		const options = [];
-		for (let n = 1; n <= n_max; n++) {
+		const MAX_REG = 2; // แสดงสูงสุด 3 ตัวเลือก = ปกติ 2 + พิเศษ (ฐานไม่ขยาย) 1
+		for (let n = n_min; n <= n_max && options.length < MAX_REG; n++) {
 			const q = cfm / n;
-			// เลือกขนาดมาตรฐาน (≤ ขนาดท่อ) ที่ให้ความเร็วใกล้ความเร็วลมพัดลมที่สุด โดยไม่เกิน V_MAX
-			let best_d = null, best_v = null;
+			if (use_third_rule && q > cfm / 3 + 0.01) continue; // ฮู้ดยาว: ลมต่อรูไม่เกิน 1/3 ของลมรวม
+
+			// 1) ขนาดฐาน: ความเร็วใกล้ความเร็วลมพัดลมที่สุด (≤ เพดาน)
+			let base_d = null, base_v = null;
 			usable_std.forEach(d => {
 				const v = v_of(q, d);
-				if (v > V_MAX) return;
-				if (best_v === null || Math.abs(v - fan_ms) < Math.abs(best_v - fan_ms)) { best_d = d; best_v = v; }
+				if (v > V_MAX_BASE) return;
+				if (base_v === null || Math.abs(v - fan_ms) < Math.abs(base_v - fan_ms)) { base_d = d; base_v = v; }
 			});
-			if (best_d === null) continue; // ลมต่อรูแรงเกินทุกขนาดที่ท่อรองรับ
+			if (base_d === null) continue; // ลมต่อรูแรงเกินทุกขนาดที่ท่อรองรับ
+
+			// 2) ขยาย Ø ตามเกณฑ์ (สั้น +15% / ยาว +20%) → ปัดขึ้นเป็นขนาดมาตรฐานถัดไป (ไม่เกินท่อ)
+			const d_target = base_d * boost;
+			let final_d = usable_std.find(d => d >= d_target);
+			if (!final_d) final_d = usable_std[usable_std.length - 1] || base_d; // เกินท่อ → ใช้ใหญ่สุดที่ท่อรองรับ
+			const final_v = v_of(q, final_d);
+
 			const spacing = L_m / n;
-			const VP = Math.pow(best_v * 196.85 / 4005, 2);
+			const VP = Math.pow(final_v * 196.85 / 4005, 2);
 			const collar_loss = 0.5 * VP; // C≈0.5 ต่อรู (plain collar entry)
-			const pass_v = best_v >= V_LO && best_v <= V_HI;
+			const pass_v = final_v >= V_LO && final_v <= V_HI;
 			const pass_sp = spacing <= SPACING_MAX;
-			options.push({ n, d_in: best_d, q, v: best_v, spacing, collar_loss, pass_v, pass_sp });
+			const hole_area_m2 = Math.PI / 4 * Math.pow(final_d * 0.0254, 2);
+			options.push({
+				n, d_in: final_d, base_d, q, v: final_v, spacing, collar_loss, pass_v, pass_sp,
+				total_area_m2: n * hole_area_m2,
+				area_ratio: (n * hole_area_m2) / face_area_m2,
+				d_to_w: (final_d * 0.0254) / W_m,
+			});
 		}
 
-		return { options, duct_limit_in, fan_ms, V_LO, V_HI, V_MAX, cfm, L_m, W_m };
+		// ตัวเลือกเปรียบเทียบเพิ่ม (แถวที่ 3): จำนวนรูถัดจากตัวเลือกสุดท้าย +1 โดยใช้ขนาดฐาน (ไม่ขยาย %)
+		{
+			const n = (options.length ? options[options.length - 1].n : n_min) + 1;
+			if (n > n_cap) return { options, duct_limit_in, fan_ms, V_LO, V_HI, cfm, L_m, W_m, n_cap, use_third_rule, boost, tbl_min, tbl_max, face_area_m2 };
+			const q = cfm / n;
+			let base_d = null, base_v = null;
+			usable_std.forEach(d => {
+				const v = v_of(q, d);
+				if (v > V_MAX_BASE) return;
+				if (base_v === null || Math.abs(v - fan_ms) < Math.abs(base_v - fan_ms)) { base_d = d; base_v = v; }
+			});
+			if (base_d !== null) {
+				const spacing = L_m / n;
+				const VP = Math.pow(base_v * 196.85 / 4005, 2);
+				const collar_loss = 0.5 * VP;
+				const pass_v = base_v >= V_LO && base_v <= V_HI;
+				const pass_sp = spacing <= SPACING_MAX;
+				const hole_area_m2 = Math.PI / 4 * Math.pow(base_d * 0.0254, 2);
+				options.push({
+					n, d_in: base_d, q, v: base_v, spacing, collar_loss, pass_v, pass_sp, no_boost: true,
+					total_area_m2: n * hole_area_m2,
+					area_ratio: (n * hole_area_m2) / face_area_m2,
+					d_to_w: (base_d * 0.0254) / W_m,
+				});
+			}
+		}
+
+		return { options, duct_limit_in, fan_ms, V_LO, V_HI, cfm, L_m, W_m, n_cap, use_third_rule, boost, tbl_min, tbl_max, face_area_m2 };
 	}
 
-	// วาดผังตำแหน่งรูเจาะ: สี่เหลี่ยม = ฝาชีมองจากด้านบน (วาดตามสัดส่วนจริง)
-	// รูปทรงรูตามท่อลม: ท่อกลม → รูกลม, ท่อเหลี่ยม → รูเหลี่ยมพื้นที่เท่ากัน
+	// วาดผังตำแหน่งรูเจาะ (มุมมองด้านบน มาตราส่วนจริง) — รองรับฝาชีตรง / L / U
+	// รูเจาะกระจายตามเส้นกึ่งกลาง; รูปทรงรูตามท่อลม (กลม/เหลี่ยมพื้นที่เท่ากัน)
 	hole_position_svg(cfg, ctx, duct_shape) {
-		const W = 700, mg = 45;
-		const innerW = W - 2 * mg;
-		const scale = innerW / ctx.L_m;          // px ต่อเมตร — ใช้สเกลเดียวทั้งภาพ
-		const hood_y = 42;
-		const hood_h = ctx.W_m * scale;          // ความกว้างฝาชีตามสัดส่วนจริง
-		const cy = hood_y + hood_h / 2;
-		const label_y = hood_y + hood_h;         // จุดเริ่มเส้นบอกระยะใต้ฝาชี
-		const H = Math.ceil(label_y + 62);       // ความสูง SVG ปรับตามขนาดฝาชี
-		const is_rect = duct_shape === 'rect';
+		const shape = ctx.shape || 'I';
+		const legs = ctx.legs || { A: ctx.L_m, B: 0, C: 0 };
+		const Wd = ctx.W_m; // ความกว้าง(ลึก)ฝาชี
+		const A = legs.A, B = legs.B, C = legs.C;
 
-		// รูเหลี่ยม: ด้านจัตุรัสที่พื้นที่เท่ารูกลม Ø d → s = d × √(π)/2
+		// ---- นิยามรูปร่าง (หน่วยเมตร): กรอบสี่เหลี่ยมประกอบ + ฟังก์ชันจุดบนเส้นกึ่งกลางที่ระยะ s ----
+		let rects, path_pt, bb_w, bb_h;
+		if (shape === 'L') {
+			// ขา A แนวนอนล่าง + ขา B แนวตั้งขวา (แชร์มุมขวาล่าง)
+			rects = [[0, 0, A, Wd], [A - Wd, 0, Wd, B]];
+			bb_w = A; bb_h = Math.max(Wd, B);
+			const s1 = A - Wd / 2; // ช่วงแนวนอนบนเส้นกึ่งกลาง
+			path_pt = s => s <= s1 ? [s, Wd / 2] : [A - Wd / 2, Wd / 2 + (s - s1)];
+		} else if (shape === 'U') {
+			// ขา A ตั้งซ้าย + ขา B นอนล่าง + ขา C ตั้งขวา
+			rects = [[0, 0, Wd, A], [0, 0, B, Wd], [B - Wd, 0, Wd, C]];
+			bb_w = B; bb_h = Math.max(A, C, Wd);
+			const s1 = A - Wd / 2;          // ลงขา A
+			const s2 = s1 + (B - Wd);       // ผ่านขาล่าง
+			path_pt = s => s <= s1 ? [Wd / 2, A - s]
+				: s <= s2 ? [Wd / 2 + (s - s1), Wd / 2]
+				: [B - Wd / 2, Wd / 2 + (s - s2)];
+		} else {
+			rects = [[0, 0, A, Wd]];
+			bb_w = A; bb_h = Wd;
+			path_pt = s => [s, Wd / 2];
+		}
+
+		// ---- สเกลภาพ ----
+		const Wpx = 700, mg = 45;
+		const scale = Math.min((Wpx - 2 * mg) / bb_w, 320 / bb_h);
+		const H = Math.ceil(bb_h * scale + mg + 55);
+		const ox = mg, oy = 30;
+		const X = x => ox + x * scale;
+		const Y = y => oy + (bb_h - y) * scale; // กลับแกน y ให้ล่าง = 0
+
+		const is_rect_hole = duct_shape === 'rect';
 		const s_in = cfg.d_in * Math.sqrt(Math.PI) / 2;
-		const d_m = cfg.d_in * 0.0254;
-		const s_m = s_in * 0.0254;
-		const r = Math.max(2, (d_m / 2) * scale);   // รัศมีรูกลมตามสเกลจริง (px)
-		const hs = Math.max(2, (s_m / 2) * scale);  // ครึ่งด้านรูเหลี่ยมตามสเกลจริง (px)
-		const cross = Math.min(4, r * 0.5);         // ขนาดกากบาทกึ่งกลาง
+		const r = Math.max(2, (cfg.d_in * 0.0254 / 2) * scale);
+		const hs = Math.max(2, (s_in * 0.0254 / 2) * scale);
+
+		const rects_svg = rects.map(rc =>
+			`<rect x="${X(rc[0]).toFixed(1)}" y="${Y(rc[1] + rc[3]).toFixed(1)}" width="${(rc[2] * scale).toFixed(1)}" height="${(rc[3] * scale).toFixed(1)}"
+				fill="#f8f8f8" stroke="#333" stroke-width="1.5"/>`).join('');
 
 		let shapes = '', labels = '';
 		const positions = [];
 		for (let i = 0; i < cfg.n; i++) {
-			const pos_m = cfg.spacing / 2 + i * cfg.spacing;
-			positions.push(pos_m.toFixed(2));
-			const cx = mg + pos_m * scale;
-			if (is_rect) {
-				shapes += `<rect x="${(cx - hs).toFixed(1)}" y="${(cy - hs).toFixed(1)}"
-					width="${(hs * 2).toFixed(1)}" height="${(hs * 2).toFixed(1)}"
-					fill="none" stroke="#333" stroke-width="1.5"/>`;
+			const s = cfg.spacing / 2 + i * cfg.spacing;
+			positions.push(s.toFixed(2));
+			const [px, py] = path_pt(Math.min(s, ctx.L_m));
+			const cx = X(px), cyy = Y(py);
+			if (is_rect_hole) {
+				shapes += `<rect x="${(cx - hs).toFixed(1)}" y="${(cyy - hs).toFixed(1)}" width="${(hs * 2).toFixed(1)}" height="${(hs * 2).toFixed(1)}"
+					fill="#fff" stroke="#333" stroke-width="1.5"/>`;
 			} else {
-				shapes += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}"
-					fill="none" stroke="#333" stroke-width="1.5"/>`;
+				shapes += `<circle cx="${cx.toFixed(1)}" cy="${cyy.toFixed(1)}" r="${r.toFixed(1)}" fill="#fff" stroke="#333" stroke-width="1.5"/>`;
 			}
-			shapes += `<line x1="${cx.toFixed(1)}" y1="${(cy - cross).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(cy + cross).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
-				<line x1="${(cx - cross).toFixed(1)}" y1="${cy.toFixed(1)}" x2="${(cx + cross).toFixed(1)}" y2="${cy.toFixed(1)}" stroke="#333" stroke-width="0.8"/>`;
-			labels += `<line x1="${cx.toFixed(1)}" y1="${label_y.toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(label_y + 14).toFixed(1)}"
-				stroke="#888" stroke-width="0.8" stroke-dasharray="3,2"/>
-				<text x="${cx.toFixed(1)}" y="${(label_y + 26).toFixed(1)}" text-anchor="middle" font-size="11">${pos_m.toFixed(2)}</text>`;
+			shapes += `<line x1="${(cx - 4).toFixed(1)}" y1="${cyy.toFixed(1)}" x2="${(cx + 4).toFixed(1)}" y2="${cyy.toFixed(1)}" stroke="#333" stroke-width="0.8"/>
+				<line x1="${cx.toFixed(1)}" y1="${(cyy - 4).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(cyy + 4).toFixed(1)}" stroke="#333" stroke-width="0.8"/>`;
+			labels += `<text x="${(cx + (r + 6)).toFixed(1)}" y="${(cyy - r - 4).toFixed(1)}" font-size="10" fill="#555">${s.toFixed(2)}</text>`;
 		}
 
-		const size_desc = is_rect
-			? `รูเหลี่ยม ${s_in.toFixed(1)}" × ${s_in.toFixed(1)}" (≈ ${(s_in * 2.54).toFixed(0)} × ${(s_in * 2.54).toFixed(0)} cm)
-				— พื้นที่เทียบเท่ารูกลม Ø ${cfg.d_in % 1 ? cfg.d_in.toFixed(1) : cfg.d_in}"`
+		const size_desc = is_rect_hole
+			? `รูเหลี่ยม ${s_in.toFixed(1)}" × ${s_in.toFixed(1)}" (≈ ${(s_in * 2.54).toFixed(0)} × ${(s_in * 2.54).toFixed(0)} cm) — พื้นที่เทียบเท่ารูกลม Ø ${cfg.d_in % 1 ? cfg.d_in.toFixed(1) : cfg.d_in}"`
 			: `รูกลม Ø ${cfg.d_in % 1 ? cfg.d_in.toFixed(1) : cfg.d_in}" (≈ ${(cfg.d_in * 2.54).toFixed(0)} cm)`;
+		const dims_txt = shape === 'L' ? `A=${A}, B=${B}, กว้าง=${Wd} m`
+			: shape === 'U' ? `A=${A}, B=${B}, C=${C}, กว้าง=${Wd} m`
+			: `ยาว=${A}, กว้าง=${Wd} m`;
 
 		return `
 		<div style="margin-bottom:14px; page-break-inside:avoid;">
 			<div style="font-size:12px; margin-bottom:2px;">
 				<b>${cfg.n} รู × ${size_desc}</b>
-				— ระยะห่างรู ${cfg.spacing.toFixed(2)} m, รูแรก/สุดท้ายห่างขอบ ${(cfg.spacing / 2).toFixed(2)} m
-				• ตำแหน่ง (m): ${positions.join(', ')}
+				— ระยะห่างรู ${cfg.spacing.toFixed(2)} m ตามเส้นกึ่งกลาง (ยาวรวม ${ctx.L_m.toFixed(2)} m), รูแรก/สุดท้ายห่างปลาย ${(cfg.spacing / 2).toFixed(2)} m
+				• ตำแหน่งตามเส้นกึ่งกลางจากปลายด้าน A (m): ${positions.join(', ')}
 			</div>
-			<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
-				style="border:1px solid #ddd; background:#fff;">
-				<rect x="${mg}" y="${hood_y}" width="${innerW}" height="${hood_h.toFixed(1)}"
-					fill="#f8f8f8" stroke="#333" stroke-width="1.5"/>
+			<svg width="${Wpx}" height="${H}" viewBox="0 0 ${Wpx} ${H}" xmlns="http://www.w3.org/2000/svg"
+				style="border:1px solid #ddd; background:#fff; max-width:100%;">
+				${rects_svg}
 				${shapes}
 				${labels}
-				<line x1="${mg}" y1="${(H - 22).toFixed(1)}" x2="${W - mg}" y2="${(H - 22).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
-				<line x1="${mg}" y1="${(H - 27).toFixed(1)}" x2="${mg}" y2="${(H - 17).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
-				<line x1="${W - mg}" y1="${(H - 27).toFixed(1)}" x2="${W - mg}" y2="${(H - 17).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
-				<text x="${W / 2}" y="${(H - 8).toFixed(1)}" text-anchor="middle" font-size="11">ความยาวฮู้ด ${ctx.L_m} m</text>
-				<text x="${mg - 8}" y="${cy.toFixed(1)}" text-anchor="end" font-size="11">กว้าง ${ctx.W_m} m</text>
-				<text x="${mg}" y="${hood_y - 8}" font-size="11" fill="#666">ขอบซ้าย (จุดอ้างอิง 0.00) • รูปทรงรูตามท่อ${is_rect ? 'เหลี่ยม' : 'กลม'} • มาตราส่วนตามจริง</text>
+				<text x="${ox}" y="${oy - 12}" font-size="11" fill="#666">ฝาชี${shape === 'I' ? 'ตรง' : 'รูปตัว ' + shape} ${dims_txt} • ตัวเลขข้างรู = ระยะตามเส้นกึ่งกลาง (m) • รูปทรงรูตามท่อ${is_rect_hole ? 'เหลี่ยม' : 'กลม'} • มาตราส่วนตามจริง</text>
 			</svg>
 		</div>`;
 	}
@@ -1060,7 +1300,8 @@ class HVACCalculator {
 					<th class="hole-print-col text-center">พิมพ์</th>
 					<th>จำนวนรู</th><th class="text-right">ขนาดรูกลม</th>
 					<th class="text-right">CFM/รู</th><th class="text-right">ความเร็ว (m/s)</th>
-					<th class="text-right">ระยะห่าง (m)</th><th class="text-right">ΔP/รู (in.wg)</th><th>สถานะ</th>
+					<th class="text-right">ระยะห่าง (m)</th><th class="text-right">พื้นที่รูรวม</th>
+					<th class="text-right">ΔP/รู (in.wg)</th><th>สถานะ</th>
 				</tr></thead>
 				<tbody>${rows}</tbody>
 			</table>
@@ -1077,10 +1318,13 @@ class HVACCalculator {
 				</label>
 			</div>
 			<p class="small text-muted mb-2">
-				ขนาดรูเลือกให้ความเร็วผ่านรูใกล้ความเร็วลมพัดลม ${holes.fan_ms} m/s ที่สุด
-				โดยไม่เกิน 10 m/s เพื่อป้องกันเสียงดัง
-				(✅ = อยู่ในช่วง ${holes.V_LO.toFixed(1)}–${holes.V_HI.toFixed(1)} m/s และระยะห่างรู ≤ 2 m)
-				• ΔP ต่อรูคิดจาก C=0.5 × VP (plain collar)
+				<b>ข้อพิจารณาการเปิดรู:</b>
+				(1) พื้นที่รูรวม และ (2) ความเร็วลมผ่านรู — แสดงในตาราง, เกณฑ์ความเร็ว ${holes.V_LO}–${holes.V_HI} m/s
+				(3) จำนวนรูตามความยาวฝาชี ${holes.L_m.toFixed(1)} m → แนะนำ ${holes.tbl_min || '-'}${holes.tbl_max && holes.tbl_max !== holes.tbl_min ? '–' + holes.tbl_max : ''} รู
+				(ตาราง: ≤1.5m→2 | 1.5–2.5→3 | 2.5–3→4–5 | 3–4→5–7 | 4–5→7–8 | >5m→≥9 รู)
+				(4) ระยะห่างรู ≤ 2 m (5) ขนาดรู ≤ 60% ของความกว้างฝาชี ${holes.W_m} m
+				(6) สัดส่วนพื้นที่รูรวมต่อพื้นที่ฝาชี ${(holes.face_area_m2 || 0).toFixed(1)} m² — แนวปฏิบัติ ~3–10%
+				• ขนาดฐานจากความเร็วลมพัดลม ${holes.fan_ms} m/s ขยาย +${Math.round((holes.boost - 1) * 100)}% ลดเสียง${holes.use_third_rule ? ' • ลมต่อรูไม่เกิน 1/3 ของลมรวม' : ''}
 				${limit_txt ? '• ' + limit_txt : ''}
 				• ติ๊กช่อง "พิมพ์" เฉพาะแถวที่ต้องการให้แสดงในรายงาน
 			</p>`;
@@ -1089,24 +1333,36 @@ class HVACCalculator {
 	hole_row_html(o, is_custom) {
 		const ctx = this.last_holes_ctx;
 		let status;
-		if (ctx.duct_limit_in > 0 && o.d_in > ctx.duct_limit_in + 0.01) {
+		if (ctx.use_third_rule && o.q > ctx.cfm / 3 + 0.01) {
+			status = '⚠️ ลมต่อรูเกิน 1/3 ของลมรวม';
+		} else if (is_custom && ctx.tbl_min && (o.n < ctx.tbl_min || o.n > ctx.tbl_max)) {
+			status = `⚠️ นอกช่วงแนะนำ ${ctx.tbl_min}–${ctx.tbl_max} รู (ยาว ${ctx.L_m.toFixed(1)} m)`;
+		} else if (o.d_to_w > 0.6) {
+			status = '⚠️ รูใหญ่เกิน 60% ของความกว้างฝาชี';
+		} else if (ctx.n_cap && o.n > ctx.n_cap) {
+			status = `⚠️ ฮู้ดยาว ≤ 2 m ไม่ควรเกิน ${ctx.n_cap} รู`;
+		} else if (ctx.duct_limit_in > 0 && o.d_in > ctx.duct_limit_in + 0.01) {
 			status = '⚠️ รูใหญ่กว่าท่อ';
 		} else if (o.v > 10) {
 			status = '🔊 เกิน 10 m/s เสียงดัง';
-		} else if (o.v > ctx.V_MAX) {
-			status = '⚠️ ความเร็วสูงเกิน';
 		} else {
-			status = (o.pass_v && o.pass_sp) ? '✅'
+			status = (o.pass_v !== false && o.pass_sp) ? '✅'
 				: (!o.pass_sp ? '⚠️ รูห่างเกิน 2 m'
-					: (o.v < ctx.V_LO ? '⚠️ ความเร็วต่ำกว่าพัดลม' : '⚠️ ความเร็วสูงกว่าพัดลม'));
+					: (o.v < ctx.V_LO ? '⚠️ ต่ำกว่าขั้นต่ำ IMC 2.54 m/s' : '⚠️ ความเร็วสูง'));
 		}
+		const size_txt = o.no_boost
+			? `Ø ${o.d_in}" (${(o.d_in * 2.54).toFixed(0)} cm)<br><span class="text-muted small">ขนาดฐาน ไม่ขยาย % — เปรียบเทียบ</span>`
+			: o.base_d && o.base_d !== o.d_in
+			? `Ø ${o.d_in}" (${(o.d_in * 2.54).toFixed(0)} cm)<br><span class="text-muted small">ฐาน ${o.base_d}" +${Math.round(((ctx.boost || 1.2) - 1) * 100)}% ลดเสียง</span>`
+			: `Ø ${o.d_in % 1 ? o.d_in.toFixed(1) : o.d_in}" (${(o.d_in * 2.54).toFixed(0)} cm)`;
 		return `<tr data-n="${o.n}" data-d="${o.d_in}" data-spacing="${o.spacing}">
 			<td class="hole-print-col text-center"><input type="checkbox" class="hole-print" checked></td>
 			<td>${o.n} รู${is_custom ? ' (กำหนดเอง)' : ''}</td>
-			<td class="text-right">Ø ${o.d_in % 1 ? o.d_in.toFixed(1) : o.d_in}" (${(o.d_in * 2.54).toFixed(0)} cm)</td>
+			<td class="text-right">${size_txt}</td>
 			<td class="text-right">${Math.round(o.q).toLocaleString()}</td>
 			<td class="text-right">${o.v.toFixed(1)}</td>
 			<td class="text-right">${o.spacing.toFixed(2)}</td>
+			<td class="text-right">${(o.total_area_m2 * 10000).toFixed(0)} cm²<br><span class="text-muted small">${(o.area_ratio * 100).toFixed(1)}% ของฝาชี</span></td>
 			<td class="text-right">${o.collar_loss.toFixed(2)}</td>
 			<td>${status}</td>
 		</tr>`;
@@ -1126,10 +1382,14 @@ class HVACCalculator {
 		const spacing = ctx.L_m / n;
 		const VP = Math.pow(v * 196.85 / 4005, 2);
 		const collar_loss = 0.5 * VP;
+		const hole_area_m2 = Math.PI / 4 * Math.pow(d_in * 0.0254, 2);
 		const o = {
 			n, d_in, q, v, spacing, collar_loss,
 			pass_v: v >= ctx.V_LO && v <= ctx.V_HI,
 			pass_sp: spacing <= 2.0,
+			total_area_m2: n * hole_area_m2,
+			area_ratio: ctx.face_area_m2 ? (n * hole_area_m2) / ctx.face_area_m2 : 0,
+			d_to_w: ctx.W_m ? (d_in * 0.0254) / ctx.W_m : 0,
 		};
 		this.$body.find('#holes_table tbody').append(this.hole_row_html(o, true));
 	}
@@ -1252,7 +1512,7 @@ class HVACCalculator {
 			? `${res.room.th} • ${res.room_w} × ${res.room_l} m (${res.area_m2.toFixed(1)} m²) • ${res.ach} ACH`
 			: this.mode === 'duct'
 				? `${res.room.th} • ${res.room_w} × ${res.room_l} m (${res.area_m2.toFixed(1)} m²) • ${res.dist.n} หัวดูด • เครื่องดูดห่าง ${res.dist.fan_dist} m`
-				: `${res.hood_th} • ${res.duty_th} • ${res.L_m}×${res.W_m} m`;
+				: `${res.hood_th} • ${res.duty_th} • ${res.shape_th} ${res.dims_th}`;
 
 		this.$body.find('#hvac_result').html(`
 		<div class="frappe-card p-4 mb-4">
