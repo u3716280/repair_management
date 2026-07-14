@@ -1,18 +1,18 @@
-/* HVAC Air Calculator — CFM & Static Pressure (in.wg)
+/* HVAC Selection — Airflow, Fan, Duct & Motor Selection
  * อ้างอิง: ASHRAE 62.1 (Ventilation Rate Procedure & Exhaust Rates),
  * ASHRAE 154 / IMC 507 (Kitchen Hood Exhaust), AMCA 210 (Fan Rating), AMCA 201 (System Effect)
  * หมายเหตุ: ตัวเลขในตารางเป็นค่าออกแบบทั่วไปเพื่อประเมินเบื้องต้น
  * ผู้ออกแบบต้องตรวจสอบกับมาตรฐานฉบับล่าสุดและกฎหมายท้องถิ่นก่อนใช้งานจริง
  */
 
-frappe.pages['hvac-calculator'].on_page_load = function (wrapper) {
+frappe.pages['hvac-selection'].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: __('HVAC Air Calculator (CFM / in.wg)'),
+		title: __('HVAC Selection (Airflow / Fan / Duct / Motor)'),
 		single_column: true,
 	});
 
-	new HVACCalculator(page);
+	new HVACSelection(page);
 };
 
 /* ---------------- ข้อมูลมาตรฐาน ---------------- */
@@ -34,8 +34,6 @@ const ROOM_TYPES = [
 	{ id: 'lab',         th: 'ห้องปฏิบัติการ (Laboratory)',       rp: 10,   ra: 0.18, density: 25,  ach: [6, 12],  ref: 'ASHRAE 62.1 / Lab guide' },
 	{ id: 'machine',     th: 'ห้องเครื่องจักรปล่อยความร้อน (Machine/Equipment)', rp: 0, ra: 0.06, density: 0, ach: [15, 25], ref: 'แนวปฏิบัติ heat-driven — ควรตรวจสอบจากภาระความร้อนจริง (Q = H/(ρ·Cp·ΔT))' },
 	{ id: 'factory',     th: 'โรงงาน (Factory / Manufacturing)', rp: 10, ra: 0.18, density: 7, ach: [6, 10], ref: 'ASHRAE 62.1 Table 6-1 (Manufacturing, ไม่ใช้สารอันตราย)' },
-	{ id: 'dusty',       th: 'ห้องที่มีฝุ่น (Dusty/Particulate)', rp: 0,  ra: 0.30, density: 0, ach: [10, 15], exhaust_ra: 0.75, ref: 'แนวปฏิบัติ — งานฝุ่น/ขัด/เจียร ควรมี local exhaust ที่แหล่งกำเนิดร่วมด้วย ไม่พึ่งเจือจางอย่างเดียว' },
-	{ id: 'odor',        th: 'ห้องที่มีกลิ่น (Odor-generating)', rp: 5,  ra: 0.24, density: 0, ach: [8, 12],  exhaust_ra: 0.50, ref: 'แนวปฏิบัติ — เช่น ห้องเก็บสารเคมี/สี/ขยะ ควรพิจารณา Carbon filter ก่อนทิ้ง' },
 	{ id: 'parking',     th: 'ที่จอดรถในอาคาร (Enclosed Parking)', rp: 0,    ra: 0,    density: 0,   ach: [6, 10],  exhaust_ra: 0.75, ref: 'ASHRAE 62.1 Table 6-2 (0.75 cfm/ft²)' },
 	{ id: 'laundry',     th: 'ห้องซักรีด (Laundry)',              rp: 0,    ra: 0,    density: 0,   ach: [10, 15], exhaust_ra: 0.50, ref: 'ASHRAE 62.1 Table 6-2' },
 ];
@@ -61,7 +59,6 @@ const DUTY_TH = {
 const AIR_CLASS = {
 	toilet: 2, locker: 2, laundry: 2, parking: 2, gym: 2,
 	machine: 2, factory: 2,
-	odor: 3, dusty: 3,
 	kitchen: 4, lab: 4,
 	// อื่นๆ = Class 1
 };
@@ -95,7 +92,7 @@ const M_TO_FT = 3.28084;
 
 /* ---------------- Page Class ---------------- */
 
-class HVACCalculator {
+class HVACSelection {
 	constructor(page) {
 		this.page = page;
 		this.$body = $(page.body);
@@ -263,7 +260,7 @@ class HVACCalculator {
 						<small class="text-muted" id="dt_room_ref"></small>
 					</div>
 					<div class="col-sm-2 mb-3">
-						<label>Air Class (ASHRAE 62.1) <a href="#" id="air_class_info_toggle" title="อธิบาย Air Class">ⓘ</a></label>
+						<label>Air Class (ASHRAE 62.1)</label>
 						<select class="form-control" id="dt_air_class_override">
 							<option value="0">ตามประเภทห้อง (auto)</option>
 							<option value="1">Class 1</option>
@@ -272,16 +269,6 @@ class HVACCalculator {
 							<option value="4">Class 4</option>
 						</select>
 						<small class="text-muted">แก้ได้ถ้าอากาศจริงปนเปื้อนต่างจากชื่อห้อง</small>
-					</div>
-					<div class="col-12" id="air_class_info_panel" style="display:none;">
-						<div class="alert alert-secondary small mb-3">
-							<b>Air Class (ASHRAE 62.1) — ระดับการปนเปื้อนของอากาศ กำหนดว่านำกลับมาหมุนเวียนได้หรือต้องทิ้งนอกอาคาร:</b><br>
-							<b>Class 1</b> — ปนเปื้อนต่ำ กลิ่น/ระคายเคืองน้อย มาจากคนเป็นหลัก (เช่น ออฟฟิศ ห้องประชุม) — หมุนเวียนได้<br>
-							<b>Class 2</b> — ปนเปื้อนปานกลาง มีกลิ่น/ระคายเคืองบ้าง (เช่น ห้องน้ำ ห้องอาหาร ห้องล็อกเกอร์) — ห้ามหมุนเวียนไปโซนอื่น<br>
-							<b>Class 3</b> — ปนเปื้อน/ระคายเคืองสูงอย่างมีนัยสำคัญ (เช่น ห้องแล็บ ห้องมีฝุ่น/กลิ่นเฉพาะ) — ห้ามหมุนเวียน ต้องทิ้งนอกอาคาร<br>
-							<b>Class 4</b> — อันตราย/ไอสารเคมี-ไขมันรุนแรง (เช่น ครัว ห้องเคมี) — ห้ามหมุนเวียนเด็ดขาด ท่อแยกอิสระถึงจุดทิ้ง<br>
-							<span class="text-muted">การจัด Class ในแอปนี้อิงชื่อประเภทห้องเป็นแนวทางเบื้องต้น ควรตรวจสอบองค์ประกอบอากาศจริงกับวิศวกรก่อนกำหนด Class สุดท้าย</span>
-						</div>
 					</div>
 					<div class="col-sm-2 mb-3">
 						<label>กว้าง (m)</label>
@@ -318,10 +305,10 @@ class HVACCalculator {
 						<label>ΔT ยอมรับ (°C)</label>
 						<input type="number" class="form-control" id="dt_heat_dt" value="5" step="0.5" min="1">
 					</div>
-					<div class="col-sm-2 mb-3 dt-rows-field">
+					<div class="col-sm-2 mb-3">
 						<label>จำนวนแถวท่อเมน</label>
 						<input type="number" class="form-control" id="dt_rows" value="1" min="1" max="10">
-						<small class="text-muted">เมนขนานหลายแถว รวมกันก่อนถึงพัดลม (ใช้ได้เฉพาะเดินท่อ 1 ด้าน)</small>
+						<small class="text-muted">เมนขนานหลายแถว รวมกันก่อนถึงพัดลม</small>
 					</div>
 					<div class="col-sm-3 mb-3 dt-collector-field" style="display:none;">
 						<label>ขนาดท่อรวม (Collector) Ø</label>
@@ -336,25 +323,12 @@ class HVACCalculator {
 						<input type="number" class="form-control" id="dt_n" value="4" min="1" max="30">
 					</div>
 					<div class="col-sm-2 mb-3">
-						<label>เดินท่อรอบห้อง (กี่ด้าน)</label>
-						<select class="form-control" id="dt_sides">
-							<option value="1">1 ด้าน (ตรง)</option>
-							<option value="2">2 ด้าน (มุมฉาก)</option>
-							<option value="3">3 ด้าน (รูปตัว U)</option>
-							<option value="4">4 ด้าน (รอบห้อง)</option>
-						</select>
-						<small class="text-muted">ท่อเมนเลี้ยวตามผนังห้อง เริ่มจากด้านที่เลือกด้านล่าง</small>
-					</div>
-					<div class="col-sm-2 mb-3">
-						<label>แนวท่อเมน <span id="dt_axis_label_extra"></span></label>
+						<label>แนวท่อเมน</label>
 						<select class="form-control" id="dt_axis">
-							<option value="l">เริ่มด้านยาว</option>
-							<option value="w">เริ่มด้านกว้าง</option>
+							<option value="l">ตามด้านยาว</option>
+							<option value="w">ตามด้านกว้าง</option>
 						</select>
 						<small class="text-muted">แนวกระจายหัวดูด/ภาพผัง</small>
-					</div>
-					<div class="col-12 mb-2 dt-rows-disabled-note" style="display:none;">
-						<small class="text-muted">⚠️ เมื่อเดินท่อมากกว่า 1 ด้าน จะไม่ใช้ "จำนวนแถวท่อเมนขนาน" ร่วมด้วย (บังคับ 1 เส้นทางตามผนัง) เพื่อความเรียบง่ายของรูปทรง</small>
 					</div>
 					<div class="col-sm-3 mb-3">
 						<label>ความเร็วหน้าหัวดูด (m/s)</label>
@@ -419,6 +393,50 @@ class HVACCalculator {
 				<small class="text-muted">ความเร็วจริงและแรงเสียดทานคำนวณจากขนาดท่อที่ระบุ (สมการ ASHRAE Friction Chart, ท่อสังกะสี) — ท่อเหลี่ยมแปลงเป็น Equivalent Diameter ตามสูตร Huebscher</small>
 			</div>
 
+
+			<!-- การเลือกพัดลม มอเตอร์ และการวิเคราะห์ระบบ -->
+			<div class="frappe-card p-4 mb-4">
+				<h5 class="mb-1">Fan & Motor Selection</h5>
+				<p class="text-muted small mb-3">กำหนดสมมติฐานเพื่อประเมินกำลังมอเตอร์ จุดเลือกพัดลม ความเสี่ยงเสียง และเปรียบเทียบขนาดท่อ</p>
+				<div class="row">
+					<div class="col-sm-3 mb-3">
+						<label>ประเภทพัดลม</label>
+						<select class="form-control" id="sel_fan_type">
+							<option value="backward">Backward Curved / Inclined</option>
+							<option value="forward">Forward Curved</option>
+							<option value="axial">Axial</option>
+							<option value="mixed">Mixed Flow / Inline</option>
+						</select>
+					</div>
+					<div class="col-sm-2 mb-3">
+						<label>Fan Efficiency (%)</label>
+						<input type="number" class="form-control" id="sel_fan_eff" value="65" min="20" max="90" step="1">
+					</div>
+					<div class="col-sm-2 mb-3">
+						<label>Motor Efficiency (%)</label>
+						<input type="number" class="form-control" id="sel_motor_eff" value="88" min="50" max="98" step="1">
+					</div>
+					<div class="col-sm-2 mb-3">
+						<label>Motor Margin (%)</label>
+						<input type="number" class="form-control" id="sel_motor_margin" value="15" min="0" max="50" step="5">
+					</div>
+					<div class="col-sm-3 mb-3">
+						<label>ประเภทระบบท่อ</label>
+						<select class="form-control" id="sel_system_type">
+							<option value="comfort">Comfort / General Ventilation</option>
+							<option value="general_exhaust">General Exhaust</option>
+							<option value="kitchen">Kitchen Grease Exhaust</option>
+							<option value="industrial">Industrial Exhaust</option>
+						</select>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-sm-3 mb-2"><div class="checkbox"><label><input type="checkbox" id="se_inlet_elbow"> มีข้องอชิดทางเข้าพัดลม</label></div></div>
+					<div class="col-sm-3 mb-2"><div class="checkbox"><label><input type="checkbox" id="se_short_inlet"> ท่อตรงก่อนพัดลมน้อยกว่า 2D</label></div></div>
+					<div class="col-sm-3 mb-2"><div class="checkbox"><label><input type="checkbox" id="se_abrupt_transition"> Reducer/Transition ชิดพัดลม</label></div></div>
+					<div class="col-sm-3 mb-2"><div class="checkbox"><label><input type="checkbox" id="se_discharge_obstruction"> ทางออกมีข้องอ/สิ่งกีดขวางชิดพัดลม</label></div></div>
+				</div>
+			</div>
 			<!-- อุปกรณ์เสริม -->
 			<div class="frappe-card p-4 mb-4">
 				<h5 class="mb-1">อุปกรณ์เสริม (Optional)</h5>
@@ -470,13 +488,13 @@ class HVACCalculator {
 		this.$body.on('change', '#dt_room_type', () => this.update_dt_hint());
 		this.$body.on('input', '#dt_w, #dt_l', () => this.update_dt_area_hint());
 		this.$body.on('input change', '#dt_rows', () => this.toggle_dt_collector());
-		this.$body.on('change', '#dt_sides', () => this.toggle_dt_sides());
 		this.$body.on('click', '#btn_print', () => this.print_result());
 		this.$body.on('click', '#btn_add_hole', () => this.add_custom_hole());
-		this.$body.on('click', '#air_class_info_toggle', (e) => { e.preventDefault(); this.$body.find('#air_class_info_panel').slideToggle(150); });
 		this.$body.on('change', '.esp-hole-radio', (e) => this.select_esp_hole(parseInt($(e.target).data('idx'))));
 		this.$body.on('change', '#duct_shape', () => this.toggle_duct_shape());
 		this.$body.on('change', '#duct_unit', () => this.update_duct_unit());
+		this.$body.on('change', '#duct_unit', () => this.$body.find('#dt_collector_unit_label').text(this.$body.find('#duct_unit').val()));
+		this.$body.on('change', '#sel_fan_type', () => this.apply_fan_eff_default());
 	}
 
 	toggle_duct_shape() {
@@ -541,7 +559,6 @@ class HVACCalculator {
 	update_duct_unit() {
 		const unit = this.$body.find('#duct_unit').val();
 		this.$body.find('.duct-unit-label').text(`(${unit})`);
-		this.$body.find('#dt_collector_unit_label').text(unit);
 		// แปลงค่าที่กรอกไว้ให้อัตโนมัติ
 		const f = unit === 'cm' ? 2.54 : 1 / 2.54;
 		['duct_dia', 'duct_w', 'duct_h', 'dt_collector_d'].forEach(id => {
@@ -582,7 +599,7 @@ class HVACCalculator {
 		this.$body.find('#panel-duct').toggle(mode === 'duct');
 		this.$body.find('#hood_filter_note').toggleClass('d-none', mode !== 'hood');
 		if (mode !== 'hood') this.custom_holes = []; // เลี่ยงข้อมูลรูเจาะค้างข้ามโหมด
-		if (mode === 'duct') this.toggle_dt_sides();
+		if (mode === 'duct') this.toggle_dt_collector();
 		this.$body.find('#hvac_result').empty();
 	}
 
@@ -624,15 +641,6 @@ class HVACCalculator {
 	toggle_dt_collector() {
 		const rows_n = Math.max(1, parseInt(this.$body.find('#dt_rows').val()) || 1);
 		this.$body.find('.dt-collector-field').toggle(rows_n > 1);
-	}
-
-	toggle_dt_sides() {
-		const sides = parseInt(this.$body.find('#dt_sides').val()) || 1;
-		const multi = sides > 1;
-		this.$body.find('.dt-rows-field').toggle(!multi);
-		this.$body.find('.dt-rows-disabled-note').toggle(multi);
-		if (multi) this.$body.find('#dt_rows').val(1);
-		this.toggle_dt_collector();
 	}
 
 	render_hood_options() {
@@ -786,32 +794,6 @@ class HVACCalculator {
 	}
 
 	/* โหมดดูดอากาศผ่านท่อ — หัวดูดหลายจุดกระจายตามความยาวห้อง เครื่องดูดอยู่ห่างออกไป */
-	// สร้างเส้นทางท่อเมนรอบห้อง (1–4 ด้าน) — คืนความยาวรวม + ฟังก์ชันแปลงระยะสะสม → พิกัด (x,y) ในกรอบห้อง
-	// เดินตามผนังตามเข็มนาฬิกา สลับด้าน "แรก" (ตามแกนที่เลือก) กับด้าน "สอง" (ตั้งฉาก) ทุกครั้งที่เลี้ยวมุม
-	build_perimeter_path(sides, axis, room_w, room_l) {
-		sides = Math.max(1, Math.min(4, sides));
-		const first = axis === 'w' ? room_w : room_l;
-		const second = axis === 'w' ? room_l : room_w;
-		const seg_lengths = [];
-		for (let i = 0; i < sides; i++) seg_lengths.push(i % 2 === 0 ? first : second);
-		const corner_pts = [[0, 0], [first, 0], [first, second], [0, second], [0, 0]];
-		const total_len = seg_lengths.reduce((a, b) => a + b, 0);
-		const path_pt = (s) => {
-			let acc = 0;
-			for (let i = 0; i < sides; i++) {
-				const segLen = seg_lengths[i];
-				if (s <= acc + segLen + 1e-9 || i === sides - 1) {
-					const t = segLen > 0 ? Math.min(1, Math.max(0, (s - acc) / segLen)) : 0;
-					const [x0, y0] = corner_pts[i], [x1, y1] = corner_pts[i + 1];
-					return [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t];
-				}
-				acc += segLen;
-			}
-			return corner_pts[sides];
-		};
-		return { total_len, path_pt, seg_lengths, corner_pts: corner_pts.slice(0, sides + 1), bb_w: first, bb_h: second };
-	}
-
 	calc_duct() {
 		const r = ROOM_TYPES.find(x => x.id === this.$body.find('#dt_room_type').val());
 		const room_w = this.num('dt_w');
@@ -861,12 +843,10 @@ class HVACCalculator {
 		const a_act_ft2 = Math.pow(side_in / 12, 2);
 		const v_act_ms = (q / a_act_ft2) / 196.85;
 
-		// แนวท่อเมน: เดินรอบห้อง 1–4 ด้าน (เลี้ยวตามผนัง) เริ่มจากด้านที่เลือก
+		// แนวท่อเมน: กระจายหัวดูดตามด้านยาวหรือด้านกว้างของห้อง
 		const axis = this.$body.find('#dt_axis').val() || 'l';
-		const sides = Math.max(1, Math.min(4, parseInt(this.$body.find('#dt_sides').val()) || 1));
-		const path = this.build_perimeter_path(sides, axis, room_w, room_l);
-		const run_m = path.total_len; // ความยาวรวมเส้นทางท่อเมน (รวมทุกด้านที่เดิน)
-		const perp_m = path.bb_h;     // ใช้กำหนดกรอบภาพเท่านั้น (bounding box ของห้อง)
+		const run_m = axis === 'w' ? room_w : room_l;   // ด้านที่ท่อเมนวิ่ง
+		const perp_m = axis === 'w' ? room_l : room_w;  // ด้านตั้งฉาก
 
 		// ตำแหน่งหัวดูดตามแนวท่อเมน (เหมือนกันทุกแถว)
 		const spacing = run_m / n;
@@ -940,7 +920,7 @@ class HVACCalculator {
 			design_note: 'ใช้ค่ามากที่สุดของทุกวิธีเพื่อประมาณขนาดพัดลมเบื้องต้น — Outdoor Air / ACH / Exhaust / Heat removal ทำหน้าที่ต่างกัน อาจต้องออกแบบเป็นคนละระบบ (เช่น OA กับ Exhaust) ไม่ใช่ตัวเลขเดียวตอบโจทย์ทุกข้อกำหนดเสมอไป',
 			duct_len_m,
 			manifold,
-			dist: { n, rows_n, n_total, q, row_cfm, side_in, face_ms, v_act_ms, spacing, positions, row_pitch, row_positions, fan_dist, duct_len_m, air_class, air_class_override, grilles, manifold, room_w, room_l, axis, sides, run_m, perp_m },
+			dist: { n, rows_n, n_total, q, row_cfm, side_in, face_ms, v_act_ms, spacing, positions, row_pitch, row_positions, fan_dist, duct_len_m, air_class, air_class_override, grilles, manifold, room_w, room_l, axis, run_m, perp_m },
 		};
 	}
 
@@ -957,8 +937,8 @@ class HVACCalculator {
 					<tr><td>ลมต่อหัวดูด</td><td class="text-right"><b>${Math.round(d.q).toLocaleString()} CFM</b> (≈ ${Math.round(d.q * 1.699).toLocaleString()} m³/h)</td></tr>
 					<tr><td>ขนาดหัวดูดแนะนำ (คอ)</td><td class="text-right"><b>${d.side_in}" × ${d.side_in}"</b> (≈ ${(d.side_in * 2.54).toFixed(0)} × ${(d.side_in * 2.54).toFixed(0)} cm)</td></tr>
 					<tr><td>ความเร็วหน้าหัวดูดจริง</td><td class="text-right">${d.v_act_ms.toFixed(1)} m/s (เป้าหมาย ${d.face_ms} m/s)</td></tr>
-					<tr><td>ระยะห่างหัวดูด (ตามเส้นทางท่อเมน${d.sides > 1 ? ` — เดินรอบห้อง ${d.sides} ด้าน` : ` — ด้าน${d.axis === 'w' ? 'กว้าง' : 'ยาว'}`} รวม ${d.run_m.toFixed(1)} m)</td><td class="text-right">${d.spacing.toFixed(2)} m — หัวแรก/สุดท้ายห่างขอบ ${(d.spacing / 2).toFixed(2)} m</td></tr>
-					<tr><td>ตำแหน่งหัวดูด${d.sides > 1 ? 'ตามเส้นทาง (ระยะสะสมจากจุดเริ่ม)' : 'จากขอบห้อง'} (m)</td><td class="text-right">${d.positions.join(', ')}</td></tr>
+					<tr><td>ระยะห่างหัวดูด (ตามแนวท่อเมน — ด้าน${d.axis === 'w' ? 'กว้าง' : 'ยาว'} ${d.run_m} m)</td><td class="text-right">${d.spacing.toFixed(2)} m — หัวแรก/สุดท้ายห่างขอบ ${(d.spacing / 2).toFixed(2)} m</td></tr>
+					<tr><td>ตำแหน่งหัวดูดจากขอบห้อง (m)</td><td class="text-right">${d.positions.join(', ')}</td></tr>
 					<tr><td>ความยาวท่อ Critical Path ถึงเครื่องดูด</td><td class="text-right">${d.duct_len_m.toFixed(1)} m (หัวไกลสุด→ขอบห้อง ${(d.duct_len_m - d.fan_dist).toFixed(2)} + ถึงพัดลม ${d.fan_dist.toFixed(1)})</td></tr>
 				</tbody>
 			</table>
@@ -976,14 +956,12 @@ class HVACCalculator {
 				ท่อตรงก่อนเข้าพัดลมอย่างน้อย 2–3 เท่าของ Ø ท่อ ลด System Effect (AMCA 201) •
 				ความเร็วหน้าหัวดูด ≤ 2.5–3 m/s และในท่อเมน 4–6 m/s เพื่อควบคุมเสียง •
 				จุดทิ้งอากาศห่างจากช่องรับอากาศเข้า (OA intake) ตามระยะขั้นต่ำ ASHRAE 62.1 Table 5-1
-				${d.sides > 1 ? `• ⚠️ เดินท่อ ${d.sides} ด้าน: การคำนวณ ESP ยังไม่รวมความสูญเสียที่มุมเลี้ยว (elbow loss ที่จุดเปลี่ยนด้าน) ควรเผื่อเพิ่มด้วยตนเองตามจำนวนมุมจริง (${d.sides - 1} มุม)` : ''}
 			</div>`;
 	}
 
 	// ผังท่อคร่าวๆ (มุมมองด้านบน): ห้อง + ท่อเมน + หัวดูด n จุด + เครื่องดูด (วาดตามสัดส่วน)
 	// แกนนอนของภาพ = แนวท่อเมน (เลือกได้ว่าด้านกว้างหรือด้านยาว)
 	duct_layout_svg(d) {
-		if (d.sides > 1) return this.duct_layout_svg_bent(d); // เดินท่อหลายด้าน — ใช้ผังแบบเลี้ยวมุมแยกต่างหาก
 		const W = 700, mg = 45;
 		const fan_w_px = 46; // พื้นที่สัญลักษณ์พัดลม
 		const innerW = W - 2 * mg - fan_w_px;
@@ -1066,69 +1044,6 @@ class HVACCalculator {
 				<line x1="${x0}" y1="${(H - 23).toFixed(1)}" x2="${x0}" y2="${(H - 13).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
 				<line x1="${room_x1.toFixed(1)}" y1="${(H - 23).toFixed(1)}" x2="${room_x1.toFixed(1)}" y2="${(H - 13).toFixed(1)}" stroke="#333" stroke-width="0.8"/>
 				<text x="${((x0 + room_x1) / 2).toFixed(1)}" y="${(H - 5).toFixed(1)}" text-anchor="middle" font-size="10">ด้าน${axis_th} ${run_m} m (แนวท่อเมน) • ด้าน${perp_th} ${perp_m} m — ตัวเลขใต้หัวดูด = ตำแหน่งจากฝั่งไกล (m)</text>
-			</svg>
-		</div>`;
-	}
-
-
-	// ผังท่อเมื่อเดินรอบห้องมากกว่า 1 ด้าน (มุมฉาก/ตัว U/รอบห้อง) — วาดตามเส้นทางจริงพร้อมมุมเลี้ยว
-	duct_layout_svg_bent(d) {
-		const path = this.build_perimeter_path(d.sides, d.axis, d.room_w, d.room_l);
-		const W = 700, mg = 50;
-		const fan_room_px = 70; // เผื่อระยะไปเครื่องดูดทางขวา
-		const availW = W - 2 * mg - fan_room_px;
-		const availH = 300;
-		const scale = Math.min(availW / path.bb_w, availH / path.bb_h);
-		const ox = mg, oy = 55;
-		const X = x => ox + x * scale;
-		const Y = y => oy + y * scale;
-
-		const room_outline = `<rect x="${X(0).toFixed(1)}" y="${Y(0).toFixed(1)}" width="${(path.bb_w * scale).toFixed(1)}" height="${(path.bb_h * scale).toFixed(1)}"
-			fill="#f8f8f8" stroke="#ccc" stroke-width="1" stroke-dasharray="4,3"/>`;
-
-		const poly_pts = path.corner_pts.map(([x, y]) => `${X(x).toFixed(1)},${Y(y).toFixed(1)}`).join(' ');
-		const duct_path_svg = `<polyline points="${poly_pts}" fill="none" stroke="#36c" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>`;
-
-		let grille_svg = '', pos_labels = '';
-		d.positions.forEach((p) => {
-			const [px, py] = path.path_pt(parseFloat(p));
-			const cx = X(px), cy = Y(py);
-			grille_svg += `<rect x="${(cx - 7).toFixed(1)}" y="${(cy - 7).toFixed(1)}" width="14" height="14"
-				fill="#fff" stroke="#0a6" stroke-width="1.5"/>
-				<line x1="${(cx - 4).toFixed(1)}" y1="${cy.toFixed(1)}" x2="${(cx + 4).toFixed(1)}" y2="${cy.toFixed(1)}" stroke="#0a6" stroke-width="1"/>
-				<line x1="${cx.toFixed(1)}" y1="${(cy - 4).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(cy + 4).toFixed(1)}" stroke="#0a6" stroke-width="1"/>`;
-			pos_labels += `<text x="${cx.toFixed(1)}" y="${(cy - 12).toFixed(1)}" text-anchor="middle" font-size="9" fill="#555">${p}</text>`;
-		});
-
-		const [ex, ey] = path.path_pt(path.total_len);
-		const fanX = X(ex) + Math.max(20, d.fan_dist * scale);
-		const fanY = Y(ey);
-		const fan_line = `<line x1="${X(ex).toFixed(1)}" y1="${Y(ey).toFixed(1)}" x2="${fanX.toFixed(1)}" y2="${fanY.toFixed(1)}" stroke="#36c" stroke-width="6"/>`;
-		const fan_symbol = `
-			<rect x="${fanX.toFixed(1)}" y="${(fanY - 20).toFixed(1)}" width="40" height="40" fill="#fff" stroke="#c33" stroke-width="1.5"/>
-			<circle cx="${(fanX + 20).toFixed(1)}" cy="${fanY.toFixed(1)}" r="12" fill="none" stroke="#c33" stroke-width="1.2"/>
-			<path d="M ${(fanX + 20).toFixed(1)} ${(fanY - 12).toFixed(1)} A 12 12 0 0 1 ${(fanX + 32).toFixed(1)} ${fanY.toFixed(1)}" fill="none" stroke="#c33" stroke-width="1.2"/>
-			<text x="${(fanX + 20).toFixed(1)}" y="${(fanY + 34).toFixed(1)}" text-anchor="middle" font-size="10" fill="#c33">เครื่องดูด</text>`;
-
-		const start_mark = `<circle cx="${X(0).toFixed(1)}" cy="${Y(0).toFixed(1)}" r="4" fill="#c33"/>
-			<text x="${X(0).toFixed(1)}" y="${(Y(0) - 10).toFixed(1)}" font-size="9" fill="#c33" text-anchor="middle">เริ่ม 0.00 m</text>`;
-
-		const H = Math.max(oy + path.bb_h * scale + 40, fanY + 60);
-		const sides_th = { 1: '1 ด้าน (ตรง)', 2: '2 ด้าน (มุมฉาก)', 3: '3 ด้าน (ตัว U)', 4: '4 ด้าน (รอบห้อง)' }[d.sides];
-
-		return `
-		<h6 class="mt-3">ผังท่อคร่าวๆ — มุมมองด้านบน (เดินท่อรอบห้อง ${sides_th})</h6>
-		<div style="margin-bottom:12px; page-break-inside:avoid;">
-			<svg width="${W}" height="${H.toFixed(0)}" viewBox="0 0 ${W} ${H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg"
-				style="border:1px solid #ddd; background:#fff; max-width:100%;">
-				${room_outline}
-				${duct_path_svg}
-				${grille_svg}
-				${pos_labels}
-				${start_mark}
-				${fan_line}
-				${fan_symbol}
-				<text x="${ox}" y="30" font-size="11" fill="#666">ห้อง ${d.room_w} × ${d.room_l} m — เส้นทางท่อรวม ${d.run_m.toFixed(1)} m • ตัวเลขข้างหัวดูด = ระยะสะสมตามเส้นทางจากจุดเริ่ม (m)</text>
 			</svg>
 		</div>`;
 	}
@@ -1366,26 +1281,20 @@ class HVACCalculator {
 		// ใช้ความเร็วผ่านรูจริงจากแถวที่ผู้ใช้ "เลือกใช้ ESP" ในตารางรูเจาะ ถ้ามี
 		// ไม่มีการบวกซ้ำอีกก้อนสำหรับ collar — ค่า C ตัวเดียวนี้ครอบคลุมทั้งทางเข้าฮู้ดและคอรูแล้ว
 		const entry_c = parseFloat(this.$body.find('#hood_entry_c').val()) || 0.5;
-		let v_entry_fpm, entry_governs, entry_estimated = false, selected_hole_txt = '';
+		let v_entry_fpm = v_fpm, entry_governs = 'ความเร็วในท่อ', entry_estimated = false, selected_hole_txt = '';
 		if (is_hood) {
 			const sel = holes_ctx ? this.custom_holes.find(h => h.selected) : null;
 			if (sel) {
-				// มีรูที่เลือก → ใช้ความเร็วผ่านรูนั้นโดยตรง (ไม่เทียบ/ไม่ผสมกับความเร็วในท่อเมน
-				// เพราะความสูญเสียในท่อเมนถูกคิดแยกผ่าน friction + fittings อยู่แล้ว)
 				const o = this.compute_hole_option(sel.n, sel.d_in, holes_ctx);
-				v_entry_fpm = o.v * 196.85;
-				entry_governs = 'ความเร็วผ่านรูที่เลือก';
+				const v_hole_fpm = o.v * 196.85;
+				v_entry_fpm = v_hole_fpm; entry_governs = 'ความเร็วผ่านรูที่เลือก';
 				selected_hole_txt = ` (จากรูที่เลือก: ${sel.n} รู Ø${sel.d_in % 1 ? sel.d_in.toFixed(1) : sel.d_in}" @ ${o.v.toFixed(1)} m/s)`;
 			} else {
-				// ยังไม่ได้เลือกรู → ใช้ความเร็วเป้าหมาย (ลมพัดลม) เป็นค่าประมาณ
 				const fan_ms_entry = this.num('fan_velocity') || 8;
-				v_entry_fpm = fan_ms_entry * 196.85;
-				entry_governs = 'ความเร็วประมาณจากลมพัดลม';
+				const v_fan_fpm = fan_ms_entry * 196.85;
+				v_entry_fpm = v_fan_fpm; entry_governs = 'ความเร็วประมาณจากลมพัดลม';
 				entry_estimated = true;
 			}
-		} else {
-			v_entry_fpm = v_fpm;
-			entry_governs = 'ความเร็วในท่อ';
 		}
 		const VP_entry = Math.pow(v_entry_fpm / 4005, 2);
 		const hood_entry = entry_c * VP_entry;
@@ -1570,7 +1479,7 @@ class HVACCalculator {
 			<td class="text-right">${o.v.toFixed(1)}</td>
 			<td class="text-right">${o.spacing.toFixed(2)}</td>
 			<td class="text-right">${(o.total_area_m2 * 10000).toFixed(0)} cm²<br><span class="text-muted small">${(o.area_ratio * 100).toFixed(1)}% ของฝาชี</span></td>
-			<td class="text-right" title="ค่าอ้างอิงเท่านั้น — ถ้าแถวนี้ถูกเลือกใช้ ESP ระบบจะคำนวณ Entry loss จาก C ที่กำหนด × VP ของรูนี้โดยตรง ไม่ได้บวกตัวเลขนี้ซ้ำเข้า ESP อีกก้อน">${o.collar_loss.toFixed(2)}</td>
+			<td class="text-right">${o.collar_loss.toFixed(2)}</td>
 			<td>${status}</td>
 		</tr>`;
 	}
@@ -1638,7 +1547,7 @@ class HVACCalculator {
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<title>HVAC Air Calculation Report</title>
+<title>HVAC Selection Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -1667,8 +1576,8 @@ class HVACCalculator {
 <body>
 	<div class="report-header">
 		<div>
-			<div style="font-size:18px; font-weight:bold;">รายงานการคำนวณระบบระบายอากาศ</div>
-			<div class="text-muted">HVAC Air Calculation Report (CFM / Static Pressure)</div>
+			<div style="font-size:18px; font-weight:bold;">รายงานการคำนวณและเลือกพัดลมระบบระบายอากาศ</div>
+			<div class="text-muted">HVAC Selection Report (CFM / Static Pressure / Motor)</div>
 		</div>
 		<div class="text-muted" style="text-align:right;">
 			วันที่: ${now}<br>ผู้คำนวณ: ${user}
@@ -1691,6 +1600,99 @@ class HVACCalculator {
 		w.document.close();
 	}
 
+
+	apply_fan_eff_default() {
+		const defaults = { backward: 65, forward: 55, axial: 55, mixed: 60 };
+		const type = this.$body.find('#sel_fan_type').val();
+		this.$body.find('#sel_fan_eff').val(defaults[type] || 60);
+	}
+
+	selection_analysis(cfm, sp) {
+		const fan_eff = Math.max(0.20, Math.min(0.90, this.num('sel_fan_eff') / 100 || 0.65));
+		const motor_eff = Math.max(0.50, Math.min(0.98, this.num('sel_motor_eff') / 100 || 0.88));
+		const margin = Math.max(0, this.num('sel_motor_margin')) / 100;
+		const bhp = cfm * sp.total / (6356 * fan_eff);
+		const shaft_kw = bhp * 0.7457;
+		const input_kw = shaft_kw / motor_eff;
+		const req_hp = bhp * (1 + margin);
+		const hp_sizes = [0.25,0.33,0.5,0.75,1,1.5,2,3,5,7.5,10,15,20,25,30,40,50,60,75,100];
+		const motor_hp = hp_sizes.find(x => x >= req_hp) || Math.ceil(req_hp / 10) * 10;
+		const selection_sp = sp.total;
+
+		const system = this.$body.find('#sel_system_type').val() || 'comfort';
+		const ranges = {
+			comfort: [3, 6], general_exhaust: [5, 8], kitchen: [7.6, 10], industrial: [10, 18]
+		};
+		const vr = ranges[system];
+		const velocity_state = sp.v_ms < vr[0] ? 'ต่ำกว่าช่วงแนะนำ' : sp.v_ms > vr[1] ? 'สูงกว่าช่วงแนะนำ' : 'อยู่ในช่วงแนะนำ';
+
+		let aspect_ratio = null;
+		if (this.$body.find('#duct_shape').val() === 'rect') {
+			const w = this.num('duct_w'), h = this.num('duct_h');
+			aspect_ratio = Math.max(w, h) / Math.max(0.001, Math.min(w, h));
+		}
+
+		const se_items = [
+			['se_inlet_elbow', 'ข้องอชิดทางเข้าพัดลม'],
+			['se_short_inlet', 'ท่อตรงก่อนพัดลมน้อยกว่า 2D'],
+			['se_abrupt_transition', 'Transition ชิดพัดลม'],
+			['se_discharge_obstruction', 'ทางออกมีสิ่งกีดขวางชิดพัดลม'],
+		].filter(([id]) => this.$body.find('#'+id).is(':checked')).map(x => x[1]);
+		const system_effect_risk = se_items.length === 0 ? 'ต่ำ' : se_items.length === 1 ? 'ปานกลาง' : 'สูง';
+
+		let noise_score = 0;
+		if (sp.v_ms > vr[1]) noise_score += 2;
+		else if (sp.v_ms > vr[1] * 0.9) noise_score += 1;
+		if (sp.total > 2.0) noise_score += 2;
+		else if (sp.total > 1.2) noise_score += 1;
+		if (se_items.length >= 2) noise_score += 1;
+		const noise_risk = noise_score >= 4 ? 'สูงมาก' : noise_score >= 3 ? 'สูง' : noise_score >= 1 ? 'ปานกลาง' : 'ต่ำ';
+
+		const velocities = Array.from(new Set([vr[0], (vr[0]+vr[1])/2, vr[1], this.num('fan_velocity') || 8])).sort((a,b)=>a-b);
+		const scenarios = velocities.map(v => {
+			const fpm = v * 196.85;
+			const area = cfm / fpm;
+			const dia = Math.sqrt(4 * area / Math.PI) * 12;
+			const rect_a = Math.sqrt(area * 144);
+			const rect_w = Math.ceil((rect_a * 1.15) / 2) * 2;
+			const rect_h = Math.ceil((area * 144 / rect_w) / 2) * 2;
+			return { v, dia, rect_w, rect_h };
+		});
+
+		const assumptions = [
+			'อากาศมาตรฐานและท่อเหล็กสังกะสี',
+			'ค่าฟิลเตอร์ใช้ค่าที่ผู้ใช้กรอก',
+			'กำลังมอเตอร์เป็นค่าประมาณจาก CFM, ESP และประสิทธิภาพที่กำหนด',
+			'ต้องเลือกพัดลมจาก Fan Curve ที่ผ่านการทดสอบ AMCA 210',
+			'ยังไม่รวม branch-level elbow tracking และ duct leakage โดยละเอียด',
+		];
+		return { fan_eff, motor_eff, margin, bhp, shaft_kw, input_kw, req_hp, motor_hp, selection_sp, system, vr, velocity_state, aspect_ratio, se_items, system_effect_risk, noise_risk, scenarios, assumptions };
+	}
+
+	render_selection(sel, cfm, sp) {
+		const scenario_rows = sel.scenarios.map(s => `<tr><td class="text-right">${s.v.toFixed(1)}</td><td class="text-right">Ø ${s.dia.toFixed(0)}"</td><td class="text-right">${s.rect_w}" × ${s.rect_h}"</td></tr>`).join('');
+		const aspect = sel.aspect_ratio == null ? '— (ท่อกลม)' : `${sel.aspect_ratio.toFixed(2)}:1 ${sel.aspect_ratio > 4 ? '<span class="text-danger">⚠️ เกิน 4:1</span>' : '✅'}`;
+		return `
+			<h6 class="mt-3">Fan Duty Point & Motor Estimation</h6>
+			<table class="table table-sm table-bordered"><tbody>
+				<tr><td>Required duty point</td><td class="text-right"><b>${Math.round(cfm).toLocaleString()} CFM @ ${sp.total.toFixed(2)} in.wg</b></td></tr>
+				<tr><td>Fan efficiency / Motor efficiency</td><td class="text-right">${(sel.fan_eff*100).toFixed(0)}% / ${(sel.motor_eff*100).toFixed(0)}%</td></tr>
+				<tr><td>Brake horsepower (BHP)</td><td class="text-right">${sel.bhp.toFixed(2)} HP</td></tr>
+				<tr><td>Shaft power / Estimated input</td><td class="text-right">${sel.shaft_kw.toFixed(2)} / ${sel.input_kw.toFixed(2)} kW</td></tr>
+				<tr class="font-weight-bold"><td>Recommended motor</td><td class="text-right">${sel.motor_hp} HP (รวม margin ${(sel.margin*100).toFixed(0)}%)</td></tr>
+			</tbody></table>
+			<h6>System Quality Checks</h6>
+			<table class="table table-sm table-bordered"><tbody>
+				<tr><td>Duct velocity range</td><td class="text-right">${sp.v_ms.toFixed(1)} m/s — ${sel.velocity_state} (${sel.vr[0]}–${sel.vr[1]} m/s)</td></tr>
+				<tr><td>Rectangular aspect ratio</td><td class="text-right">${aspect}</td></tr>
+				<tr><td>Noise risk indicator</td><td class="text-right"><b>${sel.noise_risk}</b></td></tr>
+				<tr><td>System effect risk</td><td class="text-right"><b>${sel.system_effect_risk}</b>${sel.se_items.length ? `<br><span class="small text-muted">${sel.se_items.join(' • ')}</span>` : ''}</td></tr>
+			</tbody></table>
+			<h6>Duct Size Comparison</h6>
+			<table class="table table-sm table-bordered"><thead><tr><th class="text-right">Velocity (m/s)</th><th class="text-right">Round</th><th class="text-right">Rectangular ≈ 1.15:1</th></tr></thead><tbody>${scenario_rows}</tbody></table>
+			<div class="alert alert-secondary small"><b>Calculation assumptions:</b><br>${sel.assumptions.map(x => '• '+x).join('<br>')}</div>`;
+	}
+
 	fan_recommendation(cfm, sp) {
 		if (this.mode === 'hood') return 'พัดลมหอยโข่ง Backward/Upblast Kitchen Exhaust Fan (ทนไขมัน, UL 762) — เลือกจากกราฟที่ผ่านการทดสอบ AMCA 210';
 		if (sp < 0.5) return 'พัดลมแบบ Axial / Wall Fan เพียงพอ (SP ต่ำ)';
@@ -1704,6 +1706,7 @@ class HVACCalculator {
 
 	render_result(res, sp) {
 		const cmh = res.design_cfm * 1.699;
+		const selection = this.selection_analysis(res.design_cfm, sp);
 		const rows_cfm = res.rows.map(r =>
 			`<tr><td>${r.label}</td><td class="text-right">${Math.round(r.cfm).toLocaleString()}</td></tr>`).join('');
 		const rows_sp = sp.rows.map(r =>
@@ -1712,7 +1715,7 @@ class HVACCalculator {
 		const head = this.mode === 'room'
 			? `${res.room.th} • ${res.room_w} × ${res.room_l} m (${res.area_m2.toFixed(1)} m²) • ${res.ach} ACH`
 			: this.mode === 'duct'
-				? `${res.room.th} • ${res.room_w} × ${res.room_l} m (${res.area_m2.toFixed(1)} m²) • ${res.dist.n_total} หัวดูด${res.dist.sides > 1 ? ` (${res.dist.sides} ด้าน)` : ''} • เครื่องดูดห่าง ${res.dist.fan_dist} m`
+				? `${res.room.th} • ${res.room_w} × ${res.room_l} m (${res.area_m2.toFixed(1)} m²) • ${res.dist.n} หัวดูด • เครื่องดูดห่าง ${res.dist.fan_dist} m`
 				: `${res.hood_th} • ${res.duty_th} • ${res.shape_th} ${res.dims_th}`;
 
 		this.$body.find('#hvac_result').html(`
@@ -1772,6 +1775,7 @@ class HVACCalculator {
 				</tbody>
 			</table>
 
+			${this.render_selection(selection, res.design_cfm, sp)}
 			<div class="alert alert-info small mb-0">
 				<b>คำแนะนำพัดลม:</b> ${this.fan_recommendation(res.design_cfm, sp.total)}<br>
 				เลือกพัดลมที่จุดทำงาน ${Math.round(res.design_cfm).toLocaleString()} CFM @ ${sp.total.toFixed(2)} in.wg

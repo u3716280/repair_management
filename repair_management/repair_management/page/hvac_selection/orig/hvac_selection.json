@@ -1,0 +1,20 @@
+{
+ "content": null,
+ "creation": "2026-07-12 19:35:23.496884",
+ "docstatus": 0,
+ "doctype": "Page",
+ "icon": "fa fa-wind",
+ "idx": 0,
+ "modified": "2026-07-12 19:35:23.496884",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "hvac-selection",
+ "owner": "Administrator",
+ "page_name": "hvac-selection",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "HVAC CFM Selection"
+}
