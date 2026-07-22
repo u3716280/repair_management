@@ -1,6 +1,0 @@
-app_name = "hvac_calc"
-app_title = "HVAC Calculator"
-app_publisher = "Your Company"
-app_description = "HVAC Air Calculator - CFM & Static Pressure (ASHRAE / AMCA)"
-app_email = "admin@example.com"
-app_license = "MIT"

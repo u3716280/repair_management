@@ -106,13 +106,30 @@ class HVACCalculator {
 	}
 
 	make() {
-		this.$body.html(this.template());
 		this.bind();
+		this.render_form();
+	}
+
+	// วาดฟอร์มทั้งหมดเป็นค่าเริ่มต้น — ใช้ทั้งตอนเปิดหน้าและตอนกดล้างข้อมูล (event เป็น delegated บน $body จึงไม่ต้อง bind ซ้ำ)
+	render_form() {
+		this.$body.html(this.template());
 		this.render_room_options();
 		this.render_hood_options();
 		this.render_filter_options();
 		this.toggle_hood_shape();
 		this.switch_mode('room');
+	}
+
+	// ล้างข้อมูลทั้งหมดกลับค่าเริ่มต้น (ฟอร์มทุกโหมด, รูเจาะกำหนดเอง, พัดลมที่เลือก, ผลลัพธ์)
+	reset_all() {
+		frappe.confirm('ล้างข้อมูลทั้งหมดและเริ่มใหม่ใช่หรือไม่? ค่าที่กรอกไว้ทุกโหมด รวมถึงรูเจาะกำหนดเองและพัดลมที่เลือกจะถูกล้าง', () => {
+			this.custom_holes = [];
+			this.fan_sel = { enabled: false, model: '', cfm_raw: 0, cfm_unit: 'cfm', sp_raw: 0, sp_unit: 'inwg', v: 0 };
+			this.last_res = null;
+			this.last_sp = null;
+			this.render_form();
+			frappe.show_alert({ message: 'ล้างข้อมูลเรียบร้อย', indicator: 'green' });
+		});
 	}
 
 	template() {
@@ -456,6 +473,7 @@ class HVACCalculator {
 
 			<div class="text-center mb-4">
 				<button class="btn btn-primary btn-lg px-5" id="btn_calc">คำนวณ</button>
+				<button class="btn btn-default btn-lg px-4 ml-2" id="btn_reset" title="ล้างค่าที่กรอกทุกโหมดกลับเป็นค่าเริ่มต้น">ล้างข้อมูล (Reset)</button>
 			</div>
 
 			<div id="hvac_result"></div>
@@ -465,6 +483,7 @@ class HVACCalculator {
 	bind() {
 		this.$body.on('click', '.hvac-mode', (e) => this.switch_mode($(e.currentTarget).data('mode')));
 		this.$body.on('click', '#btn_calc', () => this.calculate());
+		this.$body.on('click', '#btn_reset', () => this.reset_all());
 		this.$body.on('change', '#room_type', () => this.update_room_hint());
 		this.$body.on('change', '#hood_type', () => this.render_duty_options());
 		this.$body.on('change', '#hood_shape', () => this.toggle_hood_shape());
@@ -475,6 +494,12 @@ class HVACCalculator {
 		this.$body.on('change', '#dt_sides', () => this.toggle_dt_sides());
 		this.$body.on('click', '#btn_print', () => this.print_result());
 		this.$body.on('click', '#btn_add_hole', () => this.add_custom_hole());
+		this.$body.on('click', '.hole-del', (e) => this.remove_custom_hole(parseInt($(e.currentTarget).data('idx'))));
+		this.$body.on('change', '#custom_hole_shape', (e) => {
+			const is_rect = $(e.target).val() === 'rect';
+			this.$body.find('#custom_hole_d').css('display', is_rect ? 'none' : '');
+			this.$body.find('#custom_hole_rect_inputs').css('display', is_rect ? 'inline-flex' : 'none');
+		});
 		this.$body.on('click', '#air_class_info_toggle', (e) => { e.preventDefault(); this.$body.find('#air_class_info_panel').slideToggle(150); });
 		this.$body.on('change', '.esp-hole-radio', (e) => this.select_esp_hole(parseInt($(e.target).data('idx'))));
 		this.$body.on('change', '#duct_shape', () => this.toggle_duct_shape());
@@ -1179,22 +1204,19 @@ class HVACCalculator {
 	}
 
 	/* รูเจาะฝาชี — โหมดกำหนดเองเท่านั้น (ไม่มีตัวเลือกอัตโนมัติ)
-	 * เกณฑ์ตรวจแถวที่ผู้ใช้กำหนดเอง:
-	 * (1) ลมต่อรูไม่เกิน 1/3 ของลมรวม (ฮู้ดยาว > 2 m)
-	 * (2) ฮู้ดยาว > 2 m เริ่มที่ 3 รูขึ้นไป / ฮู้ด ≤ 2 m ไม่เกิน 4 รู
-	 * (3) รูไม่เกินขนาดท่อ — บังคับเฉพาะไม่มีท่อทับหลัง (รูต่อท่อสาขาตรง);
+	 * เกณฑ์ตรวจแถวที่ผู้ใช้กำหนดเอง (6 ข้อ):
+	 * (1) รูไม่เกินขนาดท่อ — บังคับเฉพาะไม่มีท่อทับหลัง (รูต่อท่อสาขาตรง);
 	 *     มีท่อทับหลัง: รูเป็นช่องเข้าท่อทับหลัง ไม่ถูกจำกัดด้วยขนาดท่อเมน
-	 * (4) ขนาดรู ≤ 60% ของความกว้างฝาชี
-	 * (5) จำนวนรูตามช่วงแนะนำของความยาวฝาชี
-	 * (6) ความเร็วผ่านรู 2.54–10 m/s (7) พื้นที่รูรวม > 12% ของพื้นที่ฝาชี
-	 * (8) ระยะห่างรู ≤ 2 m
+	 * (2) ขนาดรู ≤ 60% ของความกว้างฝาชี
+	 * (3) จำนวนรูตามช่วงแนะนำของความยาวฝาชี:
+	 *     <1.5m→1–2 | 1.5–2.5→2–4 | 2.5–3→3–6 | 3–4→5–8 | 4–5→6–10 | >5m→≥9 รู
+	 * (4) ความเร็วผ่านรู 2.54–10 m/s (5) พื้นที่รูรวม > 12% ของพื้นที่ฝาชี
+	 * (6) ระยะห่างรู ≤ 2 m
+	 * หมายเหตุ: เกณฑ์เดิม "ลม/รู ≤ 1/3 ของลมรวม" และ "ฝาชี > 2 m เริ่ม 3 รู / ≤ 2 m ไม่เกิน 4 รู"
+	 * ถูกยกเลิกแล้ว — ใช้ตารางช่วงแนะนำตามความยาวฝาชีเป็นตัวคุมจำนวนรูแทน
 	 */
 	calc_hood_holes(cfm, L_m, W_m) {
 		const V_LO = 2.54, V_HI = 10; // เกณฑ์ความเร็วผ่านรู (IMC 500 fpm – เพดานเสียง)
-		const long_hood = L_m > 2;
-		const use_third_rule = long_hood;     // ฮู้ดยาวเพิ่มเกณฑ์ 1/3
-		const long_min = 3;                   // ฮู้ดยาว > 2 m เริ่มที่ 3 รู
-		const n_cap = long_hood ? 99 : 4;     // ฮู้ด ≤ 2 m เจาะไม่เกิน 4 รู
 		const AREA_MIN = 0.12;                // พื้นที่รูรวมต้องมากกว่า 12% ของพื้นที่ฝาชี
 
 		const has_plenum = this.$body.find('#hood_plenum').is(':checked');
@@ -1202,22 +1224,23 @@ class HVACCalculator {
 		const duct_limit_in = has_plenum ? 0 : this.get_duct_limit_in();
 
 		// ตารางจำนวนรูแนะนำตามความยาวฝาชี (เส้นกึ่งกลาง)
-		const range_of = L => L <= 1.5 ? [2, 2] : L <= 2.5 ? [3, 3] : L <= 3.0 ? [4, 5]
-			: L <= 4.0 ? [5, 7] : L <= 5.0 ? [7, 8] : [9, 12];
+		// < 1.5 m → 1–2 รู | 1.5–2.5 → 2–4 | 2.5–3 → 3–6 | 3–4 → 5–8 | 4–5 → 6–10 | > 5 m → ≥ 9 รู (ไม่จำกัดเพดาน)
+		const range_of = L => L < 1.5 ? [1, 2] : L <= 2.5 ? [2, 4] : L <= 3.0 ? [3, 6]
+			: L <= 4.0 ? [5, 8] : L <= 5.0 ? [6, 10] : [9, Infinity];
 		const [tbl_min, tbl_max] = range_of(L_m);
 
 		return {
 			options: [], // ไม่มีตัวเลือกอัตโนมัติ — ผู้ใช้เพิ่มแถวกำหนดเองเท่านั้น
 			duct_limit_in, V_LO, V_HI, cfm, L_m, W_m,
-			long_min, n_cap, use_third_rule, AREA_MIN, has_plenum,
+			AREA_MIN, has_plenum,
 			tbl_min, tbl_max,
 			face_area_m2: L_m * W_m,
 		};
 	}
 
 	// วาดผังตำแหน่งรูเจาะ (มุมมองด้านบน มาตราส่วนจริง) — รองรับฝาชีตรง / L / U
-	// รูเจาะกระจายตามเส้นกึ่งกลาง; รูปทรงรูตามท่อลม (กลม/เหลี่ยมพื้นที่เท่ากัน)
-	hole_position_svg(cfg, ctx, duct_shape) {
+	// รูเจาะกระจายตามเส้นกึ่งกลาง; รูปทรงรูตามที่ผู้ใช้กำหนดต่อแถว (กลม Ø หรือเหลี่ยม w × h ขนาดจริง)
+	hole_position_svg(cfg, ctx) {
 		const shape = ctx.shape || 'I';
 		const legs = ctx.legs || { A: ctx.L_m, B: 0, C: 0 };
 		const Wd = ctx.W_m; // ความกว้าง(ลึก)ฝาชี
@@ -1254,10 +1277,11 @@ class HVACCalculator {
 		const X = x => ox + x * scale;
 		const Y = y => oy + (bb_h - y) * scale; // กลับแกน y ให้ล่าง = 0
 
-		const is_rect_hole = duct_shape === 'rect';
-		const s_in = cfg.d_in * Math.sqrt(Math.PI) / 2;
-		const r = Math.max(2, (cfg.d_in * 0.0254 / 2) * scale);
-		const hs = Math.max(2, (s_in * 0.0254 / 2) * scale);
+		// รูปทรงรูตามที่ผู้ใช้กำหนดในแถวนั้น — เหลี่ยมวาดขนาดจริง w × h (w ตามแนวยาว, h ตามแนวกว้างฝาชี)
+		const is_rect_hole = cfg.shape === 'rect';
+		const r = Math.max(2, ((cfg.d_in || 0) * 0.0254 / 2) * scale);
+		const hw = Math.max(2, ((cfg.w_in || 0) * 0.0254 / 2) * scale);
+		const hh = Math.max(2, ((cfg.h_in || 0) * 0.0254 / 2) * scale);
 
 		const rects_svg = rects.map(rc =>
 			`<rect x="${X(rc[0]).toFixed(1)}" y="${Y(rc[1] + rc[3]).toFixed(1)}" width="${(rc[2] * scale).toFixed(1)}" height="${(rc[3] * scale).toFixed(1)}"
@@ -1271,19 +1295,18 @@ class HVACCalculator {
 			const [px, py] = path_pt(Math.min(s, ctx.L_m));
 			const cx = X(px), cyy = Y(py);
 			if (is_rect_hole) {
-				shapes += `<rect x="${(cx - hs).toFixed(1)}" y="${(cyy - hs).toFixed(1)}" width="${(hs * 2).toFixed(1)}" height="${(hs * 2).toFixed(1)}"
+				shapes += `<rect x="${(cx - hw).toFixed(1)}" y="${(cyy - hh).toFixed(1)}" width="${(hw * 2).toFixed(1)}" height="${(hh * 2).toFixed(1)}"
 					fill="#fff" stroke="#333" stroke-width="1.5"/>`;
 			} else {
 				shapes += `<circle cx="${cx.toFixed(1)}" cy="${cyy.toFixed(1)}" r="${r.toFixed(1)}" fill="#fff" stroke="#333" stroke-width="1.5"/>`;
 			}
+			const lo = is_rect_hole ? Math.max(hw, hh) : r; // ระยะเว้น label ตามขนาดรู
 			shapes += `<line x1="${(cx - 4).toFixed(1)}" y1="${cyy.toFixed(1)}" x2="${(cx + 4).toFixed(1)}" y2="${cyy.toFixed(1)}" stroke="#333" stroke-width="0.8"/>
 				<line x1="${cx.toFixed(1)}" y1="${(cyy - 4).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(cyy + 4).toFixed(1)}" stroke="#333" stroke-width="0.8"/>`;
-			labels += `<text x="${(cx + (r + 6)).toFixed(1)}" y="${(cyy - r - 4).toFixed(1)}" font-size="10" fill="#555">${s.toFixed(2)}</text>`;
+			labels += `<text x="${(cx + (lo + 6)).toFixed(1)}" y="${(cyy - lo - 4).toFixed(1)}" font-size="10" fill="#555">${s.toFixed(2)}</text>`;
 		}
 
-		const size_desc = is_rect_hole
-			? `รูเหลี่ยม ${s_in.toFixed(1)}" × ${s_in.toFixed(1)}" (≈ ${(s_in * 2.54).toFixed(0)} × ${(s_in * 2.54).toFixed(0)} cm) — พื้นที่เทียบเท่ารูกลม Ø ${cfg.d_in % 1 ? cfg.d_in.toFixed(1) : cfg.d_in}"`
-			: `รูกลม Ø ${cfg.d_in % 1 ? cfg.d_in.toFixed(1) : cfg.d_in}" (≈ ${(cfg.d_in * 2.54).toFixed(0)} cm)`;
+		const size_desc = `${is_rect_hole ? 'รูเหลี่ยม' : 'รูกลม'} ${this.hole_size_txt(cfg)}`;
 		const dims_txt = shape === 'L' ? `A=${A}, B=${B}, กว้าง=${Wd} m`
 			: shape === 'U' ? `A=${A}, B=${B}, C=${C}, กว้าง=${Wd} m`
 			: `ยาว=${A}, กว้าง=${Wd} m`;
@@ -1300,7 +1323,7 @@ class HVACCalculator {
 				${rects_svg}
 				${shapes}
 				${labels}
-				<text x="${ox}" y="${oy - 12}" font-size="11" fill="#666">ฝาชี${shape === 'I' ? 'ตรง' : 'รูปตัว ' + shape} ${dims_txt} • ตัวเลขข้างรู = ระยะตามเส้นกึ่งกลาง (m) • รูปทรงรูตามท่อ${is_rect_hole ? 'เหลี่ยม' : 'กลม'} • มาตราส่วนตามจริง</text>
+				<text x="${ox}" y="${oy - 12}" font-size="11" fill="#666">ฝาชี${shape === 'I' ? 'ตรง' : 'รูปตัว ' + shape} ${dims_txt} • ตัวเลขข้างรู = ระยะตามเส้นกึ่งกลาง (m) • รูเจาะ${is_rect_hole ? 'เหลี่ยม (ขนาดจริง)' : 'กลม'} • มาตราส่วนตามจริง</text>
 			</svg>
 		</div>`;
 	}
@@ -1376,10 +1399,10 @@ class HVACCalculator {
 			if (sel) {
 				// มีรูที่เลือก → ใช้ความเร็วผ่านรูนั้นโดยตรง (ไม่เทียบ/ไม่ผสมกับความเร็วในท่อเมน
 				// เพราะความสูญเสียในท่อเมนถูกคิดแยกผ่าน friction + fittings อยู่แล้ว)
-				const o = this.compute_hole_option(sel.n, sel.d_in, holes_ctx);
+				const o = this.compute_hole_option(sel, holes_ctx);
 				v_entry_fpm = o.v * 196.85;
 				entry_governs = 'ความเร็วผ่านรูที่เลือก';
-				selected_hole_txt = ` (จากรูที่เลือก: ${sel.n} รู Ø${sel.d_in % 1 ? sel.d_in.toFixed(1) : sel.d_in}" @ ${o.v.toFixed(1)} m/s)`;
+				selected_hole_txt = ` (จากรูที่เลือก: ${sel.n} รู ${this.hole_size_txt(o)} @ ${o.v.toFixed(1)} m/s)`;
 			} else {
 				// ยังไม่ได้เลือกรู → ใช้ความเร็วเป้าหมาย (ลมพัดลม) เป็นค่าประมาณ
 				const fan_ms_entry = this.num('fan_velocity') || 8;
@@ -1453,23 +1476,41 @@ class HVACCalculator {
 		};
 	}
 
-	// คำนวณค่าทั้งหมดของรู 1 ตัวเลือก (n รู × ขนาด d_in) จาก ctx ปัจจุบัน — ใช้ทั้งตอนเพิ่มแถวและตอน re-render
-	compute_hole_option(n, d_in, ctx) {
+	// คำนวณค่าทั้งหมดของรู 1 ตัวเลือก จาก ctx ปัจจุบัน — ใช้ทั้งตอนเพิ่มแถวและตอน re-render
+	// hole = { n, shape: 'circle'|'rect', d_in (กลม), w_in, h_in (เหลี่ยม: w ตามแนวยาวฝาชี, h ตามแนวกว้าง) }
+	compute_hole_option(hole, ctx) {
+		const n = hole.n;
+		const shape = hole.shape || 'circle';
 		const q = ctx.cfm / n;
-		const a = Math.PI / 4 * Math.pow(d_in / 12, 2);
-		const v = (q / a) / 196.85;
+		const area_ft2 = shape === 'rect'
+			? (hole.w_in / 12) * (hole.h_in / 12)
+			: Math.PI / 4 * Math.pow(hole.d_in / 12, 2);
+		const v = (q / area_ft2) / 196.85;
 		const spacing = ctx.L_m / n;
 		const VP = Math.pow(v * 196.85 / 4005, 2);
 		const collar_loss = 0.5 * VP;
-		const hole_area_m2 = Math.PI / 4 * Math.pow(d_in * 0.0254, 2);
+		const hole_area_m2 = area_ft2 * 0.09290304;
+		// เส้นผ่านศูนย์กลางเทียบเท่าเชิงพื้นที่ (นิ้ว) — ใช้เทียบกับขนาดท่อสาขา
+		const d_eq = shape === 'rect' ? Math.sqrt(4 * area_ft2 / Math.PI) * 12 : hole.d_in;
+		// มิติตามแนวกว้างฝาชี — ใช้ตรวจเกณฑ์ 60% ของความกว้าง
+		const across_in = shape === 'rect' ? hole.h_in : hole.d_in;
 		return {
-			n, d_in, q, v, spacing, collar_loss,
+			n, shape, d_in: hole.d_in, w_in: hole.w_in, h_in: hole.h_in, d_eq,
+			q, v, spacing, collar_loss,
 			pass_v: v >= ctx.V_LO && v <= ctx.V_HI,
 			pass_sp: spacing <= 2.0,
 			total_area_m2: n * hole_area_m2,
 			area_ratio: ctx.face_area_m2 ? (n * hole_area_m2) / ctx.face_area_m2 : 0,
-			d_to_w: ctx.W_m ? (d_in * 0.0254) / ctx.W_m : 0,
+			d_to_w: ctx.W_m ? (across_in * 0.0254) / ctx.W_m : 0,
 		};
+	}
+
+	// ข้อความขนาดรูสำหรับแสดงผล เช่น Ø 10" (25 cm) หรือ 10" × 6" (25 × 15 cm)
+	hole_size_txt(o) {
+		const f = x => x % 1 ? x.toFixed(1) : x;
+		return (o.shape || 'circle') === 'rect'
+			? `${f(o.w_in)}" × ${f(o.h_in)}" (${(o.w_in * 2.54).toFixed(0)} × ${(o.h_in * 2.54).toFixed(0)} cm)`
+			: `Ø ${f(o.d_in)}" (${(o.d_in * 2.54).toFixed(0)} cm)`;
 	}
 
 	render_holes(holes) {
@@ -1479,7 +1520,7 @@ class HVACCalculator {
 			: '';
 		// วนคำนวณใหม่จากรายการที่ผู้ใช้เพิ่มไว้ (this.custom_holes) ด้วย ctx ปัจจุบันเสมอ — กันค่าค้างเมื่อเปลี่ยนขนาดฝาชี/CFM
 		const rows = this.custom_holes.map((h, i) => {
-			const o = this.compute_hole_option(h.n, h.d_in, holes);
+			const o = this.compute_hole_option(h, holes);
 			return this.hole_row_html(o, i, h.selected);
 		}).join('');
 		const has_selected = this.custom_holes.some(h => h.selected);
@@ -1493,17 +1534,25 @@ class HVACCalculator {
 				<thead><tr>
 					<th class="text-center">ใช้ ESP</th>
 					<th class="hole-print-col text-center">พิมพ์</th>
-					<th>จำนวนรู</th><th class="text-right">ขนาดรูกลม</th>
+					<th>จำนวนรู</th><th class="text-right">ขนาดรู</th>
 					<th class="text-right">CFM/รู</th><th class="text-right">ความเร็ว (m/s)</th>
 					<th class="text-right">ระยะห่าง (m)</th><th class="text-right">พื้นที่รูรวม</th>
 					<th class="text-right">ค่าอ้างอิง 0.5×VP (in.wg)</th><th>สถานะ</th>
+					<th class="hole-del-col text-center">ลบ</th>
 				</tr></thead>
 				<tbody>${rows}</tbody>
 			</table>
 			<div class="form-inline mb-2 hole-custom-form">
 				<label class="mr-2">กำหนดเอง:</label>
 				<input type="number" class="form-control form-control-sm mr-1" id="custom_hole_n" value="2" min="1" max="20" style="width:70px" title="จำนวนรู"> รู ×
-				<input type="number" class="form-control form-control-sm mx-1" id="custom_hole_d" value="10" step="0.5" min="1" style="width:80px" title="ขนาดรู">
+				<select class="form-control form-control-sm mx-1" id="custom_hole_shape" style="width:95px" title="รูปทรงรู">
+					<option value="circle">รูกลม Ø</option><option value="rect">รูเหลี่ยม</option>
+				</select>
+				<input type="number" class="form-control form-control-sm mx-1" id="custom_hole_d" value="10" step="0.5" min="1" style="width:80px" title="ขนาดรูกลม (เส้นผ่านศูนย์กลาง)">
+				<span id="custom_hole_rect_inputs" style="display:none; align-items:center;">
+					<input type="number" class="form-control form-control-sm mx-1" id="custom_hole_w" value="10" step="0.5" min="1" style="width:75px" title="ด้านตามแนวยาวฝาชี (กว้างรู)"> ×
+					<input type="number" class="form-control form-control-sm mx-1" id="custom_hole_h" value="6" step="0.5" min="1" style="width:75px" title="ด้านตามแนวกว้างฝาชี (สูงรู)">
+				</span>
 				<select class="form-control form-control-sm mr-2" id="custom_hole_unit" style="width:70px">
 					<option value="in">in</option><option value="cm">cm</option>
 				</select>
@@ -1515,15 +1564,13 @@ class HVACCalculator {
 			<p class="small text-muted mb-2">
 				<b>ข้อพิจารณาการเปิดรู (ตรวจอัตโนมัติทุกแถวที่กำหนดเอง):</b>
 				<span class="text-muted">— เกณฑ์ด้านล่างเป็นแนวทางออกแบบภายในของแอปนี้ ไม่ใช่ข้อกำหนดที่คัดลอกมาจาก IMC/ASHRAE โดยตรง ควรตรวจสอบกับวิศวกรและมาตรฐานฉบับเต็มก่อนใช้งานจริง</span>
-				(1) ลมต่อรูไม่เกิน 1/3 ของลมรวม${holes.use_third_rule ? ` (ฝาชียาว > 2 m — เพดาน ${Math.round(holes.cfm / 3).toLocaleString()} CFM/รู)` : ' (เฉพาะฝาชียาว > 2 m)'}
-				(2) จำนวนรูขั้นต่ำ: ฝาชี > 2 m เริ่มที่ 3 รู / ฝาชี ≤ 2 m ไม่เกิน 4 รู (ปัจจุบัน ${holes.use_third_rule ? 'ต้อง ≥ 3 รู' : `ไม่เกิน ${holes.n_cap} รู`})
-				(3) ${holes.has_plenum ? 'มีท่อทับหลัง — รูเป็นช่องเข้าท่อทับหลัง ไม่จำกัดตามขนาดท่อเมน (ปากต่อท่อทับหลัง→ท่อเมนต้องพอดีกับท่อที่กำหนดแยกต่างหาก)' : `ไม่มีท่อทับหลัง — รูไม่เกินขนาดท่อสาขาที่กำหนด (Ø ≤ ${holes.duct_limit_in ? holes.duct_limit_in.toFixed(1) : '-'}\")`}
-				(4) ขนาดรู ≤ 60% ของความกว้างฝาชี ${holes.W_m} m
-				(5) จำนวนรูตามความยาวฝาชี ${holes.L_m.toFixed(1)} m → แนะนำ ${holes.tbl_min || '-'}${holes.tbl_max && holes.tbl_max !== holes.tbl_min ? '–' + holes.tbl_max : ''} รู
-				(ตาราง: ≤1.5m→2 | 1.5–2.5→3 | 2.5–3→4–5 | 3–4→5–7 | 4–5→7–8 | >5m→≥9 รู)
-				(6) ความเร็วผ่านรู ${holes.V_LO}–${holes.V_HI} m/s (ขั้นต่ำ IMC 500 fpm ถึงเพดานเสียง)
-				(7) พื้นที่รูรวมต่อพื้นที่ฝาชี ${(holes.face_area_m2 || 0).toFixed(1)} m² ต้องมากกว่า ${Math.round(holes.AREA_MIN * 100)}%
-				(8) ระยะห่างระหว่างศูนย์กลางรู ≤ 2 m — ป้องกันจุดอับลมกึ่งกลางระหว่างรูที่แรงดูดอ่อน
+				(1) ${holes.has_plenum ? 'มีท่อทับหลัง — รูเป็นช่องเข้าท่อทับหลัง ไม่จำกัดตามขนาดท่อเมน (ปากต่อท่อทับหลัง→ท่อเมนต้องพอดีกับท่อที่กำหนดแยกต่างหาก)' : `ไม่มีท่อทับหลัง — รูไม่เกินขนาดท่อสาขาที่กำหนด (Ø ≤ ${holes.duct_limit_in ? holes.duct_limit_in.toFixed(1) : '-'}\\")`}
+				(2) ขนาดรู ≤ 60% ของความกว้างฝาชี ${holes.W_m} m
+				(3) จำนวนรูตามความยาวฝาชี ${holes.L_m.toFixed(1)} m → แนะนำ ${holes.tbl_max === Infinity ? '≥ ' + holes.tbl_min : (holes.tbl_min || '-') + (holes.tbl_max && holes.tbl_max !== holes.tbl_min ? '–' + holes.tbl_max : '')} รู
+				(ตาราง: &lt;1.5m→1–2 | 1.5–2.5→2–4 | 2.5–3→3–6 | 3–4→5–8 | 4–5→6–10 | &gt;5m→≥9 รู)
+				(4) ความเร็วผ่านรู ${holes.V_LO}–${holes.V_HI} m/s (ขั้นต่ำ IMC 500 fpm ถึงเพดานเสียง)
+				(5) พื้นที่รูรวมต่อพื้นที่ฝาชี ${(holes.face_area_m2 || 0).toFixed(1)} m² ต้องมากกว่า ${Math.round(holes.AREA_MIN * 100)}%
+				(6) ระยะห่างระหว่างศูนย์กลางรู ≤ 2 m — ป้องกันจุดอับลมกึ่งกลางระหว่างรูที่แรงดูดอ่อน
 				&nbsp;&nbsp;&nbsp;(รูแรก/รูสุดท้ายวางห่างขอบฝาชีครึ่งหนึ่งของระยะห่างนี้ เพื่อให้แรงดูดคลุมถึงขอบฝาชีเท่าๆ กัน)
 				${limit_txt ? '• ' + limit_txt : ''}
 				• ติ๊กช่อง "พิมพ์" เฉพาะแถวที่ต้องการให้แสดงในรายงาน — วงกลม "ใช้ ESP" มีได้แถวเดียวเท่านั้น
@@ -1533,39 +1580,31 @@ class HVACCalculator {
 	hole_row_html(o, idx, selected) {
 		const ctx = this.last_holes_ctx;
 		let status;
-		// (1) ลมต่อรู ≤ 1/3 ของลมรวม (ฮู้ด > 2 m)
-		if (ctx.use_third_rule && o.q > ctx.cfm / 3 + 0.01) {
-			status = `⚠️ ลมต่อรู ${Math.round(o.q).toLocaleString()} CFM เกิน 1/3 ของลมรวม (${Math.round(ctx.cfm / 3).toLocaleString()} CFM)`;
-		// (2) จำนวนรูขั้นต่ำ/สูงสุด: ฮู้ด > 2 m เริ่มที่ 3 รู / ฮู้ด ≤ 2 m ไม่เกิน 4 รู
-		} else if (ctx.use_third_rule && o.n < ctx.long_min) {
-			status = `⚠️ ฮู้ดยาว > 2 m ควรเริ่มที่ ${ctx.long_min} รูขึ้นไป`;
-		} else if (!ctx.use_third_rule && ctx.n_cap && o.n > ctx.n_cap) {
-			status = `⚠️ ฮู้ดยาว ≤ 2 m ไม่ควรเกิน ${ctx.n_cap} รู`;
-		// (3) รูไม่เกินขนาดท่อ — เฉพาะกรณีไม่มีท่อทับหลัง (รูต่อท่อสาขาตรง)
-		} else if (!ctx.has_plenum && ctx.duct_limit_in > 0 && o.d_in > ctx.duct_limit_in + 0.01) {
-			status = `⚠️ รูใหญ่กว่าท่อ (Ø${o.d_in}" > ท่อ Ø${ctx.duct_limit_in.toFixed(1)}") — ไม่มีท่อทับหลัง ต้องต่อท่อสาขาโดยตรง`;
-		// (4) ขนาดรู ≤ 60% ของความกว้างฝาชี
+		// (1) รูไม่เกินขนาดท่อ — เฉพาะกรณีไม่มีท่อทับหลัง (รูต่อท่อสาขาตรง) — รูเหลี่ยมเทียบด้วย Ø เทียบเท่าเชิงพื้นที่
+		if (!ctx.has_plenum && ctx.duct_limit_in > 0 && o.d_eq > ctx.duct_limit_in + 0.01) {
+			status = `⚠️ รูใหญ่กว่าท่อ (${o.shape === 'rect' ? `Øเทียบเท่า ${o.d_eq.toFixed(1)}"` : `Ø${o.d_in}"`} > ท่อ Ø${ctx.duct_limit_in.toFixed(1)}") — ไม่มีท่อทับหลัง ต้องต่อท่อสาขาโดยตรง`;
+		// (2) ขนาดรู (ด้านตามแนวกว้าง) ≤ 60% ของความกว้างฝาชี
 		} else if (o.d_to_w > 0.6) {
-			status = `⚠️ รู Ø${o.d_in}" เกิน 60% ของความกว้างฝาชี ${ctx.W_m} m`;
-		// (5) จำนวนรูตามความยาวฝาชี
+			status = `⚠️ รู ${o.shape === 'rect' ? `ด้านกว้าง ${o.h_in % 1 ? o.h_in.toFixed(1) : o.h_in}"` : `Ø${o.d_in}"`} เกิน 60% ของความกว้างฝาชี ${ctx.W_m} m`;
+		// (3) จำนวนรูตามความยาวฝาชี
 		} else if (ctx.tbl_min && (o.n < ctx.tbl_min || o.n > ctx.tbl_max)) {
-			status = `⚠️ นอกช่วงแนะนำ ${ctx.tbl_min}–${ctx.tbl_max} รู (ฝาชียาว ${ctx.L_m.toFixed(1)} m)`;
-		// (6) ความเร็วผ่านรู 2.54–10 m/s
+			status = `⚠️ นอกช่วงแนะนำ ${ctx.tbl_max === Infinity ? '≥ ' + ctx.tbl_min : ctx.tbl_min + '–' + ctx.tbl_max} รู (ฝาชียาว ${ctx.L_m.toFixed(1)} m)`;
+		// (4) ความเร็วผ่านรู 2.54–10 m/s
 		} else if (o.v > 10) {
 			status = `🔊 ความเร็ว ${o.v.toFixed(1)} m/s เกิน 10 m/s เสียงดัง`;
 		} else if (o.v < ctx.V_LO) {
 			status = `⚠️ ความเร็ว ${o.v.toFixed(1)} m/s ต่ำกว่าขั้นต่ำ IMC 2.54 m/s`;
-		// (7) พื้นที่รูรวม > 12% ของพื้นที่ฝาชี
+		// (5) พื้นที่รูรวม > 12% ของพื้นที่ฝาชี
 		} else if (o.area_ratio <= ctx.AREA_MIN + 0.001) {
 			status = `⚠️ พื้นที่รูรวม ${(o.area_ratio * 100).toFixed(1)}% ไม่เกิน ${Math.round(ctx.AREA_MIN * 100)}% ของฝาชี`;
-		// (8) ระยะห่างระหว่างรู ≤ 2 m
+		// (6) ระยะห่างระหว่างรู ≤ 2 m
 		} else if (!o.pass_sp) {
 			status = `⚠️ ระยะห่างรู ${o.spacing.toFixed(2)} m เกิน 2 m (จุดกึ่งกลางระหว่างรูดูดลมอ่อน เสี่ยงจุดอับ)`;
 		} else {
 			status = '✅';
 		}
-		const size_txt = `Ø ${o.d_in % 1 ? o.d_in.toFixed(1) : o.d_in}" (${(o.d_in * 2.54).toFixed(0)} cm)`;
-		return `<tr data-idx="${idx}" data-n="${o.n}" data-d="${o.d_in}" data-spacing="${o.spacing}" data-v="${o.v}">
+		const size_txt = this.hole_size_txt(o);
+		return `<tr data-idx="${idx}" data-n="${o.n}" data-shape="${o.shape}" data-d="${o.d_in || 0}" data-w="${o.w_in || 0}" data-h="${o.h_in || 0}" data-spacing="${o.spacing}" data-v="${o.v}">
 			<td class="text-center"><input type="radio" name="esp_hole_select" class="esp-hole-radio" data-idx="${idx}" ${selected ? 'checked' : ''}></td>
 			<td class="hole-print-col text-center"><input type="checkbox" class="hole-print" checked></td>
 			<td>${o.n} รู${selected ? ' <span class="badge badge-primary">ใช้คำนวณ ESP</span>' : ''}</td>
@@ -1576,6 +1615,7 @@ class HVACCalculator {
 			<td class="text-right">${(o.total_area_m2 * 10000).toFixed(0)} cm²<br><span class="text-muted small">${(o.area_ratio * 100).toFixed(1)}% ของฝาชี</span></td>
 			<td class="text-right" title="ค่าอ้างอิงเท่านั้น — ถ้าแถวนี้ถูกเลือกใช้ ESP ระบบจะคำนวณ Entry loss จาก C ที่กำหนด × VP ของรูนี้โดยตรง ไม่ได้บวกตัวเลขนี้ซ้ำเข้า ESP อีกก้อน">${o.collar_loss.toFixed(2)}</td>
 			<td>${status}</td>
+			<td class="hole-del-col text-center"><button class="btn btn-xs btn-default hole-del" data-idx="${idx}" title="ลบแถวนี้">−</button></td>
 		</tr>`;
 	}
 
@@ -1583,13 +1623,28 @@ class HVACCalculator {
 		const ctx = this.last_holes_ctx;
 		if (!ctx) return;
 		const n = parseInt(this.$body.find('#custom_hole_n').val()) || 0;
-		let d_in = parseFloat(this.$body.find('#custom_hole_d').val()) || 0;
-		if (this.$body.find('#custom_hole_unit').val() === 'cm') d_in = d_in / 2.54;
-		if (n <= 0 || d_in <= 0) { frappe.msgprint(__('กรุณากรอกจำนวนและขนาดรู')); return; }
-
+		const shape = this.$body.find('#custom_hole_shape').val() || 'circle';
+		const to_in = this.$body.find('#custom_hole_unit').val() === 'cm' ? (x) => x / 2.54 : (x) => x;
 		const selected = this.custom_holes.length === 0; // แถวแรกเลือกใช้ ESP ให้อัตโนมัติ
-		this.custom_holes.push({ n, d_in, selected });
+
+		if (shape === 'rect') {
+			const w_in = to_in(parseFloat(this.$body.find('#custom_hole_w').val()) || 0);
+			const h_in = to_in(parseFloat(this.$body.find('#custom_hole_h').val()) || 0);
+			if (n <= 0 || w_in <= 0 || h_in <= 0) { frappe.msgprint(__('กรุณากรอกจำนวนรูและขนาดรูเหลี่ยม (กว้าง × สูง) ให้ครบ')); return; }
+			this.custom_holes.push({ n, shape: 'rect', w_in, h_in, selected });
+		} else {
+			const d_in = to_in(parseFloat(this.$body.find('#custom_hole_d').val()) || 0);
+			if (n <= 0 || d_in <= 0) { frappe.msgprint(__('กรุณากรอกจำนวนและขนาดรู')); return; }
+			this.custom_holes.push({ n, shape: 'circle', d_in, selected });
+		}
 		this.calculate(); // คำนวณใหม่ทั้งชุด — ESP จะสะท้อนแถวที่เพิ่ม/เลือกทันที
+	}
+
+	// ลบแถวรูเจาะ — ถ้าลบแถวที่ผูก ESP อยู่ ระบบจะกลับไปประมาณจากลมพัดลม พร้อมเตือนให้เลือกแถวใหม่
+	remove_custom_hole(idx) {
+		if (idx < 0 || idx >= this.custom_holes.length) return;
+		this.custom_holes.splice(idx, 1);
+		this.calculate();
 	}
 
 	select_esp_hole(idx) {
@@ -1612,6 +1667,7 @@ class HVACCalculator {
 		// เอาเฉพาะแถวรูเจาะที่ติ๊ก "พิมพ์" + ตัดคอลัมน์ checkbox และฟอร์มกำหนดเองออก
 		$result.find('.hole-print:not([checked])').closest('tr').remove();
 		$result.find('.hole-print-col').remove();
+		$result.find('.hole-del-col').remove(); // ตัดคอลัมน์ปุ่มลบแถวออกจากรายงาน
 		$result.find('.hole-custom-form').remove();
 		$result.find('.fan-sel-form').remove(); // ตัด checkbox/ฟอร์มกรอกพัดลม — คงเฉพาะตารางผลเปรียบเทียบ (ถ้าเปิดใช้)
 
@@ -1625,15 +1681,17 @@ class HVACCalculator {
 				if ($(this).find('.hole-print').is(':checked')) {
 					configs.push({
 						n: parseInt($(this).data('n')),
-						d_in: parseFloat($(this).data('d')),
+						shape: $(this).data('shape') || 'circle',
+						d_in: parseFloat($(this).data('d')) || 0,
+						w_in: parseFloat($(this).data('w')) || 0,
+						h_in: parseFloat($(this).data('h')) || 0,
 						spacing: parseFloat($(this).data('spacing')),
 					});
 				}
 			});
 			if (configs.length) {
-				const duct_shape = this.$body.find('#duct_shape').val();
 				positions_html = `<h6 style="margin-top:16px;">ตำแหน่งรูเจาะฝาชี — มุมมองด้านบน (วัดถึงกึ่งกลางรู จากขอบซ้าย)</h6>`
-					+ configs.map(c => this.hole_position_svg(c, ctx, duct_shape)).join('');
+					+ configs.map(c => this.hole_position_svg(c, ctx)).join('');
 			}
 		}
 		const now = frappe.datetime.now_datetime();
