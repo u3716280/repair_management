@@ -17,39 +17,27 @@ frappe.pages['hvac-calculator'].on_page_load = function (wrapper) {
 
 /* ---------------- ข้อมูลมาตรฐาน ---------------- */
 
-// ตารางแนะนำปริมาณการระบายอากาศ (Air Change Method) — จากเอกสาร "การคำนวณปริมาณลม" (Nicotra Gebhardt)
-// + กลุ่ม "แนวปฏิบัติเพิ่มเติม" จากชุดเดิม ซึ่งมีข้อมูล ASHRAE 62.1:
-//   rp = cfm/person, ra = cfm/ft², density = คน/1000 ft², exhaust_ra = cfm/ft² (Exhaust ขั้นต่ำ)
-// ปริมาณลม = ปริมาตรห้อง × Air Change — ประเภทห้องชุดนี้ไม่มีข้อมูล Rp/Ra ของ ASHRAE 62.1
-// จึงคำนวณด้วยวิธี ACH (+ วิธีระบายความร้อนถ้ากรอก) โดยไม่แสดงแถว Vbz
-const REF_ACH = 'ตารางแนะนำปริมาณการระบายอากาศ (Air Change Method)';
+// ASHRAE 62.1 Table 6-1 (ตัวแทนค่า) + ACH ที่ใช้ออกแบบทั่วไป
+// rp = cfm/person, ra = cfm/ft², density = คน/1000 ft², ach = Air Changes/Hour (ช่วงออกแบบ)
 const ROOM_TYPES = [
-	{ id: 'showroom',   th: 'ห้องแสดงสินค้า',       ach: [6, 20],   ref: REF_ACH },
-	{ id: 'meeting',    th: 'ห้องประชุม',            ach: [4, 15],   ref: REF_ACH },
-	{ id: 'bakery',     th: 'ร้านทำขนม',             ach: [20, 60],  ref: REF_ACH },
-	{ id: 'bank',       th: 'ธนาคาร',                ach: [6, 20],   ref: REF_ACH },
-	{ id: 'bar',        th: 'บาร์บริการเครื่องดื่ม',   ach: [15, 30],  ref: REF_ACH },
-	{ id: 'foundry',    th: 'กระบวนการหล่อ',         ach: [15, 60],  ref: REF_ACH },
-	{ id: 'garage',     th: 'อู่ซ่อม',                ach: [6, 30],   ref: REF_ACH },
-	{ id: 'lab',        th: 'ห้องปฏิบัติการ',         ach: [12, 30],  ref: REF_ACH },
-	{ id: 'glass',      th: 'โรงงานกระจก',           ach: [30, 60],  ref: REF_ACH },
-	{ id: 'gymnasium',  th: 'โรงพลศึกษา',            ach: [6, 30],   ref: REF_ACH },
-	{ id: 'production', th: 'ห้องผลิต',              ach: [30, 60],  ref: REF_ACH },
-	{ id: 'project',    th: 'ห้องวางโครงการ',         ach: [20, 60],  ref: REF_ACH },
-	{ id: 'recreation', th: 'ห้องสันทนาการ',          ach: [7.5, 30], ref: REF_ACH },
-	{ id: 'residence',  th: 'ที่อยู่อาศัย',            ach: [12, 30],  ref: REF_ACH },
-	{ id: 'dining',     th: 'ห้องอาหาร',             ach: [6, 12],   ref: REF_ACH },
-	// ---- ประเภทเพิ่มเติมจากชุดเดิม (มีข้อมูล Rp/Ra/Exhaust ของ ASHRAE 62.1) ----
-	{ id: 'kitchen', th: 'ครัวพาณิชย์ (Commercial Kitchen)', rp: 7.5, ra: 0.12, density: 20, ach: [20, 30], exhaust_ra: 0.70, group: 'แนวปฏิบัติเพิ่มเติม',
-		ref: 'ASHRAE 62.1 Table 6-2 (Exhaust 0.7 cfm/ft²)' },
-	{ id: 'machine', th: 'ห้องเครื่องจักรปล่อยความร้อน (Machine/Equipment)', rp: 0, ra: 0.06, density: 0, ach: [15, 25], group: 'แนวปฏิบัติเพิ่มเติม',
-		ref: 'แนวปฏิบัติ heat-driven — ควรตรวจสอบจากภาระความร้อนจริง (Q = H/(ρ·Cp·ΔT))' },
-	{ id: 'factory', th: 'โรงงาน (Factory / Manufacturing)', rp: 10, ra: 0.18, density: 7, ach: [6, 10], group: 'แนวปฏิบัติเพิ่มเติม',
-		ref: 'ASHRAE 62.1 Table 6-1 (Manufacturing, ไม่ใช้สารอันตราย)' },
-	{ id: 'dusty', th: 'ห้องที่มีฝุ่น (Dusty/Particulate)', rp: 0, ra: 0.30, density: 0, ach: [10, 15], exhaust_ra: 0.75, group: 'แนวปฏิบัติเพิ่มเติม',
-		ref: 'แนวปฏิบัติ — งานฝุ่น/ขัด/เจียร ควรมี local exhaust ที่แหล่งกำเนิดร่วมด้วย ไม่พึ่งเจือจางอย่างเดียว' },
-	{ id: 'odor',  th: 'ห้องที่มีกลิ่น (Odor-generating)', rp: 5, ra: 0.24, density: 0, ach: [8, 12], exhaust_ra: 0.50, group: 'แนวปฏิบัติเพิ่มเติม',
-		ref: 'แนวปฏิบัติ — เช่น ห้องเก็บสารเคมี/สี/ขยะ ควรพิจารณา Carbon filter ก่อนทิ้ง' },
+	{ id: 'office',      th: 'สำนักงาน (Office)',                rp: 5,    ra: 0.06, density: 5,   ach: [4, 6],   ref: 'ASHRAE 62.1 Table 6-1' },
+	{ id: 'conference',  th: 'ห้องประชุม (Conference)',           rp: 5,    ra: 0.06, density: 50,  ach: [6, 10],  ref: 'ASHRAE 62.1 Table 6-1' },
+	{ id: 'classroom',   th: 'ห้องเรียน (Classroom 9+)',          rp: 10,   ra: 0.12, density: 35,  ach: [4, 6],   ref: 'ASHRAE 62.1 Table 6-1' },
+	{ id: 'dining',      th: 'ร้านอาหาร–โซนนั่งทาน (Dining)',      rp: 7.5,  ra: 0.18, density: 70,  ach: [8, 12],  ref: 'ASHRAE 62.1 Table 6-1' },
+	{ id: 'kitchen',     th: 'ครัวพาณิชย์ (Commercial Kitchen)',  rp: 7.5,  ra: 0.12, density: 20,  ach: [20, 30], exhaust_ra: 0.70, ref: 'ASHRAE 62.1 Table 6-2 (Exhaust 0.7 cfm/ft²)' },
+	{ id: 'toilet',      th: 'ห้องน้ำรวม (Public Toilet)',        rp: 0,    ra: 0,    density: 0,   ach: [10, 15], exhaust_fixture: 70, ref: 'ASHRAE 62.1 Table 6-2 (50–70 cfm/โถ)' },
+	{ id: 'locker',      th: 'ห้องล็อกเกอร์/เปลี่ยนเสื้อ',         rp: 0,    ra: 0,    density: 0,   ach: [8, 12],  exhaust_ra: 0.50, ref: 'ASHRAE 62.1 Table 6-2 (0.5 cfm/ft²)' },
+	{ id: 'gym',         th: 'ฟิตเนส (Gym / Weight Room)',        rp: 20,   ra: 0.06, density: 10,  ach: [8, 12],  ref: 'ASHRAE 62.1 Table 6-1' },
+	{ id: 'retail',      th: 'ร้านค้า (Retail)',                  rp: 7.5,  ra: 0.12, density: 15,  ach: [4, 8],   ref: 'ASHRAE 62.1 Table 6-1' },
+	{ id: 'lobby',       th: 'ล็อบบี้ (Lobby)',                   rp: 5,    ra: 0.06, density: 10,  ach: [4, 6],   ref: 'ASHRAE 62.1 Table 6-1' },
+	{ id: 'server',      th: 'ห้อง Server / Electrical',          rp: 0,    ra: 0.06, density: 0,   ach: [15, 20], ref: 'ควรออกแบบหลักจาก sensible heat load ของอุปกรณ์ (กรอกช่อง "ความร้อนที่ปล่อย") — ACH/VRP เป็นเพียงค่าประมาณสำรอง' },
+	{ id: 'lab',         th: 'ห้องปฏิบัติการ (Laboratory)',       rp: 10,   ra: 0.18, density: 25,  ach: [6, 12],  ref: 'ASHRAE 62.1 / Lab guide' },
+	{ id: 'machine',     th: 'ห้องเครื่องจักรปล่อยความร้อน (Machine/Equipment)', rp: 0, ra: 0.06, density: 0, ach: [15, 25], ref: 'แนวปฏิบัติ heat-driven — ควรตรวจสอบจากภาระความร้อนจริง (Q = H/(ρ·Cp·ΔT))' },
+	{ id: 'factory',     th: 'โรงงาน (Factory / Manufacturing)', rp: 10, ra: 0.18, density: 7, ach: [6, 10], ref: 'ASHRAE 62.1 Table 6-1 (Manufacturing, ไม่ใช้สารอันตราย)' },
+	{ id: 'dusty',       th: 'ห้องที่มีฝุ่น (Dusty/Particulate)', rp: 0,  ra: 0.30, density: 0, ach: [10, 15], exhaust_ra: 0.75, ref: 'แนวปฏิบัติ — งานฝุ่น/ขัด/เจียร ควรมี local exhaust ที่แหล่งกำเนิดร่วมด้วย ไม่พึ่งเจือจางอย่างเดียว' },
+	{ id: 'odor',        th: 'ห้องที่มีกลิ่น (Odor-generating)', rp: 5,  ra: 0.24, density: 0, ach: [8, 12],  exhaust_ra: 0.50, ref: 'แนวปฏิบัติ — เช่น ห้องเก็บสารเคมี/สี/ขยะ ควรพิจารณา Carbon filter ก่อนทิ้ง' },
+	{ id: 'parking',     th: 'ที่จอดรถในอาคาร (Enclosed Parking)', rp: 0,    ra: 0,    density: 0,   ach: [6, 10],  exhaust_ra: 0.75, ref: 'ASHRAE 62.1 Table 6-2 (0.75 cfm/ft²)' },
+	{ id: 'laundry',     th: 'ห้องซักรีด (Laundry)',              rp: 0,    ra: 0,    density: 0,   ach: [10, 15], exhaust_ra: 0.50, ref: 'ASHRAE 62.1 Table 6-2' },
 ];
 
 // อัตราดูดอากาศฮู้ดครัว (ฮู้ดไม่มี listing) — IMC 507.13 / ASHRAE 154
@@ -71,11 +59,11 @@ const DUTY_TH = {
 
 // ASHRAE 62.1 Air Class ของอากาศที่ดูด (1 = สะอาด นำกลับได้, 4 = ห้ามหมุนเวียน ต้องทิ้งนอกอาคาร)
 const AIR_CLASS = {
-	bakery: 2, bar: 2, garage: 2, gymnasium: 2, production: 2, machine: 2, factory: 2,
-	foundry: 3, glass: 3, dusty: 3, odor: 3,
+	toilet: 2, locker: 2, laundry: 2, parking: 2, gym: 2,
+	machine: 2, factory: 2,
+	odor: 3, dusty: 3,
 	kitchen: 4, lab: 4,
-	// อื่นๆ (ห้องแสดงสินค้า/ประชุม/ธนาคาร/วางโครงการ/สันทนาการ/ที่อยู่อาศัย/ห้องอาหาร) = Class 1
-	// หมายเหตุ: จับคู่โดยประมาณจากลักษณะกิจกรรม — ปรับได้จากช่อง Air Class กำหนดเอง
+	// อื่นๆ = Class 1
 };
 const AIR_CLASS_TH = {
 	1: 'Class 1 — อากาศปนเปื้อนต่ำ นำกลับมาหมุนเวียนได้',
@@ -118,72 +106,8 @@ class HVACCalculator {
 	}
 
 	make() {
-		this.ensure_styles();
 		this.bind();
 		this.render_form();
-	}
-
-	// ฉีดฟอนต์ + CSS ธีม "Shop Drawing" ครั้งเดียวต่อหน้า — scoped ใต้ .hvac-calc ไม่กระทบส่วนอื่นของ Desk
-	ensure_styles() {
-		if (document.getElementById('hvac-shopdrawing-style')) return;
-		const fonts = document.createElement('link');
-		fonts.rel = 'stylesheet';
-		fonts.href = 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap';
-		document.head.appendChild(fonts);
-		const st = document.createElement('style');
-		st.id = 'hvac-shopdrawing-style';
-		st.textContent = `
-.hvac-calc {
-	--hv-blue: #1A5D9F;   /* Supply Blue — สีท่อลมจ่าย */
-	--hv-steel: #39434E;  /* เหล็กแผ่น */
-	--hv-zinc: #EDF0F2;   /* สังกะสีเคลือบ */
-	--hv-line: #C9D4DD;   /* เส้นกระดาษเขียนแบบ */
-	--hv-pass: #1E7F4F; --hv-warn: #B26A00; --hv-fail: #B3261E;
-	--hv-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-	font-family: 'IBM Plex Sans Thai', 'Sarabun', var(--font-stack, sans-serif);
-	color: var(--hv-steel);
-}
-.hvac-calc .frappe-card { border: 1px solid var(--hv-line); border-radius: 2px; box-shadow: none; background: #fff; }
-.hvac-calc h5 { font-weight: 600; font-size: 15px; letter-spacing: .01em; color: var(--hv-steel);
-	border-bottom: 1px solid var(--hv-line); padding-bottom: 7px; position: relative; }
-.hvac-calc h5::before { content: ''; position: absolute; left: 0; bottom: -1px; width: 42px; height: 2px; background: var(--hv-blue); }
-.hvac-calc h6 { font-weight: 600; font-size: 13.5px; color: var(--hv-steel); }
-.hvac-calc label { font-size: 12px; font-weight: 500; color: #5B6673; margin-bottom: 4px; }
-.hvac-calc .form-control { border-radius: 2px; border-color: var(--hv-line); color: var(--hv-steel); }
-.hvac-calc .form-control:focus { border-color: var(--hv-blue); box-shadow: 0 0 0 2px rgba(26,93,159,.18); }
-.hvac-calc input[type=number] { font-family: var(--hv-mono); font-variant-numeric: tabular-nums; }
-.hvac-calc .btn { border-radius: 2px; }
-.hvac-calc .btn:focus-visible { outline: 2px solid var(--hv-blue); outline-offset: 1px; }
-.hvac-calc .btn-primary { background: var(--hv-blue); border-color: var(--hv-blue); }
-.hvac-calc .btn-primary:hover { background: #164F88; border-color: #164F88; }
-.hvac-calc .btn-default { background: #fff; border: 1px solid var(--hv-line); color: var(--hv-steel); }
-.hvac-calc .btn-default:hover { background: var(--hv-zinc); }
-.hvac-calc .btn-group .hvac-mode { font-weight: 500; }
-.hvac-calc .text-primary { color: var(--hv-blue) !important; }
-.hvac-calc .badge-primary { background: var(--hv-blue); border-radius: 2px; }
-.hvac-calc table.table { border-color: var(--hv-line); }
-.hvac-calc table.table th { background: var(--hv-zinc); border-color: var(--hv-line); font-weight: 600; font-size: 12px; color: #4A5560; }
-.hvac-calc table.table td { border-color: var(--hv-line); }
-.hvac-calc table.table td.text-right { font-family: var(--hv-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
-.hvac-calc .alert { border-radius: 2px; }
-.hvac-calc .text-success { color: var(--hv-pass) !important; }
-.hvac-calc .text-danger { color: var(--hv-fail) !important; }
-/* --- Signature: แถบมาตรวัดผลลัพธ์ --- */
-.hvac-calc .hvac-gauge { display: flex; background: var(--hv-steel); color: #fff; border-radius: 2px; overflow: hidden; }
-.hvac-calc .hvac-gauge-cell { flex: 1; text-align: center; padding: 14px 10px 12px; border-left: 1px solid rgba(255,255,255,.14); }
-.hvac-calc .hvac-gauge-cell:first-child { border-left: none; }
-.hvac-calc .hvac-gauge-num { font-family: var(--hv-mono); font-variant-numeric: tabular-nums;
-	font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: -.01em; }
-.hvac-calc .hvac-gauge-unit { font-size: 15px; font-weight: 500; color: #B9C4CE; }
-.hvac-calc .hvac-gauge-label { font-size: 12px; color: #B9C4CE; margin-top: 2px; }
-.hvac-calc .hvac-gauge-sub { font-size: 11px; color: #8E9AA6; font-family: var(--hv-mono); }
-.hvac-calc .hvac-gauge-scale { color: #DAE2E8; margin: 4px auto 2px; max-width: 200px; }
-.hvac-calc .hvac-gauge-scale svg { display: block; width: 100%; height: 22px; }
-@media (max-width: 576px) { .hvac-calc .hvac-gauge { flex-direction: column; }
-	.hvac-calc .hvac-gauge-cell { border-left: none; border-top: 1px solid rgba(255,255,255,.14); } }
-@media (prefers-reduced-motion: reduce) { .hvac-calc * { transition: none !important; } }
-`;
-		document.head.appendChild(st);
 	}
 
 	// วาดฟอร์มทั้งหมดเป็นค่าเริ่มต้น — ใช้ทั้งตอนเปิดหน้าและตอนกดล้างข้อมูล (event เป็น delegated บน $body จึงไม่ต้อง bind ซ้ำ)
@@ -242,7 +166,7 @@ class HVACCalculator {
 						<label>ความสูงฝ้า (m)</label>
 						<input type="number" class="form-control" id="room_height" value="2.7" step="0.1" min="2">
 					</div>
-					<div class="col-sm-3 mb-3 room-people-col">
+					<div class="col-sm-3 mb-3">
 						<label>จำนวนคน (0 = ใช้ค่ามาตรฐาน)</label>
 						<input type="number" class="form-control" id="room_people" value="0" min="0">
 					</div>
@@ -391,7 +315,7 @@ class HVACCalculator {
 						<label>ความสูงฝ้า (m)</label>
 						<input type="number" class="form-control" id="dt_h" value="2.7" step="0.1" min="2">
 					</div>
-					<div class="col-sm-2 mb-3 dt-people-col">
+					<div class="col-sm-2 mb-3">
 						<label>จำนวนคน (0 = มาตรฐาน)</label>
 						<input type="number" class="form-control" id="dt_people" value="0" min="0">
 					</div>
@@ -694,16 +618,9 @@ class HVACCalculator {
 	render_room_options() {
 		const $sel = this.$body.find('#room_type');
 		const $sel2 = this.$body.find('#dt_room_type');
-		// แยกกลุ่ม: ตาราง Air Change (ค่าเริ่มต้น) กับประเภทเพิ่มเติมจากชุดเดิม
-		const groups = {};
 		ROOM_TYPES.forEach(r => {
-			const g = r.group || 'ตารางแนะนำปริมาณการระบายอากาศ';
-			(groups[g] = groups[g] || []).push(r);
-		});
-		Object.entries(groups).forEach(([g, list]) => {
-			const opts = list.map(r => `<option value="${r.id}">${r.th}</option>`).join('');
-			$sel.append(`<optgroup label="${g}">${opts}</optgroup>`);
-			$sel2.append(`<optgroup label="${g}">${opts}</optgroup>`);
+			$sel.append(`<option value="${r.id}">${r.th}</option>`);
+			$sel2.append(`<option value="${r.id}">${r.th}</option>`);
 		});
 		this.update_room_hint();
 		this.update_dt_hint();
@@ -713,10 +630,9 @@ class HVACCalculator {
 		const r = ROOM_TYPES.find(x => x.id === this.$body.find('#room_type').val());
 		if (!r) return;
 		this.$body.find('#room_ref').text(r.ref);
-		this.$body.find('#ach_hint').text(`ช่วงแนะนำ ${r.ach[0]}–${r.ach[1]} ACH — ตั้งต้นด้วยค่าสูงสุดตามแนวทางเอกสาร ปรับลดได้ตามหน้างาน`);
-		this.$body.find('#room_ach').val(r.ach[1]);
+		this.$body.find('#ach_hint').text(`ช่วงแนะนำ ${r.ach[0]}–${r.ach[1]} ACH`);
+		this.$body.find('#room_ach').val(((r.ach[0] + r.ach[1]) / 2).toFixed(1));
 		this.$body.find('.room-fixture-count').toggle(!!r.exhaust_fixture);
-		this.$body.find('.room-people-col').toggle(!!(r.rp || r.density)); // ชุดตาราง Air Change ไม่ใช้จำนวนคน
 	}
 
 	update_dt_hint() {
@@ -724,10 +640,9 @@ class HVACCalculator {
 		if (!r) return;
 		const cls = AIR_CLASS[r.id] || 1;
 		this.$body.find('#dt_room_ref').text(`${r.ref} • Air Class ${cls}`);
-		this.$body.find('#dt_ach_hint').text(`ช่วงแนะนำ ${r.ach[0]}–${r.ach[1]} ACH — ตั้งต้นด้วยค่าสูงสุดตามแนวทางเอกสาร ปรับลดได้ตามหน้างาน`);
-		this.$body.find('#dt_ach').val(r.ach[1]);
+		this.$body.find('#dt_ach_hint').text(`ช่วงแนะนำ ${r.ach[0]}–${r.ach[1]} ACH`);
+		this.$body.find('#dt_ach').val(((r.ach[0] + r.ach[1]) / 2).toFixed(1));
 		this.$body.find('.dt-fixture-count').toggle(!!r.exhaust_fixture);
-		this.$body.find('.dt-people-col').toggle(!!(r.rp || r.density));
 	}
 
 	update_dt_area_hint() {
@@ -797,14 +712,10 @@ class HVACCalculator {
 		// วิธี 1: ACH
 		const cfm_ach = volume_ft3 * ach / 60;
 
-		// วิธี 2: ASHRAE 62.1 Ventilation Rate Procedure — เฉพาะประเภทห้องที่มีข้อมูล Rp/Ra
+		// วิธี 2: ASHRAE 62.1 Ventilation Rate Procedure
 		let people = this.num('room_people');
-		let cfm_621 = 0;
-		const has_621 = !!(r.rp || r.ra);
-		if (has_621) {
-			if (!people && r.density) people = Math.ceil(area_ft2 * r.density / 1000);
-			cfm_621 = people * (r.rp || 0) + area_ft2 * (r.ra || 0);
-		}
+		if (!people && r.density) people = Math.ceil(area_ft2 * r.density / 1000);
+		const cfm_621 = people * r.rp + area_ft2 * r.ra;
 
 		// วิธี 3: Exhaust rate ต่อพื้นที่ (ถ้ามี)
 		let cfm_exhaust = 0, exhaust_note = '';
@@ -830,7 +741,7 @@ class HVACCalculator {
 			room: r, room_w, room_l, area_m2, area_ft2, volume_ft3, ach, people,
 			rows: [
 				{ label: `วิธี ACH (${ach} ACH × ${Math.round(volume_ft3).toLocaleString()} ft³ ÷ 60)`, cfm: cfm_ach },
-				...(has_621 ? [{ label: `วิธี ASHRAE 62.1 — Breathing Zone OA เบื้องต้น, Vbz (${people} คน × ${r.rp} + ${Math.round(area_ft2)} ft² × ${r.ra}) — ยังไม่รวม Ez/system efficiency`, cfm: cfm_621 }] : []),
+				{ label: `วิธี ASHRAE 62.1 — Breathing Zone OA เบื้องต้น, Vbz (${people} คน × ${r.rp} + ${Math.round(area_ft2)} ft² × ${r.ra}) — ยังไม่รวม Ez/system efficiency`, cfm: cfm_621 },
 				...(cfm_exhaust ? [{ label: `Exhaust ขั้นต่ำ ASHRAE 62.1 Table 6-2 (${exhaust_note})`, cfm: cfm_exhaust }] : []),
 				...(cfm_fixture ? [{ label: `Exhaust ตามจำนวนโถ (${fixtures} โถ × ${r.exhaust_fixture} cfm/โถ) — ASHRAE 62.1 Table 6-2`, cfm: cfm_fixture }] : []),
 				...(cfm_heat ? [{ label: `วิธีระบายความร้อน (${heat_kw} kW ÷ ρ·Cp·ΔT ${heat_dt}°C — ASHRAE Fundamentals)`, cfm: cfm_heat }] : []),
@@ -948,12 +859,8 @@ class HVACCalculator {
 		// ปริมาณลม 3 วิธี (เหมือนโหมดพื้นที่ห้อง)
 		const cfm_ach = volume_ft3 * ach / 60;
 		let people = this.num('dt_people');
-		let cfm_621 = 0;
-		const has_621 = !!(r.rp || r.ra); // เฉพาะประเภทห้องที่มีข้อมูล Rp/Ra (ชุดตาราง Air Change ไม่มี)
-		if (has_621) {
-			if (!people && r.density) people = Math.ceil(area_ft2 * r.density / 1000);
-			cfm_621 = people * (r.rp || 0) + area_ft2 * (r.ra || 0);
-		}
+		if (!people && r.density) people = Math.ceil(area_ft2 * r.density / 1000);
+		const cfm_621 = people * r.rp + area_ft2 * r.ra;
 		let cfm_exhaust = 0, exhaust_note = '';
 		if (r.exhaust_ra) {
 			cfm_exhaust = area_ft2 * r.exhaust_ra;
@@ -1053,7 +960,7 @@ class HVACCalculator {
 			room: r, room_w, room_l, area_m2, ach, people,
 			rows: [
 				{ label: `วิธี ACH (${ach} ACH × ${Math.round(volume_ft3).toLocaleString()} ft³ ÷ 60)`, cfm: cfm_ach },
-				...(has_621 ? [{ label: `วิธี ASHRAE 62.1 — Breathing Zone OA เบื้องต้น, Vbz (${people} คน × ${r.rp} + ${Math.round(area_ft2)} ft² × ${r.ra}) — ยังไม่รวม Ez/system efficiency`, cfm: cfm_621 }] : []),
+				{ label: `วิธี ASHRAE 62.1 — Breathing Zone OA เบื้องต้น, Vbz (${people} คน × ${r.rp} + ${Math.round(area_ft2)} ft² × ${r.ra}) — ยังไม่รวม Ez/system efficiency`, cfm: cfm_621 },
 				...(cfm_exhaust ? [{ label: `Exhaust ขั้นต่ำ ASHRAE 62.1 Table 6-2 (${exhaust_note})`, cfm: cfm_exhaust }] : []),
 				...(cfm_fixture ? [{ label: `Exhaust ตามจำนวนโถ (${fixtures} โถ × ${r.exhaust_fixture} cfm/โถ) — ASHRAE 62.1 Table 6-2`, cfm: cfm_fixture }] : []),
 				...(cfm_heat ? [{ label: `วิธีระบายความร้อน (${heat_kw} kW ÷ ρ·Cp·ΔT ${heat_dt}°C — ASHRAE Fundamentals)`, cfm: cfm_heat }] : []),
@@ -1796,43 +1703,27 @@ class HVACCalculator {
 <meta charset="utf-8">
 <title>HVAC Air Calculation Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 <style>
-	body { font-family: 'IBM Plex Sans Thai', 'Sarabun', 'Tahoma', 'Segoe UI', sans-serif; font-size: 13px; color: #222; margin: 24px; }
+	body { font-family: 'Sarabun', 'Tahoma', 'Segoe UI', sans-serif; font-size: 13px; color: #222; margin: 24px; }
 	h5 { font-size: 17px; margin: 0 0 4px; }
 	h6 { font-size: 14px; margin: 14px 0 6px; }
 	table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
 	th, td { border: 1px solid #999; padding: 5px 8px; }
 	th { background: #f0f0f0; text-align: left; }
-	.text-right { text-align: right; font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+	.text-right { text-align: right; }
 	.text-muted, .small { color: #666; font-size: 12px; }
 	.row { display: flex; text-align: center; margin: 14px 0; }
 	.col-4 { flex: 1; }
-	.h3 { font-size: 24px; font-weight: bold; margin: 0; font-family: 'IBM Plex Mono', monospace; }
+	.h3 { font-size: 24px; font-weight: bold; margin: 0; }
 	.alert { border: 1px solid #999; background: #f7f7f7; padding: 8px 10px; font-size: 12px; margin-top: 8px; }
 	.alert-warning { background: #fff8e1; border-color: #e0a800; }
 	tr.table-success td { background: #e6f4ea; }
 	tr.table-warning td { background: #fff8e1; }
 	tr.table-danger td { background: #fdecea; }
 	.font-weight-bold { font-weight: bold; }
-	/* แถบมาตรวัดผลลัพธ์ — ฉบับพิมพ์ (ขาวดำ ประหยัดหมึก) */
-	.hvac-gauge { display: flex; border: 1.5px solid #333; margin: 12px 0; color: #333; }
-	.hvac-gauge-cell { flex: 1; text-align: center; padding: 10px 8px; border-left: 1px solid #999; }
-	.hvac-gauge-cell:first-child { border-left: none; }
-	.hvac-gauge-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 700; }
-	.hvac-gauge-unit { font-size: 13px; font-weight: 500; color: #666; }
-	.hvac-gauge-label { font-size: 12px; color: #444; }
-	.hvac-gauge-sub { font-size: 11px; color: #666; font-family: 'IBM Plex Mono', monospace; }
-	.hvac-gauge-scale { margin: 3px auto 1px; max-width: 190px; }
-	.hvac-gauge-scale svg { display: block; width: 100%; height: 20px; }
-	/* Title block หัวรายงานแบบแบบวิศวกรรม */
-	table.title-block { border: 1.5px solid #333; margin-bottom: 14px; }
-	table.title-block td { border: 1px solid #333; padding: 6px 10px; vertical-align: top; }
-	.tb-title { width: 52%; }
-	.tb-name { font-size: 17px; font-weight: 700; }
-	.tb-sub { font-size: 11px; color: #666; }
-	.tb-cell { font-size: 11px; color: #666; }
-	.tb-cell b { font-size: 13px; color: #222; font-weight: 600; }
+	.report-header { border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 14px;
+		display: flex; justify-content: space-between; align-items: flex-end; }
 	.report-footer { border-top: 1px solid #999; margin-top: 18px; padding-top: 8px;
 		font-size: 11px; color: #666; }
 	.d-flex { display: block; }
@@ -1840,20 +1731,15 @@ class HVACCalculator {
 </style>
 </head>
 <body>
-	<table class="title-block">
-		<tr>
-			<td rowspan="2" class="tb-title">
-				<div class="tb-name">รายงานการคำนวณระบบระบายอากาศ</div>
-				<div class="tb-sub">HVAC Air Calculation Report — CFM / Static Pressure (in.wg)</div>
-			</td>
-			<td class="tb-cell" style="width:24%;">วันที่<br><b>${now}</b></td>
-			<td class="tb-cell" style="width:24%;">ผู้คำนวณ<br><b>${user}</b></td>
-		</tr>
-		<tr>
-			<td class="tb-cell">โครงการ / สถานที่<br><b>&nbsp;</b></td>
-			<td class="tb-cell">ผู้ตรวจสอบ<br><b>&nbsp;</b></td>
-		</tr>
-	</table>
+	<div class="report-header">
+		<div>
+			<div style="font-size:18px; font-weight:bold;">รายงานการคำนวณระบบระบายอากาศ</div>
+			<div class="text-muted">HVAC Air Calculation Report (CFM / Static Pressure)</div>
+		</div>
+		<div class="text-muted" style="text-align:right;">
+			วันที่: ${now}<br>ผู้คำนวณ: ${user}
+		</div>
+	</div>
 	${$result.html()}
 	${positions_html}
 	<div class="report-footer">
@@ -2053,25 +1939,6 @@ class HVACCalculator {
 
 	/* ---------- แสดงผล ---------- */
 
-	// สเกลขีดแบบ manometer ใต้ค่า ESP — ใช้ currentColor เพื่อให้สีตามบริบท (จอ = สว่างบนแถบเข้ม, พิมพ์ = ดำบนขาว)
-	esp_scale_svg(total) {
-		const max = Math.max(1, Math.ceil(total * 1.25 / 0.5) * 0.5); // เพดานสเกล: ปัดขึ้นทีละ 0.5 เผื่อ 25%
-		let ticks = '';
-		for (let v = 0; v <= max + 1e-9; v += 0.25) {
-			const x = (v / max) * 192 + 4;
-			const major = Math.round(v * 100) % 50 === 0;
-			ticks += `<line x1="${x.toFixed(1)}" y1="${major ? 6 : 9}" x2="${x.toFixed(1)}" y2="13" stroke="currentColor" stroke-width="${major ? 1.2 : 0.7}" opacity="${major ? 1 : 0.55}"/>`;
-		}
-		const px = (Math.min(total, max) / max) * 192 + 4;
-		return `<svg viewBox="0 0 200 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-			<line x1="4" y1="13" x2="196" y2="13" stroke="currentColor" stroke-width="1"/>
-			${ticks}
-			<path d="M ${px.toFixed(1)} 12 l -3.4 -5.5 h 6.8 z" fill="currentColor"/>
-			<text x="4" y="21" font-size="6.5" fill="currentColor" opacity="0.8">0</text>
-			<text x="196" y="21" font-size="6.5" fill="currentColor" opacity="0.8" text-anchor="end">${max.toFixed(1)} in.wg</text>
-		</svg>`;
-	}
-
 	render_result(res, sp) {
 		this.last_res = res; // เก็บไว้ให้ส่วนเปรียบเทียบพัดลมอัปเดตตารางได้โดยไม่ต้องคำนวณทั้งชุด
 		this.last_sp = sp;
@@ -2095,22 +1962,21 @@ class HVACCalculator {
 			</div>
 			<p class="text-muted small">${head}</p>
 
-			<div class="hvac-gauge mb-4">
-				<div class="hvac-gauge-cell">
-					<div class="hvac-gauge-num">${Math.round(res.design_cfm).toLocaleString()}</div>
-					<div class="hvac-gauge-label">CFM (ออกแบบ)</div>
-					<div class="hvac-gauge-sub">≈ ${Math.round(cmh).toLocaleString()} m³/h</div>
+			<div class="row text-center mb-4">
+				<div class="col-4">
+					<div class="h3 mb-0 text-primary">${Math.round(res.design_cfm).toLocaleString()}</div>
+					<div class="text-muted">CFM (ออกแบบ)</div>
+					<div class="small text-muted">≈ ${Math.round(cmh).toLocaleString()} m³/h</div>
 				</div>
-				<div class="hvac-gauge-cell">
-					<div class="hvac-gauge-num">${sp.total.toFixed(2)}</div>
-					<div class="hvac-gauge-label">in.wg (ESP)</div>
-					<div class="hvac-gauge-scale">${this.esp_scale_svg(sp.total)}</div>
-					<div class="hvac-gauge-sub">≈ ${Math.round(sp.total * 249).toLocaleString()} Pa</div>
+				<div class="col-4">
+					<div class="h3 mb-0 text-primary">${sp.total.toFixed(2)}</div>
+					<div class="text-muted">in.wg (ESP)</div>
+					<div class="small text-muted">≈ ${Math.round(sp.total * 249).toLocaleString()} Pa</div>
 				</div>
-				<div class="hvac-gauge-cell">
-					<div class="hvac-gauge-num">${sp.v_ms.toFixed(1)}<span class="hvac-gauge-unit"> m/s</span></div>
-					<div class="hvac-gauge-label">ความเร็วจริงในท่อ</div>
-					<div class="hvac-gauge-sub">${sp.size_txt}</div>
+				<div class="col-4">
+					<div class="h3 mb-0 text-primary">${sp.v_ms.toFixed(1)} m/s</div>
+					<div class="text-muted">ความเร็วจริงในท่อ</div>
+					<div class="small text-muted">${sp.size_txt}</div>
 				</div>
 			</div>
 

@@ -1,20 +1,20 @@
 {
  "content": null,
- "creation": "2026-07-07 09:00:00",
+ "creation": "2026-07-28 11:42:15.824298",
  "docstatus": 0,
  "doctype": "Page",
- "icon": "fa fa-gears",
+ "icon": "fa fa-bar-chart",
  "idx": 0,
- "modified": "2026-07-28 11:44:16.281035",
+ "modified": "2026-07-28 11:42:15.824298",
  "modified_by": "Administrator",
  "module": "Repair Management",
- "name": "belt-sf-calculator",
+ "name": "reorder-point-calcul",
  "owner": "Administrator",
- "page_name": "belt-sf-calculator",
+ "page_name": "reorder-point-calcul",
  "roles": [],
  "script": null,
  "standard": "Yes",
  "style": null,
  "system_page": 0,
- "title": "Belt SF Calculator"
+ "title": "Reorder Point Calculator"
 }
