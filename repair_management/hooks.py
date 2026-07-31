@@ -299,3 +299,94 @@ fixtures = [
         ],
     }
 ]
+
+# BEGIN ADDITIONAL SALARY PAYMENT
+# Added by additional_salary_payment_v15 installer.
+
+doctype_js = globals().get("doctype_js") or {}
+doctype_js["Additional Salary"] = "public/js/additional_salary_payment.js"
+
+doc_events = globals().get("doc_events") or {}
+
+
+def _asp_add_doc_event(doctype, event, handler):
+    handlers = doc_events.setdefault(doctype, {})
+    current = handlers.get(event)
+    if not current:
+        handlers[event] = handler
+    elif isinstance(current, (list, tuple)):
+        if handler not in current:
+            handlers[event] = list(current) + [handler]
+    elif current != handler:
+        handlers[event] = [current, handler]
+
+
+_asp_add_doc_event(
+    "Additional Salary",
+    "before_cancel",
+    "repair_management.additional_salary_payment.events.before_cancel_additional_salary",
+)
+_asp_add_doc_event(
+    "Payment Entry",
+    "validate",
+    "repair_management.additional_salary_payment.events.validate_payment_entry",
+)
+_asp_add_doc_event(
+    "Payment Entry",
+    "on_submit",
+    "repair_management.additional_salary_payment.events.on_submit_payment_entry",
+)
+_asp_add_doc_event(
+    "Payment Entry",
+    "on_cancel",
+    "repair_management.additional_salary_payment.events.on_cancel_payment_entry",
+)
+_asp_add_doc_event(
+    "Payment Entry",
+    "on_trash",
+    "repair_management.additional_salary_payment.events.on_trash_payment_entry",
+)
+
+_asp_add_doc_event(
+    "Payment Entry",
+    "before_cancel",
+    "repair_management.additional_salary_payment.events.before_cancel_payment_entry",
+)
+
+_after_migrate_handler = "repair_management.additional_salary_payment.setup.install"
+_current_after_migrate = globals().get("after_migrate")
+if not _current_after_migrate:
+    after_migrate = _after_migrate_handler
+elif isinstance(_current_after_migrate, (list, tuple)):
+    after_migrate = list(_current_after_migrate)
+    if _after_migrate_handler not in after_migrate:
+        after_migrate.append(_after_migrate_handler)
+elif _current_after_migrate != _after_migrate_handler:
+    after_migrate = [_current_after_migrate, _after_migrate_handler]
+# END ADDITIONAL SALARY PAYMENT
+
+# BEGIN SALARY SLIP PAYMENT
+doctype_js["Salary Slip"] = "public/js/salary_slip_payment.js"
+
+_asp_add_doc_event(
+    "Salary Slip",
+    "before_cancel",
+    "repair_management.additional_salary_payment.events.before_cancel_salary_slip",
+)
+_asp_add_doc_event(
+    "Payment Entry",
+    "validate",
+    "repair_management.additional_salary_payment.events.validate_salary_slip_payment_entry",
+)
+_asp_add_doc_event(
+    "Payment Entry",
+    "on_submit",
+    "repair_management.additional_salary_payment.events.on_submit_salary_slip_payment",
+)
+_asp_add_doc_event(
+    "Payment Entry",
+    "on_cancel",
+    "repair_management.additional_salary_payment.events.on_cancel_salary_slip_payment",
+)
+
+# END SALARY SLIP PAYMENT
