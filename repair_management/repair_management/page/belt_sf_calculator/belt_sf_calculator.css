@@ -1,183 +1,172 @@
-/* Belt SF Calculator – styled after the WebCAP mobile layout */
+/* Belt SF Calculator — layout inherits Frappe Desk's theme; two accent hues carry
+   the drivetrain metaphor through the page: amber = motor/driver side, teal = fan/driven side. */
 .belt-sf-app {
-	max-width: 520px;
+	--bsf-amber: #f2994a;
+	--bsf-amber-ink: #b5651d;
+	--bsf-teal: #14b8a6;
+	--bsf-teal-ink: #0d7d70;
+	max-width: 640px;
 	margin: 0 auto;
-	font-size: 15px;
 }
+@media (prefers-color-scheme: dark) {
+	.belt-sf-app { --bsf-amber-ink: #f7b46c; --bsf-teal-ink: #5eead4; }
+}
+[data-theme="dark"] .belt-sf-app { --bsf-amber-ink: #f7b46c; --bsf-teal-ink: #5eead4; }
 
 .belt-sf-app .bsf-intro {
-	background: #e6e6e6;
-	border-bottom: 3px solid #c00;
-	padding: 12px 14px;
-	margin-bottom: 14px;
-	color: #222;
+	margin-bottom: var(--margin-lg, 20px);
 }
 
-.belt-sf-app .bsf-toolbar {
-	display: flex;
-	gap: 12px;
-	margin-bottom: 16px;
+.belt-sf-app .form-section.card-section {
+	border: 1px solid var(--border-color, #d1d8dd);
+	border-top: 3px solid var(--border-color, #d1d8dd);
+	border-radius: var(--border-radius, 8px);
+	padding: var(--padding-lg, 16px);
+	margin-bottom: var(--margin-lg, 20px);
+	background: var(--card-bg, var(--fg-color, #fff));
 }
-.belt-sf-app .bsf-toolbar .btn {
-	flex: 1;
-	background: #e8e8e8;
-	border: 1px solid #bbb;
-	border-radius: 0;
-	font-weight: 600;
-	padding: 10px;
+.belt-sf-app .form-section.card-section.bsf-accent-driver {
+	border-top-color: var(--bsf-amber);
 }
-.belt-sf-app .bsf-btn-back { border-left: 5px solid #1f4e8c; }
-.belt-sf-app .bsf-btn-calc { border-left: 5px solid #5a9e32; color: #2e6b12; }
 
-.belt-sf-app .bsf-card {
-	background: #eee;
-	border: 1px solid #ccc;
-	margin-bottom: 20px;
-}
-.belt-sf-app .bsf-card-title {
-	background: #1f4e8c;
-	color: #fff;
-	font-size: 20px;
-	font-weight: 600;
-	padding: 12px 16px;
-}
-.belt-sf-app .bsf-card-body { padding: 14px; }
-
-.belt-sf-app .bsf-row {
-	display: flex;
-	align-items: stretch;
-	margin-bottom: 12px;
-}
-.belt-sf-app .bsf-stack { margin-bottom: 12px; }
-.belt-sf-app .bsf-stack .bsf-row { margin-bottom: 0; }
-
-.belt-sf-app .bsf-label {
-	background: #d9d9d9;
-	border: 1px solid #333;
-	border-right: none;
-	padding: 9px 10px;
-	font-weight: 600;
-	white-space: nowrap;
+.belt-sf-app .section-head {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px;
+	font-weight: 600;
+	font-size: var(--text-lg, 15px);
+	margin-bottom: var(--margin-md, 12px);
+	padding-bottom: var(--padding-sm, 8px);
+	border-bottom: 1px solid var(--border-color, #d1d8dd);
 }
-.belt-sf-app .bsf-label.wide {
-	display: block;
-	border: 1px solid #333;
+.belt-sf-app .section-head.bsf-flow {
 	border-bottom: none;
+	padding-bottom: 10px;
+	background-image: linear-gradient(90deg, var(--bsf-amber), var(--bsf-teal));
+	background-repeat: no-repeat;
+	background-size: 100% 3px;
+	background-position: bottom;
 }
-
-.belt-sf-app .bsf-input {
-	flex: 1;
-	min-width: 0;
-	border: 1px solid #333;
-	border-radius: 0;
-	padding: 9px 10px;
-	background: #fff;
-	font-size: 16px;
-}
-.belt-sf-app select.bsf-input { appearance: auto; }
-
-.belt-sf-app .bsf-unit {
-	background: #d9d9d9;
-	border: 1px solid #333;
-	border-left: none;
-	padding: 9px 10px;
-	font-weight: 600;
+.belt-sf-app .bsf-dia-unit-toggle {
 	display: flex;
 	align-items: center;
+	gap: 8px;
+	font-weight: 400;
 }
 
-.belt-sf-app .bsf-toggle { display: flex; }
-.belt-sf-app .bsf-toggle button {
-	border: 1px solid #333;
-	border-left: none;
-	background: #d9d9d9;
-	padding: 9px 12px;
-	font-weight: 600;
-	cursor: pointer;
+.belt-sf-app .section-body.row {
+	margin: 0 -8px;
 }
-.belt-sf-app .bsf-toggle button.active {
-	background: #1f4e8c;
-	color: #fff;
-	outline: 2px solid #12233d;
-	outline-offset: -3px;
+.belt-sf-app .frappe-control {
+	padding: 0 8px;
+	margin-bottom: var(--margin-md, 12px);
 }
+.belt-sf-app .frappe-control:last-child { margin-bottom: 0; }
 
-.belt-sf-app .bsf-btn-sf {
-	background: #1f4e8c;
-	color: #fff;
-	border-radius: 0;
-	margin-left: -1px;
-	font-weight: 600;
+.belt-sf-app .bsf-toggle button,
+.belt-sf-app .bsf-pulley-mode button {
+	white-space: nowrap;
 }
 
 /* Pulleys */
 .belt-sf-app .bsf-pulley {
-	border: 1px solid #333;
-	margin-bottom: 14px;
-	background: #fff;
+	border: 1px solid var(--border-color, #d1d8dd);
+	border-left: 3px solid var(--border-color, #d1d8dd);
+	border-radius: var(--border-radius, 8px);
+	padding: var(--padding-md, 12px);
+}
+.belt-sf-app .bsf-pulley.bsf-driver {
+	border-left-color: var(--bsf-amber);
+}
+.belt-sf-app .bsf-pulley.bsf-driven {
+	border-left-color: var(--bsf-teal);
 }
 .belt-sf-app .bsf-pulley-title {
-	background: #3a6ea5;
-	color: #fff;
-	font-weight: 600;
-	padding: 8px 12px;
+	margin-bottom: var(--margin-sm, 8px);
 }
-.belt-sf-app .bsf-pulley-mode { display: flex; }
+.belt-sf-app .bsf-pulley.bsf-driver .bsf-pulley-title {
+	color: var(--bsf-amber-ink);
+}
+.belt-sf-app .bsf-pulley.bsf-driven .bsf-pulley-title {
+	color: var(--bsf-teal-ink);
+}
+.belt-sf-app .bsf-pulley-mode {
+	display: flex;
+	margin-bottom: var(--margin-md, 12px);
+}
 .belt-sf-app .bsf-pulley-mode button {
 	flex: 1;
-	padding: 10px;
-	font-size: 17px;
-	border: none;
-	background: #16324f;
-	color: #cdd8e4;
-	cursor: pointer;
 }
-.belt-sf-app .bsf-pulley-mode button.active {
-	background: #fff;
-	color: #1f4e8c;
-	font-weight: 700;
-}
-.belt-sf-app .bsf-pulley .bsf-stack { margin: 12px; }
 
 /* Results */
-.belt-sf-app .bsf-res-row {
+.belt-sf-app .bsf-results {
+	scroll-margin-top: 16px;
+}
+.belt-sf-app .bsf-res-table {
+	margin-bottom: var(--margin-md, 12px);
+}
+.belt-sf-app .bsf-res-table td {
+	vertical-align: middle;
+}
+
+.belt-sf-app .bsf-sf-compare {
+	margin-bottom: var(--margin-md, 12px);
+}
+.belt-sf-app .bsf-sf-vs {
 	display: flex;
-	justify-content: space-between;
-	gap: 10px;
-	padding: 7px 4px;
-	border-bottom: 1px dotted #aaa;
+	align-items: center;
+	justify-content: center;
 }
-.belt-sf-app .bsf-res-highlight {
-	background: #1f4e8c;
-	color: #fff;
-	text-align: center;
-	padding: 14px;
-	margin: 14px 0;
-}
-.belt-sf-app .bsf-res-highlight .big {
-	font-size: 30px;
+.belt-sf-app .bsf-sf-vs .indicator-pill {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	font-weight: 700;
-	margin: 4px 0;
 }
-.belt-sf-app .bsf-res-highlight.alt {
-	background: #2e6b12;
+
+.belt-sf-app .bsf-big {
+	font-size: 28px;
+	font-weight: 700;
+	line-height: 1.3;
 }
-.belt-sf-app .bsf-warn {
-	background: #fdeaea;
-	border: 1px solid #c00;
-	color: #900;
-	padding: 10px;
-	margin-top: 12px;
+
+.belt-sf-app .bsf-highlight {
+	margin-bottom: 0;
+	padding: var(--padding-md, 14px);
+	border-radius: var(--border-radius, 8px);
+	border: 1px solid transparent;
+	height: 100%;
 }
+.belt-sf-app .bsf-highlight.amber {
+	background: rgba(242, 153, 74, 0.12);
+	border-color: rgba(242, 153, 74, 0.35);
+}
+.belt-sf-app .bsf-highlight.amber .bsf-big {
+	color: var(--bsf-amber-ink);
+}
+.belt-sf-app .bsf-highlight.teal {
+	background: rgba(20, 184, 166, 0.12);
+	border-color: rgba(20, 184, 166, 0.35);
+}
+.belt-sf-app .bsf-highlight.teal .bsf-big {
+	color: var(--bsf-teal-ink);
+}
+
+.belt-sf-app .bsf-warn div + div {
+	margin-top: 4px;
+}
+
 .belt-sf-app .bsf-note {
-	color: #666;
-	font-size: 12.5px;
-	margin-top: 12px;
+	margin-top: var(--margin-md, 12px);
 }
 
 /* SF dialog */
-.bsf-sf-table th { background: #1f4e8c; color: #fff; }
-.bsf-sf-table td { vertical-align: middle; }
-.bsf-sf-table .sf-pick { width: 100%; font-weight: 600; }
+.bsf-sf-table .sf-pick {
+	width: 100%;
+	font-weight: 600;
+}

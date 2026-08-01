@@ -1,10 +1,10 @@
 frappe.pages['belt-sf-calculator'].on_page_load = function (wrapper) {
-	frappe.ui.make_app_page({
+	const page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: __('Belt SF Calculator (Bando)'),
 		single_column: true,
 	});
-	new BeltSFCalculator(wrapper);
+	new BeltSFCalculator(wrapper, page);
 };
 
 /* =========================================================
@@ -310,7 +310,8 @@ function bando_belt_rating(rating_key, d_small_in, rpm_fast, ratio, belt_len_in,
 
 /* ========================================================= */
 class BeltSFCalculator {
-	constructor(wrapper) {
+	constructor(wrapper, page) {
+		this.page = page;
 		this.$page = $(wrapper).find('.layout-main-section');
 		this.state = {
 			power_unit: 'kW',
@@ -319,114 +320,159 @@ class BeltSFCalculator {
 			driver_class: 'normal',
 			driver_mode: 'standard',
 			driven_mode: 'standard',
+			pulley_dia_unit: 'mm',
 		};
 		this.render();
+		this.setup_page_actions();
 		this.bind();
 		this.fill_std_diameters();
 	}
 
 	/* ---------------- UI ---------------- */
+	setup_page_actions() {
+		if (!this.page) return;
+		this.page.set_primary_action(__('Calculate'), () => this.calculate(), 'calculator');
+		this.page.set_secondary_action(__('Clear'), () => this.clear_form(), 'refresh');
+		this.page.add_menu_item(__('Back to Menu'), () => frappe.set_route('app'));
+	}
+
+	field(opts) {
+		const { label, field, type = 'number', unit, select, min = '0', step, value, placeholder } = opts;
+		const input = select
+			? `<select class="form-control" data-field="${field}">${select}</select>`
+			: `<input type="${type}" class="form-control" data-field="${field}"
+				${placeholder ? `placeholder="${placeholder}"` : ''}
+				${min !== null ? `min="${min}"` : ''} ${step ? `step="${step}"` : ''} ${value !== undefined ? `value="${value}"` : ''}>`;
+		return `
+		<div class="frappe-control col-sm-6">
+			<label class="control-label">${label}</label>
+			<div class="control-input-wrapper">
+				<div class="input-group">
+					${input}
+					${unit ? `<div class="input-group-append"><span class="input-group-text">${unit}</span></div>` : ''}
+				</div>
+			</div>
+		</div>`;
+	}
+
+	toggle_group(toggle, options, standalone = false) {
+		return `
+		<div class="${standalone ? '' : 'input-group-append '}bsf-toggle btn-group" data-toggle="${toggle}">
+			${options.map(([val, label], i) =>
+				`<button type="button" class="btn btn-default ${i === options.length - 1 ? 'active' : ''}" data-val="${val}">${label}</button>`
+			).join('')}
+		</div>`;
+	}
+
 	render() {
 		this.$page.html(`
 		<div class="belt-sf-app">
-			<div class="bsf-intro">
-				<b>Tension</b> – ${__('กรอกข้อมูลขั้นต่ำเพื่อคำนวณแรงตึงติดตั้งและจำนวนเส้นสายพานที่แนะนำ (ตาม Bando V-Belt Design Manual) ทุกช่องจำเป็นต้องกรอก')}
+			<div class="bsf-intro text-muted small">
+				${__('กรอกข้อมูลขั้นต่ำเพื่อคำนวณแรงตึงติดตั้งและจำนวนเส้นสายพานที่แนะนำ (ตาม Bando V-Belt Design Manual) ทุกช่องจำเป็นต้องกรอก')}
 			</div>
 
-			<div class="bsf-toolbar">
-				<button class="btn bsf-btn-back">← ${__('Back to Menu')}</button>
-				<button class="btn bsf-btn-clear">✕ ${__('Clear')}</button>
-				<button class="btn bsf-btn-calc">🖩 ${__('Calculate')}</button>
-			</div>
-
-			<div class="bsf-card">
-				<div class="bsf-card-title">${__('Input - Driver')}</div>
-				<div class="bsf-card-body">
-					<div class="bsf-row">
-						<span class="bsf-label">${__('Power')}</span>
-						<input type="number" class="bsf-input" data-field="power" placeholder="${__('Motor Power')}" min="0" step="0.1">
-						<span class="bsf-toggle" data-toggle="power_unit">
-							<button data-val="HP">HP</button><button data-val="kW" class="active">kW</button>
-						</span>
-					</div>
-					<div class="bsf-row">
-						<span class="bsf-label">${__('Driver')}</span>
-						<input type="number" class="bsf-input" data-field="rpm" placeholder="${__('Input RPM')}" min="0" step="1">
-						<span class="bsf-unit">RPM</span>
-					</div>
-					<div class="bsf-stack">
-						<span class="bsf-label wide">${__('ชนิดต้นกำลัง (Bando DriveR class)')}</span>
-						<select class="bsf-input" data-field="driver_class">
-							<option value="normal" selected>${__('มอเตอร์ AC ทั่วไป / DC Shunt / เครื่องยนต์หลายสูบ')}</option>
-							<option value="high">${__('มอเตอร์แรงบิดสูง-สลิปสูง / DC Series / เครื่องยนต์สูบเดียว / คลัตช์')}</option>
-						</select>
-					</div>
-				</div>
-			</div>
-
-			<div class="bsf-card">
-				<div class="bsf-card-title">${__('Belt Info')}</div>
-				<div class="bsf-card-body">
-					<div class="bsf-row">
-						<span class="bsf-label"># ${__('Belts')}</span>
-						<input type="number" class="bsf-input" data-field="belts" min="1" step="1" value="1">
-					</div>
-					<div class="bsf-stack">
-						<span class="bsf-label wide">${__('Belt Length')}</span>
-						<div class="bsf-row">
-							<input type="number" class="bsf-input" data-field="length" min="0" step="1">
-							<span class="bsf-toggle" data-toggle="length_unit">
-								<button data-val="inch">Inch</button><button data-val="mm" class="active">mm</button>
-							</span>
+			<div class="form-section card-section bsf-accent-driver">
+				<div class="section-head">${__('Input - Driver')}</div>
+				<div class="section-body row">
+					<div class="frappe-control col-sm-6">
+						<label class="control-label">${__('Power')}</label>
+						<div class="control-input-wrapper">
+							<div class="input-group">
+								<input type="number" class="form-control" data-field="power" placeholder="${__('Motor Power')}" min="0" step="0.1">
+								${this.toggle_group('power_unit', [['HP', 'HP'], ['kW', 'kW']])}
+							</div>
 						</div>
 					</div>
-					<div class="bsf-stack">
-						<span class="bsf-label wide">${__('Service Factor')}</span>
-						<div class="bsf-row">
-							<input type="number" class="bsf-input" data-field="sf" value="1.40" min="1" step="0.05">
-							<button class="btn bsf-btn-sf">⧉ ${__('Select SF')}</button>
+					${this.field({ label: __('Driver'), field: 'rpm', placeholder: __('Input RPM'), step: 1, unit: 'RPM' })}
+					<div class="frappe-control col-sm-12">
+						<label class="control-label">${__('ชนิดต้นกำลัง (Bando DriveR class)')}</label>
+						<div class="control-input-wrapper">
+							<select class="form-control" data-field="driver_class">
+								<option value="normal" selected>${__('มอเตอร์ AC ทั่วไป / DC Shunt / เครื่องยนต์หลายสูบ')}</option>
+								<option value="high">${__('มอเตอร์แรงบิดสูง-สลิปสูง / DC Series / เครื่องยนต์สูบเดียว / คลัตช์')}</option>
+							</select>
 						</div>
 					</div>
-					<div class="bsf-row">
-						<span class="bsf-label">${__('Belt Profile')}</span>
-						<select class="bsf-input" data-field="profile">
-							${Object.keys(BELT_DATA).map(p =>
-								`<option ${p === 'SPA' ? 'selected' : ''}>${p}</option>`).join('')}
-						</select>
+				</div>
+			</div>
+
+			<div class="form-section card-section">
+				<div class="section-head">${__('Belt Info')}</div>
+				<div class="section-body row">
+					${this.field({ label: '# ' + __('Belts'), field: 'belts', min: 1, step: 1, value: 1 })}
+					<div class="frappe-control col-sm-6">
+						<label class="control-label">${__('Belt Length')}</label>
+						<div class="control-input-wrapper">
+							<div class="input-group">
+								<input type="number" class="form-control" data-field="length" min="0" step="1">
+								${this.toggle_group('length_unit', [['inch', 'Inch'], ['mm', 'mm']])}
+							</div>
+						</div>
+					</div>
+					<div class="frappe-control col-sm-6">
+						<label class="control-label">${__('Service Factor')}</label>
+						<div class="control-input-wrapper">
+							<div class="input-group">
+								<input type="number" class="form-control" data-field="sf" value="1.40" min="1" step="0.05">
+								<div class="input-group-append">
+									<button class="btn btn-default bsf-btn-sf" type="button">${frappe.utils.icon('filter', 'xs')} ${__('Select SF')}</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="frappe-control col-sm-6">
+						<label class="control-label">${__('Belt Profile')}</label>
+						<div class="control-input-wrapper">
+							<select class="form-control" data-field="profile">
+								${Object.keys(BELT_DATA).map(p =>
+									`<option ${p === 'SPA' ? 'selected' : ''}>${p}</option>`).join('')}
+							</select>
+						</div>
 					</div>
 				</div>
 			</div>
 
-			<div class="bsf-card">
-				<div class="bsf-card-title">${__('Pulleys')}</div>
-				<div class="bsf-card-body">
-					${this.pulley_block('driver', __('Driver Pulley'))}
-					${this.pulley_block('driven', __('Driven Pulley'))}
+			<div class="form-section card-section">
+				<div class="section-head bsf-flow">
+					<span>${__('Pulleys')}</span>
+					<span class="bsf-dia-unit-toggle">
+						<span class="text-muted small">${__('Pulley Size')}</span>
+						${this.toggle_group('pulley_dia_unit', [['inch', 'Inch'], ['mm', 'mm']], true)}
+					</span>
+				</div>
+				<div class="section-body row">
+					${this.pulley_block('driver', __('Motor Driver Pulley'))}
+					${this.pulley_block('driven', __('Fan Driven Pulley'))}
 				</div>
 			</div>
 
-			<div class="bsf-card bsf-results" style="display:none">
-				<div class="bsf-card-title">${__('Results')}</div>
-				<div class="bsf-card-body bsf-result-body"></div>
+			<div class="form-section card-section bsf-results" style="display:none">
+				<div class="section-head">${__('Results')}</div>
+				<div class="section-body bsf-result-body"></div>
 			</div>
 		</div>`);
 	}
 
 	pulley_block(key, title) {
+		const accent = key === 'driver' ? 'bsf-driver' : 'bsf-driven';
 		return `
-		<div class="bsf-pulley" data-pulley="${key}">
-			<div class="bsf-pulley-title">${title}:</div>
-			<div class="bsf-pulley-mode">
-				<button class="mode-std active" data-mode="standard">${__('Standard')}</button>
-				<button class="mode-custom" data-mode="custom">${__('Custom')}</button>
+		<div class="bsf-pulley col-sm-6 ${accent}" data-pulley="${key}">
+			<div class="bsf-pulley-title bold">${title}</div>
+			<div class="btn-group btn-block bsf-pulley-mode" role="group">
+				<button type="button" class="btn btn-default active" data-mode="standard">${__('Standard')}</button>
+				<button type="button" class="btn btn-default" data-mode="custom">${__('Custom')}</button>
 			</div>
-			<div class="bsf-stack std-block">
-				<span class="bsf-label wide">${__('Diameter')} (mm)</span>
-				<select class="bsf-input" data-field="${key}_dia_std"></select>
+			<div class="frappe-control std-block">
+				<label class="control-label bsf-dia-label">${__('Diameter')} (mm)</label>
+				<div class="control-input-wrapper">
+					<select class="form-control" data-field="${key}_dia_std"></select>
+				</div>
 			</div>
-			<div class="bsf-stack custom-block" style="display:none">
-				<span class="bsf-label wide">${__('Diameter')} (mm)</span>
-				<input type="number" class="bsf-input" data-field="${key}_dia_custom" min="0" step="1">
+			<div class="frappe-control custom-block" style="display:none">
+				<label class="control-label bsf-dia-label">${__('Diameter')} (mm)</label>
+				<div class="control-input-wrapper">
+					<input type="number" class="form-control" data-field="${key}_dia_custom" min="0" step="0.05">
+				</div>
 			</div>
 		</div>`;
 	}
@@ -435,9 +481,14 @@ class BeltSFCalculator {
 		const me = this;
 		this.$page.on('click', '.bsf-toggle button', function () {
 			const $t = $(this).closest('.bsf-toggle');
+			const toggle = $t.data('toggle');
 			$t.find('button').removeClass('active');
 			$(this).addClass('active');
-			me.state[$t.data('toggle')] = $(this).data('val');
+			me.state[toggle] = $(this).data('val');
+			if (toggle === 'pulley_dia_unit') {
+				me.fill_std_diameters();
+				me.update_dia_labels();
+			}
 		});
 		this.$page.on('click', '.bsf-pulley-mode button', function () {
 			const $p = $(this).closest('.bsf-pulley');
@@ -456,9 +507,6 @@ class BeltSFCalculator {
 			me.state.driver_class = $(this).val();
 		});
 		this.$page.find('.bsf-btn-sf').on('click', () => this.open_sf_dialog());
-		this.$page.find('.bsf-btn-calc').on('click', () => this.calculate());
-		this.$page.find('.bsf-btn-clear').on('click', () => this.clear_form());
-		this.$page.find('.bsf-btn-back').on('click', () => frappe.set_route('app'));
 	}
 
 	/* ล้างข้อมูลทั้งหมดกลับค่าเริ่มต้น */
@@ -477,8 +525,11 @@ class BeltSFCalculator {
 			.filter('[data-val="kW"]').addClass('active');
 		$p.find('[data-toggle="length_unit"] button').removeClass('active')
 			.filter('[data-val="mm"]').addClass('active');
+		$p.find('[data-toggle="pulley_dia_unit"] button').removeClass('active')
+			.filter('[data-val="mm"]').addClass('active');
 		this.state.power_unit = 'kW';
 		this.state.length_unit = 'mm';
+		this.state.pulley_dia_unit = 'mm';
 		// pulleys → Standard
 		$p.find('.bsf-pulley').each(function () {
 			$(this).find('.bsf-pulley-mode button').removeClass('active')
@@ -489,18 +540,29 @@ class BeltSFCalculator {
 		this.state.driver_mode = 'standard';
 		this.state.driven_mode = 'standard';
 		this.fill_std_diameters();
+		this.update_dia_labels();
 		$p.find('.bsf-results').hide();
 		frappe.show_alert({ message: __('ล้างข้อมูลแล้ว'), indicator: 'green' });
 	}
 
 	fill_std_diameters() {
 		const dias = BELT_DATA[this.state.profile].std_dia;
+		const inch = this.state.pulley_dia_unit === 'inch';
 		['driver', 'driven'].forEach(k => {
 			const $sel = this.$page.find(`[data-field="${k}_dia_std"]`);
 			const cur = $sel.val();
-			$sel.html(dias.map(d => `<option value="${d}">${d} mm</option>`).join(''));
+			// value stays mm (source of truth); only the label switches unit
+			$sel.html(dias.map(d =>
+				`<option value="${d}">${inch ? (d / 25.4).toFixed(3) + ' in' : d + ' mm'}</option>`
+			).join(''));
 			if (dias.includes(Number(cur))) $sel.val(cur);
 		});
+	}
+
+	/* อัปเดตข้อความหน่วยของช่อง Diameter ตาม pulley_dia_unit */
+	update_dia_labels() {
+		const label = this.state.pulley_dia_unit === 'inch' ? `${__('Diameter')} (in)` : `${__('Diameter')} (mm)`;
+		this.$page.find('.bsf-dia-label').text(label);
 	}
 
 	open_sf_dialog() {
@@ -537,7 +599,12 @@ class BeltSFCalculator {
 		if (s.power_unit === 'HP') power *= 0.7457;
 		let length = g('length');
 		if (s.length_unit === 'inch') length *= 25.4;
-		const dia = (k) => s[k + '_mode'] === 'custom' ? g(k + '_dia_custom') : g(k + '_dia_std');
+		const dia = (k) => {
+			if (s[k + '_mode'] !== 'custom') return g(k + '_dia_std'); // value attr is always mm
+			let x = g(k + '_dia_custom');
+			if (s.pulley_dia_unit === 'inch') x *= 25.4;
+			return x;
+		};
 		return {
 			power_kw: power, rpm: g('rpm'), belts: g('belts'),
 			length_mm: length, sf: g('sf'),
@@ -628,53 +695,65 @@ class BeltSFCalculator {
 	}
 
 	show_results(v, r) {
-		const row = (l, val) => `<div class="bsf-res-row"><span>${l}</span><b>${val}</b></div>`;
+		const row = (l, val) => `<tr><td class="text-muted">${l}</td><td class="text-right bold">${val}</td></tr>`;
 		const kgf = (n) => (n / 9.80665).toFixed(1);
 		let html = '';
 		const sf_ok = r.actual_sf >= v.sf;
-		html += `<div class="bsf-sf-compare ${sf_ok ? 'ok' : 'fail'}">
-			<div class="bsf-sf-col">
-				<div>${__('SF ที่ตั้งไว้')}</div>
-				<div class="val">${v.sf.toFixed(2)}</div>
+
+		html += `<div class="row bsf-sf-compare">
+			<div class="col-sm-5 text-center">
+				<div class="text-muted small">${__('SF ที่ตั้งไว้')}</div>
+				<div class="bsf-big">${v.sf.toFixed(2)}</div>
 			</div>
-			<div class="bsf-sf-vs">${sf_ok ? '✓' : '✗'}</div>
-			<div class="bsf-sf-col">
-				<div>${__('SF จริงที่ได้ ({0} เส้น)', [v.belts])}</div>
-				<div class="val">${r.actual_sf.toFixed(2)}</div>
+			<div class="col-sm-2 text-center bsf-sf-vs">
+				<span class="indicator-pill ${sf_ok ? 'green' : 'red'}">${sf_ok ? '✓' : '✗'}</span>
+			</div>
+			<div class="col-sm-5 text-center">
+				<div class="text-muted small">${__('SF จริงที่ได้ ({0} เส้น)', [v.belts])}</div>
+				<div class="bsf-big ${sf_ok ? 'text-success' : 'text-danger'}">${r.actual_sf.toFixed(2)}</div>
 			</div>
 		</div>`;
-		html += row(__('กำลังออกแบบ (P × SF)'), `${r.PB.toFixed(2)} kW (${r.design_hp.toFixed(2)} HP)`);
-		html += row(__('อัตราทด'), `1 : ${r.ratio.toFixed(2)} (${r.rpm_out.toFixed(0)} RPM ขาออก)`);
-		html += row(__('ความเร็วสายพาน'), `${r.speed.toFixed(2)} m/s`);
-		html += row(__('ระยะห่างแกน (คำนวณ)'), `${r.C.toFixed(0)} mm`);
-		html += row(__('มุมโอบพูลเลย์เล็ก (θ)'), `${r.theta.toFixed(1)}° — FA = ${r.FA.toFixed(3)}`);
 
-		// HP rating block (Bando Procedure 6–7)
-		html += row(__('Base HP + Speed Ratio Adder (ต่อเส้น)'),
-			`${r.rate.base_hp.toFixed(2)} + ${r.rate.adder_hp.toFixed(2)} HP`);
-		html += row(__('Coefficient of Belt Length (FL)'), r.rate.FL.toFixed(2));
-		html += row(__('กำลังส่งได้ต่อเส้น (× FA × FL)'),
-			`${r.rate.corrected_hp.toFixed(2)} HP (${(r.rate.corrected_hp * 0.7457).toFixed(2)} kW)`);
+		html += `<table class="table table-bordered bsf-res-table">
+			${row(__('กำลังออกแบบ (P × SF)'), `${r.PB.toFixed(2)} kW (${r.design_hp.toFixed(2)} HP)`)}
+			${row(__('อัตราทด'), `1 : ${r.ratio.toFixed(2)} (${r.rpm_out.toFixed(0)} RPM ขาออก)`)}
+			${row(__('ความเร็วสายพาน'), `${r.speed.toFixed(2)} m/s`)}
+			${row(__('ระยะห่างแกน (คำนวณ)'), `${r.C.toFixed(0)} mm`)}
+			${row(__('มุมโอบพูลเลย์เล็ก (θ)'), `${r.theta.toFixed(1)}° — FA = ${r.FA.toFixed(3)}`)}
+			${row(__('Base HP + Speed Ratio Adder (ต่อเส้น)'), `${r.rate.base_hp.toFixed(2)} + ${r.rate.adder_hp.toFixed(2)} HP`)}
+			${row(__('Coefficient of Belt Length (FL)'), r.rate.FL.toFixed(2))}
+			${row(__('กำลังส่งได้ต่อเส้น (× FA × FL)'), `${r.rate.corrected_hp.toFixed(2)} HP (${(r.rate.corrected_hp * 0.7457).toFixed(2)} kW)`)}
+		</table>`;
 
-		html += `<div class="bsf-res-highlight">
-			<div>${__('จำนวนเส้นที่แนะนำ (Bando)')}</div>
-			<div class="big">${r.belts_needed} ${__('เส้น')}</div>
-			<div>${__('Design HP ÷ (HP ต่อเส้น × FA × FL) = {0}',
-				[(r.design_hp / r.rate.corrected_hp).toFixed(2)])}</div>
+		html += `<div class="row">
+			<div class="col-sm-6">
+				<div class="bsf-highlight amber text-center" role="status">
+					<div class="small">${__('จำนวนเส้นที่แนะนำ (Bando)')}</div>
+					<div class="bsf-big">${r.belts_needed} <small>${__('เส้น')}</small></div>
+					<div class="small">${__('Design HP ÷ (HP ต่อเส้น × FA × FL) = {0}',
+						[(r.design_hp / r.rate.corrected_hp).toFixed(2)])}</div>
+				</div>
+			</div>
+			<div class="col-sm-6">
+				<div class="bsf-highlight teal text-center" role="status">
+					<div class="small">${__('แรงตึงติดตั้งสถิตต่อเส้น (ที่ {0} เส้น)', [v.belts])}</div>
+					<div class="bsf-big">${r.Ts.toFixed(0)} N <small>(${kgf(r.Ts)} kgf)</small></div>
+					<div class="small">T1/T2 ${__('รวมทุกเส้น')}: ${r.T1.toFixed(0)} / ${r.T2.toFixed(0)} N</div>
+				</div>
+			</div>
 		</div>`;
 
-		html += `<div class="bsf-res-highlight alt">
-			<div>${__('แรงตึงติดตั้งสถิตต่อเส้น (ที่ {0} เส้น)', [v.belts])}</div>
-			<div class="big">${r.Ts.toFixed(0)} N <small>(${kgf(r.Ts)} kgf)</small></div>
-			<div>T1/T2 ${__('รวมทุกเส้น')}: ${r.T1.toFixed(0)} / ${r.T2.toFixed(0)} N</div>
-		</div>`;
-		html += row(__('ระยะกดทดสอบ (16 mm / 1 m ของช่วงสายพาน)'), `${r.defl_mm.toFixed(1)} mm`);
-		html += row(__('แรงกดทดสอบต่อเส้น'), `${r.defl_force.toFixed(1)} N (${kgf(r.defl_force)} kgf)`);
+		html += `<table class="table table-bordered bsf-res-table">
+			${row(__('ระยะกดทดสอบ (16 mm / 1 m ของช่วงสายพาน)'), `${r.defl_mm.toFixed(1)} mm`)}
+			${row(__('แรงกดทดสอบต่อเส้น'), `${r.defl_force.toFixed(1)} N (${kgf(r.defl_force)} kgf)`)}
+		</table>`;
 
 		if (r.warns.length) {
-			html += `<div class="bsf-warn">${r.warns.map(w => '⚠ ' + w).join('<br>')}</div>`;
+			html += `<div class="alert alert-warning bsf-warn" role="alert">${
+				r.warns.map(w => `<div>⚠ ${w}</div>`).join('')
+			}</div>`;
 		}
-		html += `<div class="bsf-note">${__('สูตร, ตาราง SF, FA, FL และ HP Ratings อ้างอิง Bando V-Belt Design Manual (bandousa.com): A=Table 22/23, B=24/25, SPZ≈3V=7/8, SPB≈5V=9/10, SPA≈AX=32/33 — ค่าเป็นการประมาณด้วย interpolation ควรเทียบกับคู่มือก่อนใช้งานจริง')}</div>`;
+		html += `<div class="text-muted small bsf-note">${__('สูตร, ตาราง SF, FA, FL และ HP Ratings อ้างอิง Bando V-Belt Design Manual (bandousa.com): A=Table 22/23, B=24/25, SPZ≈3V=7/8, SPB≈5V=9/10, SPA≈AX=32/33 — ค่าเป็นการประมาณด้วย interpolation ควรเทียบกับคู่มือก่อนใช้งานจริง')}</div>`;
 
 		const $res = this.$page.find('.bsf-results');
 		$res.find('.bsf-result-body').html(html);
