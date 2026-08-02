@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "creation": "2026-08-02 12:21:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "credentials_section",
+  "channel_secret",
+  "channel_access_token",
+  "workflow_section",
+  "delivery_postback_action",
+  "session_expiry_minutes",
+  "logging_section",
+  "log_payload"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "credentials_section",
+   "fieldtype": "Section Break",
+   "label": "LINE Messaging API Credentials"
+  },
+  {
+   "fieldname": "channel_secret",
+   "fieldtype": "Password",
+   "label": "Channel Secret"
+  },
+  {
+   "fieldname": "channel_access_token",
+   "fieldtype": "Password",
+   "label": "Channel Access Token"
+  },
+  {
+   "fieldname": "workflow_section",
+   "fieldtype": "Section Break",
+   "label": "Delivery Confirmation Workflow"
+  },
+  {
+   "default": "delivery_complete_request",
+   "fieldname": "delivery_postback_action",
+   "fieldtype": "Data",
+   "label": "Delivery Postback Action",
+   "reqd": 1
+  },
+  {
+   "default": "15",
+   "fieldname": "session_expiry_minutes",
+   "fieldtype": "Int",
+   "label": "Session Expiry (Minutes)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "logging_section",
+   "fieldtype": "Section Break",
+   "label": "Logging"
+  },
+  {
+   "default": "1",
+   "description": "Store the complete verified event JSON in LINE Webhook Log.",
+   "fieldname": "log_payload",
+   "fieldtype": "Check",
+   "label": "Log Payload"
+  }
+ ],
+ "grid_page_length": 50,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-02 12:21:00.000000",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "LINE Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
+

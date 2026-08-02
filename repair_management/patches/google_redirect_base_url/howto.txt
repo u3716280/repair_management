@@ -1,0 +1,3 @@
+bench --site local.147 execute repair_management.patches.google_redirect_base_url.apply
+bench --site local.147 execute repair_management.patches.google_redirect_base_url.check
+bench --site local.147 execute repair_management.patches.google_redirect_base_url.revert
