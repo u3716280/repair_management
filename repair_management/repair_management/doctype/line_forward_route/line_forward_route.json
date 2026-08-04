@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-02 23:28:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "route_name",
+  "trigger_event",
+  "priority",
+  "filter_section",
+  "source_line_account",
+  "confirmation_type",
+  "postback_action",
+  "requested_status",
+  "reference_doctype",
+  "target_section",
+  "targets"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "route_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Route Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "Delivery Confirmation",
+   "fieldname": "trigger_event",
+   "fieldtype": "Select",
+   "label": "Trigger Event",
+   "options": "Delivery Confirmation\nConfirmation",
+   "reqd": 1
+  },
+  {
+   "default": "10",
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Priority"
+  },
+  {
+   "fieldname": "filter_section",
+   "fieldtype": "Section Break",
+   "label": "Filters"
+  },
+  {
+   "fieldname": "source_line_account",
+   "fieldtype": "Link",
+   "label": "Source LINE Account",
+   "options": "LINE Account"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "target_section",
+   "fieldtype": "Section Break",
+   "label": "Forward Targets"
+  },
+  {
+   "fieldname": "targets",
+   "fieldtype": "Table",
+   "label": "Targets",
+   "options": "LINE Forward Route Target",
+   "reqd": 1
+  },
+  {
+   "fieldname": "confirmation_type",
+   "fieldtype": "Select",
+   "label": "Confirmation Type",
+   "options": "\nDelivery\nPayment\nService\nInstallation\nOther"
+  },
+  {
+   "fieldname": "postback_action",
+   "fieldtype": "Data",
+   "label": "Postback Action"
+  },
+  {
+   "fieldname": "requested_status",
+   "fieldtype": "Data",
+   "label": "Requested Status"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-08-03 17:33:00.000000",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "LINE Forward Route",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:route_name"
+}

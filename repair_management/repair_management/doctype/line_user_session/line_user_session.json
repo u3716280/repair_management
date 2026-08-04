@@ -1,32 +1,76 @@
 {
  "actions": [],
  "allow_rename": 0,
- "autoname": "field:line_user_id",
- "creation": "2026-08-02 12:21:00.000000",
+ "creation": "2026-08-02 23:28:00.000000",
  "doctype": "DocType",
+ "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "session_key",
+  "line_account",
   "line_user_id",
+  "source_type",
+  "source_id",
+  "workflow_section",
+  "postback_action",
+  "action_label",
+  "confirmation_type",
+  "requested_status",
+  "require_location",
+  "require_image",
+  "forward_route",
   "state",
   "expires_at",
   "reference_section",
   "reference_doctype",
   "reference_name",
-  "confirmation_section",
+  "current_confirmation",
+  "pending_media",
+  "location_section",
   "latitude",
   "longitude",
   "address",
+  "location_received_at",
+  "image_section",
+  "image_message_id",
+  "image_file",
+  "image_received_at",
   "confirmed_at",
   "last_event_id"
  ],
  "fields": [
   {
+   "fieldname": "session_key",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Session Key",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "line_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "LINE Account",
+   "options": "LINE Account",
+   "reqd": 1
+  },
+  {
    "fieldname": "line_user_id",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "LINE User ID",
-   "reqd": 1,
-   "unique": 1
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_type",
+   "fieldtype": "Data",
+   "label": "Source Type"
+  },
+  {
+   "fieldname": "source_id",
+   "fieldtype": "Data",
+   "label": "Source ID"
   },
   {
    "default": "IDLE",
@@ -34,7 +78,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "State",
-   "options": "IDLE\nAWAITING_LOCATION",
+   "options": "IDLE\nAWAITING_REFERENCE\nAWAITING_LOCATION\nAWAITING_IMAGE\nPROCESSING\nCOMPLETED",
    "reqd": 1
   },
   {
@@ -61,17 +105,25 @@
    "options": "reference_doctype"
   },
   {
-   "fieldname": "confirmation_section",
-   "fieldtype": "Section Break",
-   "label": "Latest Confirmation"
+   "fieldname": "current_confirmation",
+   "fieldtype": "Link",
+   "label": "Current Confirmation",
+   "options": "LINE Delivery Confirmation"
   },
   {
+   "fieldname": "location_section",
+   "fieldtype": "Section Break",
+   "label": "Location"
+  },
+  {
+   "default": "0",
    "fieldname": "latitude",
    "fieldtype": "Float",
    "label": "Latitude",
    "precision": "8"
   },
   {
+   "default": "0",
    "fieldname": "longitude",
    "fieldtype": "Float",
    "label": "Longitude",
@@ -83,6 +135,31 @@
    "label": "Address"
   },
   {
+   "fieldname": "location_received_at",
+   "fieldtype": "Datetime",
+   "label": "Location Received At"
+  },
+  {
+   "fieldname": "image_section",
+   "fieldtype": "Section Break",
+   "label": "Image"
+  },
+  {
+   "fieldname": "image_message_id",
+   "fieldtype": "Data",
+   "label": "Image Message ID"
+  },
+  {
+   "fieldname": "image_file",
+   "fieldtype": "Attach Image",
+   "label": "Image File"
+  },
+  {
+   "fieldname": "image_received_at",
+   "fieldtype": "Datetime",
+   "label": "Image Received At"
+  },
+  {
    "fieldname": "confirmed_at",
    "fieldtype": "Datetime",
    "label": "Confirmed At"
@@ -91,12 +168,64 @@
    "fieldname": "last_event_id",
    "fieldtype": "Data",
    "label": "Last Webhook Event ID"
+  },
+  {
+   "fieldname": "workflow_section",
+   "fieldtype": "Section Break",
+   "label": "Workflow"
+  },
+  {
+   "fieldname": "postback_action",
+   "fieldtype": "Data",
+   "label": "Postback Action"
+  },
+  {
+   "fieldname": "action_label",
+   "fieldtype": "Data",
+   "label": "Action Label"
+  },
+  {
+   "fieldname": "confirmation_type",
+   "fieldtype": "Select",
+   "label": "Confirmation Type",
+   "options": "Delivery\nPayment\nService\nInstallation\nOther"
+  },
+  {
+   "fieldname": "requested_status",
+   "fieldtype": "Data",
+   "label": "Requested Status"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_location",
+   "fieldtype": "Check",
+   "label": "Require Location"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_image",
+   "fieldtype": "Check",
+   "label": "Require Image"
+  },
+  {
+   "fieldname": "forward_route",
+   "fieldtype": "Link",
+   "label": "Forward Route",
+   "options": "LINE Forward Route"
+  },
+  {
+   "fieldname": "pending_media",
+   "fieldtype": "Link",
+   "label": "Pending Media",
+   "options": "LINE Pending Media"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "istable": 0,
  "links": [],
- "modified": "2026-08-02 12:21:00.000000",
+ "modified": "2026-08-03 17:33:00.000000",
  "modified_by": "Administrator",
  "module": "Repair Management",
  "name": "LINE User Session",
@@ -105,16 +234,19 @@
   {
    "create": 1,
    "delete": 1,
+   "email": 1,
    "export": 1,
    "print": 1,
    "read": 1,
    "report": 1,
-   "role": "System Manager",
-   "write": 1
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
   }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "track_changes": 1
+ "track_changes": 1,
+ "autoname": "field:session_key"
 }

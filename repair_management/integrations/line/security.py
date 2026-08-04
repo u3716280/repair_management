@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import base64
@@ -17,4 +18,3 @@ def verify_line_signature(raw_body: bytes, signature: str, channel_secret: str) 
     ).digest()
     expected = base64.b64encode(digest).decode("ascii")
     return hmac.compare_digest(expected, signature)
-

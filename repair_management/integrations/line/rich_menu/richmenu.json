@@ -36,9 +36,10 @@
     {
       "bounds": {"x": 1250, "y": 843, "width": 1250, "height": 843},
       "action": {
-        "type": "location",
-        "label": "ตำแหน่งที่ตั้ง",
-        "displayText": "ตำแหน่งที่ตั้ง"
+        "type": "postback",
+	"data": "action=payment_status",
+        "label": "ยืนยันการชำระ",
+        "displayText": "ยืนยันการชำระ"
       }
     }
   ]

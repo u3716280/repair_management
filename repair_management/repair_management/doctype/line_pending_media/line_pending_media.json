@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-03 17:33:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "status",
+  "source_section",
+  "line_account",
+  "line_user_id",
+  "source_type",
+  "source_id",
+  "image_section",
+  "image_message_id",
+  "image_file",
+  "original_file_doc",
+  "preview_file_doc",
+  "image_content_type",
+  "received_at",
+  "expires_at",
+  "assignment_section",
+  "selected_action",
+  "assigned_confirmation",
+  "last_error"
+ ],
+ "fields": [
+  {
+   "default": "LPM-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "LPM-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "default": "Pending Classification",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending Classification\nAssigned\nDiscarded\nExpired\nFailed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "LINE Source"
+  },
+  {
+   "fieldname": "line_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "LINE Account",
+   "options": "LINE Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "line_user_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "LINE User ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_type",
+   "fieldtype": "Data",
+   "label": "Source Type"
+  },
+  {
+   "fieldname": "source_id",
+   "fieldtype": "Data",
+   "label": "Source ID"
+  },
+  {
+   "fieldname": "image_section",
+   "fieldtype": "Section Break",
+   "label": "Image"
+  },
+  {
+   "fieldname": "image_message_id",
+   "fieldtype": "Data",
+   "label": "Image Message ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "image_file",
+   "fieldtype": "Attach Image",
+   "label": "Image File"
+  },
+  {
+   "fieldname": "original_file_doc",
+   "fieldtype": "Link",
+   "label": "Original File Document",
+   "options": "File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "preview_file_doc",
+   "fieldtype": "Link",
+   "label": "Preview File Document",
+   "options": "File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "image_content_type",
+   "fieldtype": "Data",
+   "label": "Image Content Type"
+  },
+  {
+   "fieldname": "received_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Received At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expires_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Expires At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Classification and Assignment"
+  },
+  {
+   "fieldname": "selected_action",
+   "fieldtype": "Data",
+   "label": "Selected Action"
+  },
+  {
+   "fieldname": "assigned_confirmation",
+   "fieldtype": "Link",
+   "label": "Assigned Confirmation",
+   "options": "LINE Delivery Confirmation"
+  },
+  {
+   "fieldname": "last_error",
+   "fieldtype": "Small Text",
+   "label": "Last Error"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "issingle": 0,
+ "istable": 0,
+ "links": [],
+ "modified": "2026-08-03 17:33:00.000000",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "LINE Pending Media",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "share": 1,
+   "write": 1,
+   "role": "System Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "naming_series:"
+}
