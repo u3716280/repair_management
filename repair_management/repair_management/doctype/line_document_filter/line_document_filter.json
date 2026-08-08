@@ -1,0 +1,38 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Document Filter",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 1,
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "fieldname",
+    "operator",
+    "value"
+  ],
+  "fields": [
+    {
+      "fieldname": "fieldname",
+      "label": "Fieldname",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "operator",
+      "label": "Operator",
+      "fieldtype": "Select",
+      "options": "=\n!=\nlike\nin\nnot in",
+      "default": "="
+    },
+    {
+      "fieldname": "value",
+      "label": "Value",
+      "fieldtype": "Data"
+    }
+  ],
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

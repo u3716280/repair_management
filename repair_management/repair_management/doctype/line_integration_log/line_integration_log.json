@@ -1,0 +1,79 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Integration Log",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "line_channel",
+    "operation",
+    "reference_doctype",
+    "reference_name",
+    "status",
+    "request_summary",
+    "response_summary",
+    "error_message"
+  ],
+  "fields": [
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel"
+    },
+    {
+      "fieldname": "operation",
+      "label": "Operation",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "reference_doctype",
+      "label": "Reference DocType",
+      "fieldtype": "Link",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "reference_name",
+      "label": "Reference Name",
+      "fieldtype": "Dynamic Link",
+      "options": "reference_doctype"
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "request_summary",
+      "label": "Request Summary",
+      "fieldtype": "Long Text"
+    },
+    {
+      "fieldname": "response_summary",
+      "label": "Response Summary",
+      "fieldtype": "Long Text"
+    },
+    {
+      "fieldname": "error_message",
+      "label": "Error Message",
+      "fieldtype": "Long Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-LOG-{#####}"
+}

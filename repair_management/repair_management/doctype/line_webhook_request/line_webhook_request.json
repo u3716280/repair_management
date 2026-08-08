@@ -1,0 +1,133 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Webhook Request",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "line_channel",
+    "received_at",
+    "destination",
+    "event_count",
+    "is_verification_request",
+    "signature_valid",
+    "signature",
+    "raw_request_json",
+    "parsed_request_json",
+    "headers_json",
+    "http_response_status",
+    "processing_status",
+    "processing_duration_ms",
+    "error_message"
+  ],
+  "fields": [
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel",
+      "reqd": 1
+    },
+    {
+      "fieldname": "received_at",
+      "label": "Received At",
+      "fieldtype": "Datetime",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "destination",
+      "label": "Destination",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "event_count",
+      "label": "Event Count",
+      "fieldtype": "Int",
+      "read_only": 1
+    },
+    {
+      "fieldname": "is_verification_request",
+      "label": "Is Verification Request",
+      "fieldtype": "Check",
+      "read_only": 1
+    },
+    {
+      "fieldname": "signature_valid",
+      "label": "Signature Valid",
+      "fieldtype": "Check",
+      "read_only": 1
+    },
+    {
+      "fieldname": "signature",
+      "label": "X-Line-Signature",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "raw_request_json",
+      "label": "Raw Request JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "parsed_request_json",
+      "label": "Parsed Request JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "headers_json",
+      "label": "Headers JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "http_response_status",
+      "label": "HTTP Response Status",
+      "fieldtype": "Int",
+      "read_only": 1
+    },
+    {
+      "fieldname": "processing_status",
+      "label": "Processing Status",
+      "fieldtype": "Select",
+      "options": "Received\nVerified\nQueued\nProcessing\nCompleted\nRejected\nFailed",
+      "read_only": 1
+    },
+    {
+      "fieldname": "processing_duration_ms",
+      "label": "Processing Duration (ms)",
+      "fieldtype": "Float",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_message",
+      "label": "Error Message",
+      "fieldtype": "Long Text",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-WHRQ-{#####}"
+}

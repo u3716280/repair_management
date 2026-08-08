@@ -1,0 +1,25 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Stock Allowed Item Group",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 1,
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "item_group"
+  ],
+  "fields": [
+    {
+      "fieldname": "item_group",
+      "label": "Item Group",
+      "fieldtype": "Link",
+      "options": "Item Group",
+      "reqd": 1
+    }
+  ],
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

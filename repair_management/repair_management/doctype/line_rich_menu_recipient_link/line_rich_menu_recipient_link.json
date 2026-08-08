@@ -1,0 +1,85 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Rich Menu Recipient Link",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "line_channel",
+    "line_user_id",
+    "recipient_assignment",
+    "desired_deployment",
+    "desired_rich_menu_id",
+    "actual_rich_menu_id",
+    "status",
+    "last_verified_at",
+    "error_response"
+  ],
+  "fields": [
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel"
+    },
+    {
+      "fieldname": "line_user_id",
+      "label": "LINE User ID",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "recipient_assignment",
+      "label": "Recipient Assignment",
+      "fieldtype": "Link",
+      "options": "LINE Rich Menu Recipient Assignment"
+    },
+    {
+      "fieldname": "desired_deployment",
+      "label": "Desired Deployment",
+      "fieldtype": "Link",
+      "options": "LINE Rich Menu Deployment"
+    },
+    {
+      "fieldname": "desired_rich_menu_id",
+      "label": "Desired Rich Menu ID",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "actual_rich_menu_id",
+      "label": "Actual Rich Menu ID",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "last_verified_at",
+      "label": "Last Verified At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "error_response",
+      "label": "Error Response",
+      "fieldtype": "Long Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-RML-{#####}"
+}

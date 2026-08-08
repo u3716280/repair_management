@@ -1,0 +1,88 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Media File",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "flow_session",
+    "line_message_id",
+    "image_set_id",
+    "image_index",
+    "media_type",
+    "temporary_file",
+    "final_file",
+    "processing_status",
+    "error_message"
+  ],
+  "fields": [
+    {
+      "fieldname": "flow_session",
+      "label": "Flow Session",
+      "fieldtype": "Link",
+      "options": "LINE Flow Session"
+    },
+    {
+      "fieldname": "line_message_id",
+      "label": "LINE Message ID",
+      "fieldtype": "Data",
+      "unique": 1
+    },
+    {
+      "fieldname": "image_set_id",
+      "label": "Image Set ID",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "image_index",
+      "label": "Image Index",
+      "fieldtype": "Int"
+    },
+    {
+      "fieldname": "media_type",
+      "label": "Media Type",
+      "fieldtype": "Select",
+      "options": "Image\nVideo"
+    },
+    {
+      "fieldname": "temporary_file",
+      "label": "Temporary File",
+      "fieldtype": "Link",
+      "options": "File"
+    },
+    {
+      "fieldname": "final_file",
+      "label": "Final File",
+      "fieldtype": "Link",
+      "options": "File"
+    },
+    {
+      "fieldname": "processing_status",
+      "label": "Processing Status",
+      "fieldtype": "Select",
+      "options": "Queued\nDownloaded\nAttached\nMerged\nFailed"
+    },
+    {
+      "fieldname": "error_message",
+      "label": "Error Message",
+      "fieldtype": "Long Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-MF-{#####}"
+}

@@ -1,0 +1,169 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Webhook Event",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "webhook_request",
+    "event_index",
+    "event_key",
+    "webhook_event_id",
+    "line_channel",
+    "event_type",
+    "event_mode",
+    "event_timestamp",
+    "source_type",
+    "line_user_id",
+    "group_id",
+    "room_id",
+    "message_id",
+    "payload_json",
+    "processing_status",
+    "processed_at",
+    "duplicate",
+    "error_message"
+  ],
+  "fields": [
+    {
+      "fieldname": "webhook_request",
+      "label": "Webhook Request",
+      "fieldtype": "Link",
+      "options": "LINE Webhook Request",
+      "reqd": 1
+    },
+    {
+      "fieldname": "event_index",
+      "label": "Event Index",
+      "fieldtype": "Int",
+      "read_only": 1
+    },
+    {
+      "fieldname": "event_key",
+      "label": "Event Key",
+      "fieldtype": "Data",
+      "length": 255,
+      "reqd": 1,
+      "unique": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "webhook_event_id",
+      "label": "Webhook Event ID",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel",
+      "reqd": 1
+    },
+    {
+      "fieldname": "event_type",
+      "label": "Event Type",
+      "fieldtype": "Data",
+      "length": 140,
+      "read_only": 1
+    },
+    {
+      "fieldname": "event_mode",
+      "label": "Event Mode",
+      "fieldtype": "Data",
+      "length": 140,
+      "read_only": 1
+    },
+    {
+      "fieldname": "event_timestamp",
+      "label": "Event Timestamp",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "source_type",
+      "label": "Source Type",
+      "fieldtype": "Data",
+      "length": 140,
+      "read_only": 1
+    },
+    {
+      "fieldname": "line_user_id",
+      "label": "LINE User ID",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "group_id",
+      "label": "Group ID",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "room_id",
+      "label": "Room ID",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "message_id",
+      "label": "Message ID",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "payload_json",
+      "label": "Event JSON",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "processing_status",
+      "label": "Processing Status",
+      "fieldtype": "Select",
+      "options": "Queued\nProcessing\nCompleted\nDuplicate\nFailed",
+      "read_only": 1
+    },
+    {
+      "fieldname": "processed_at",
+      "label": "Processed At",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "duplicate",
+      "label": "Duplicate",
+      "fieldtype": "Check",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_message",
+      "label": "Error Message",
+      "fieldtype": "Long Text",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "field:event_key"
+}

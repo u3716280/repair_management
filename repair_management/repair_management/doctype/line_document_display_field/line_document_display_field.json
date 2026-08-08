@@ -1,0 +1,24 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Document Display Field",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 1,
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "fieldname"
+  ],
+  "fields": [
+    {
+      "fieldname": "fieldname",
+      "label": "Fieldname",
+      "fieldtype": "Data",
+      "reqd": 1
+    }
+  ],
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

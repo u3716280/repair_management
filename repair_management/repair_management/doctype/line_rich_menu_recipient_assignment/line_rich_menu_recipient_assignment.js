@@ -1,0 +1,1 @@
+frappe.ui.form.on('LINE Rich Menu Recipient Assignment',{refresh(frm){if(frm.is_new())return;frm.add_custom_button(__('Sync and Verify'),()=>frappe.call({method:'repair_management.integrations.line.api.rich_menu.sync_recipient',args:{assignment_name:frm.doc.name},freeze:true,callback:()=>frm.reload_doc()}));}});

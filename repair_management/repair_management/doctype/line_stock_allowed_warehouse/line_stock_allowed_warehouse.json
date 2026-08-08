@@ -1,0 +1,25 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Stock Allowed Warehouse",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 1,
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "warehouse"
+  ],
+  "fields": [
+    {
+      "fieldname": "warehouse",
+      "label": "Warehouse",
+      "fieldtype": "Link",
+      "options": "Warehouse",
+      "reqd": 1
+    }
+  ],
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

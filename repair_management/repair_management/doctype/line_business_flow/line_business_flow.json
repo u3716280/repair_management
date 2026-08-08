@@ -1,0 +1,111 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Business Flow",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "flow_name",
+    "line_channel",
+    "flow_type",
+    "action_key",
+    "handler_path",
+    "enabled",
+    "required_audience",
+    "session_expiry_minutes",
+    "configuration_doctype",
+    "configuration_name",
+    "description"
+  ],
+  "fields": [
+    {
+      "fieldname": "flow_name",
+      "label": "Flow Name",
+      "fieldtype": "Data",
+      "length": 255,
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel",
+      "reqd": 1
+    },
+    {
+      "fieldname": "flow_type",
+      "label": "Flow Type",
+      "fieldtype": "Select",
+      "options": "Stock Query\nDocument Media Upload\nCustom",
+      "reqd": 1
+    },
+    {
+      "fieldname": "action_key",
+      "label": "Action Key",
+      "fieldtype": "Data",
+      "length": 140
+    },
+    {
+      "fieldname": "handler_path",
+      "label": "Handler Path",
+      "fieldtype": "Data",
+      "length": 255,
+      "reqd": 1
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "required_audience",
+      "label": "Required Audience",
+      "fieldtype": "Link",
+      "options": "LINE Rich Menu Audience"
+    },
+    {
+      "fieldname": "session_expiry_minutes",
+      "label": "Session Expiry Minutes",
+      "fieldtype": "Int",
+      "default": "15"
+    },
+    {
+      "fieldname": "configuration_doctype",
+      "label": "Configuration DocType",
+      "fieldtype": "Link",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "configuration_name",
+      "label": "Configuration Name",
+      "fieldtype": "Dynamic Link",
+      "options": "configuration_doctype"
+    },
+    {
+      "fieldname": "description",
+      "label": "Description",
+      "fieldtype": "Text Editor"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "field:flow_name",
+  "title_field": "flow_name",
+  "show_title_field_in_link": 1
+}

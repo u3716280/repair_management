@@ -1,0 +1,113 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Rich Menu Definition",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "menu_name",
+    "line_channel",
+    "scope",
+    "width",
+    "height",
+    "chat_bar_text",
+    "selected",
+    "rich_menu_image",
+    "enabled",
+    "description",
+    "areas",
+    "current_active_deployment"
+  ],
+  "fields": [
+    {
+      "fieldname": "menu_name",
+      "label": "Menu Name",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel",
+      "reqd": 1
+    },
+    {
+      "fieldname": "scope",
+      "label": "Scope",
+      "fieldtype": "Select",
+      "options": "Default\nPer-user",
+      "reqd": 1
+    },
+    {
+      "fieldname": "width",
+      "label": "Width",
+      "fieldtype": "Int",
+      "default": "2500"
+    },
+    {
+      "fieldname": "height",
+      "label": "Height",
+      "fieldtype": "Int",
+      "default": "1686"
+    },
+    {
+      "fieldname": "chat_bar_text",
+      "label": "Chat Bar Text",
+      "fieldtype": "Data",
+      "default": "เมนู"
+    },
+    {
+      "fieldname": "selected",
+      "label": "Selected",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "rich_menu_image",
+      "label": "Rich Menu Image",
+      "fieldtype": "Attach Image"
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "description",
+      "label": "Description",
+      "fieldtype": "Text Editor"
+    },
+    {
+      "fieldname": "areas",
+      "label": "Areas",
+      "fieldtype": "Table",
+      "options": "LINE Rich Menu Area"
+    },
+    {
+      "fieldname": "current_active_deployment",
+      "label": "Current Active Deployment",
+      "fieldtype": "Link",
+      "options": "LINE Rich Menu Deployment"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-RM-{#####}",
+  "title_field": "menu_name"
+}

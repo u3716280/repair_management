@@ -1,0 +1,160 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Document Media Upload Profile",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "profile_name",
+    "line_channel",
+    "enabled",
+    "action_key",
+    "target_doctype",
+    "title_field",
+    "order_by",
+    "maximum_results",
+    "media_type",
+    "minimum_files",
+    "maximum_files",
+    "create_collage",
+    "single_image_mode",
+    "delete_originals_after_merge",
+    "private_file",
+    "session_expiry_minutes",
+    "search_fields",
+    "display_fields",
+    "document_filters"
+  ],
+  "fields": [
+    {
+      "fieldname": "profile_name",
+      "label": "Profile Name",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel"
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "action_key",
+      "label": "Action Key",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "target_doctype",
+      "label": "Target DocType",
+      "fieldtype": "Link",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "title_field",
+      "label": "Title Field",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "order_by",
+      "label": "Order By",
+      "fieldtype": "Data",
+      "default": "modified desc"
+    },
+    {
+      "fieldname": "maximum_results",
+      "label": "Maximum Results",
+      "fieldtype": "Int",
+      "default": "10"
+    },
+    {
+      "fieldname": "media_type",
+      "label": "Media Type",
+      "fieldtype": "Select",
+      "options": "Image\nVideo"
+    },
+    {
+      "fieldname": "minimum_files",
+      "label": "Minimum Files",
+      "fieldtype": "Int",
+      "default": "1"
+    },
+    {
+      "fieldname": "maximum_files",
+      "label": "Maximum Files",
+      "fieldtype": "Int",
+      "default": "8"
+    },
+    {
+      "fieldname": "create_collage",
+      "label": "Create Collage",
+      "fieldtype": "Select",
+      "options": "Auto\nAlways\nNever"
+    },
+    {
+      "fieldname": "single_image_mode",
+      "label": "Single Image Mode",
+      "fieldtype": "Select",
+      "options": "Attach Directly\nCreate Single-cell Collage"
+    },
+    {
+      "fieldname": "delete_originals_after_merge",
+      "label": "Delete Originals After Merge",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "private_file",
+      "label": "Private File",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "session_expiry_minutes",
+      "label": "Session Expiry Minutes",
+      "fieldtype": "Int",
+      "default": "30"
+    },
+    {
+      "fieldname": "search_fields",
+      "label": "Search Fields",
+      "fieldtype": "Table",
+      "options": "LINE Document Search Field"
+    },
+    {
+      "fieldname": "display_fields",
+      "label": "Display Fields",
+      "fieldtype": "Table",
+      "options": "LINE Document Display Field"
+    },
+    {
+      "fieldname": "document_filters",
+      "label": "Document Filters",
+      "fieldtype": "Table",
+      "options": "LINE Document Filter"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-MEDIA-{#####}",
+  "title_field": "profile_name"
+}

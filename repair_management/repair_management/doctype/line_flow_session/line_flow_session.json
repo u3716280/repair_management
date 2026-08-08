@@ -1,0 +1,113 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Flow Session",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "line_channel",
+    "line_user_id",
+    "business_flow",
+    "action_key",
+    "current_state",
+    "target_doctype",
+    "target_document",
+    "context_json",
+    "expected_media_type",
+    "received_files",
+    "expires_at",
+    "status",
+    "error_message"
+  ],
+  "fields": [
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel"
+    },
+    {
+      "fieldname": "line_user_id",
+      "label": "LINE User ID",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "business_flow",
+      "label": "Business Flow",
+      "fieldtype": "Link",
+      "options": "LINE Business Flow"
+    },
+    {
+      "fieldname": "action_key",
+      "label": "Action Key",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "current_state",
+      "label": "Current State",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "target_doctype",
+      "label": "Target DocType",
+      "fieldtype": "Link",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "target_document",
+      "label": "Target Document",
+      "fieldtype": "Dynamic Link",
+      "options": "target_doctype"
+    },
+    {
+      "fieldname": "context_json",
+      "label": "Context JSON",
+      "fieldtype": "Code",
+      "options": "JSON"
+    },
+    {
+      "fieldname": "expected_media_type",
+      "label": "Expected Media Type",
+      "fieldtype": "Select",
+      "options": "Image\nVideo"
+    },
+    {
+      "fieldname": "received_files",
+      "label": "Received Files",
+      "fieldtype": "Int"
+    },
+    {
+      "fieldname": "expires_at",
+      "label": "Expires At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "Active\nCompleted\nFailed\nExpired\nCancelled"
+    },
+    {
+      "fieldname": "error_message",
+      "label": "Error Message",
+      "fieldtype": "Long Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-SESSION-{#####}"
+}

@@ -1,0 +1,1 @@
+frappe.ui.form.on('LINE Channel',{refresh(frm){if(frm.is_new())return;frm.add_custom_button(__('Verify Connection'),()=>frappe.call({method:'repair_management.integrations.line.methods.verify_connection',args:{channel_name:frm.doc.name},freeze:true,callback:()=>frm.reload_doc()}));}});

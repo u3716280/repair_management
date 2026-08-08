@@ -1,0 +1,126 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Stock Query Configuration",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "configuration_name",
+    "line_channel",
+    "enabled",
+    "company",
+    "selling_price_list",
+    "show_purchase_price",
+    "show_selling_price",
+    "include_zero_stock",
+    "include_child_item_groups",
+    "maximum_search_results",
+    "results_per_page",
+    "session_expiry_minutes",
+    "allowed_warehouses",
+    "allowed_item_groups"
+  ],
+  "fields": [
+    {
+      "fieldname": "configuration_name",
+      "label": "Configuration Name",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel"
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "company",
+      "label": "Company",
+      "fieldtype": "Link",
+      "options": "Company"
+    },
+    {
+      "fieldname": "selling_price_list",
+      "label": "Selling Price List",
+      "fieldtype": "Link",
+      "options": "Price List"
+    },
+    {
+      "fieldname": "show_purchase_price",
+      "label": "Show Purchase Price",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "show_selling_price",
+      "label": "Show Selling Price",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "include_zero_stock",
+      "label": "Include Zero Stock",
+      "fieldtype": "Check"
+    },
+    {
+      "fieldname": "include_child_item_groups",
+      "label": "Include Child Item Groups",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "maximum_search_results",
+      "label": "Maximum Search Results",
+      "fieldtype": "Int",
+      "default": "10"
+    },
+    {
+      "fieldname": "results_per_page",
+      "label": "Results Per Page",
+      "fieldtype": "Int",
+      "default": "5"
+    },
+    {
+      "fieldname": "session_expiry_minutes",
+      "label": "Session Expiry Minutes",
+      "fieldtype": "Int",
+      "default": "15"
+    },
+    {
+      "fieldname": "allowed_warehouses",
+      "label": "Allowed Warehouses",
+      "fieldtype": "Table",
+      "options": "LINE Stock Allowed Warehouse"
+    },
+    {
+      "fieldname": "allowed_item_groups",
+      "label": "Allowed Item Groups",
+      "fieldtype": "Table",
+      "options": "LINE Stock Allowed Item Group"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-STOCK-{#####}",
+  "title_field": "configuration_name"
+}

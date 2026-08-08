@@ -1,0 +1,124 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Rich Menu Recipient Assignment",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "recipient",
+    "line_channel",
+    "line_user_id",
+    "recipient_name",
+    "enabled",
+    "audience",
+    "direct_deployment_override",
+    "desired_rich_menu_id",
+    "actual_rich_menu_id",
+    "sync_status",
+    "last_verified_at",
+    "error_message"
+  ],
+  "fields": [
+    {
+      "fieldname": "recipient",
+      "label": "LINE Recipient",
+      "fieldtype": "Link",
+      "options": "LINE Recipient",
+      "reqd": 1
+    },
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel",
+      "read_only": 1,
+      "fetch_from": "recipient.line_channel"
+    },
+    {
+      "fieldname": "line_user_id",
+      "label": "LINE User ID",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1,
+      "fetch_from": "recipient.recipient_id"
+    },
+    {
+      "fieldname": "recipient_name",
+      "label": "Recipient Name",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1,
+      "fetch_from": "recipient.display_name"
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "audience",
+      "label": "Audience",
+      "fieldtype": "Link",
+      "options": "LINE Rich Menu Audience"
+    },
+    {
+      "fieldname": "direct_deployment_override",
+      "label": "Direct Deployment Override",
+      "fieldtype": "Link",
+      "options": "LINE Rich Menu Deployment"
+    },
+    {
+      "fieldname": "desired_rich_menu_id",
+      "label": "Desired Rich Menu ID",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "actual_rich_menu_id",
+      "label": "Actual Rich Menu ID",
+      "fieldtype": "Data",
+      "length": 255,
+      "read_only": 1
+    },
+    {
+      "fieldname": "sync_status",
+      "label": "Sync Status",
+      "fieldtype": "Select",
+      "options": "Pending Link\nLinked\nVerified\nPending Unlink\nUnlinked\nMismatch\nFailed",
+      "read_only": 1
+    },
+    {
+      "fieldname": "last_verified_at",
+      "label": "Last Verified At",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_message",
+      "label": "Error Message",
+      "fieldtype": "Long Text",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-RMA-{#####}",
+  "title_field": "recipient_name",
+  "show_title_field_in_link": 1
+}

@@ -1,0 +1,113 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Rich Menu Deployment",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "line_channel",
+    "rich_menu_definition",
+    "version",
+    "scope",
+    "payload_snapshot",
+    "image_snapshot",
+    "payload_sha256",
+    "image_sha256",
+    "line_rich_menu_id",
+    "deployment_status",
+    "activated_at",
+    "retired_at",
+    "error_response"
+  ],
+  "fields": [
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel",
+      "reqd": 1
+    },
+    {
+      "fieldname": "rich_menu_definition",
+      "label": "Rich Menu Definition",
+      "fieldtype": "Link",
+      "options": "LINE Rich Menu Definition",
+      "reqd": 1
+    },
+    {
+      "fieldname": "version",
+      "label": "Version",
+      "fieldtype": "Int"
+    },
+    {
+      "fieldname": "scope",
+      "label": "Scope",
+      "fieldtype": "Select",
+      "options": "Default\nPer-user"
+    },
+    {
+      "fieldname": "payload_snapshot",
+      "label": "Payload Snapshot",
+      "fieldtype": "Code",
+      "options": "JSON"
+    },
+    {
+      "fieldname": "image_snapshot",
+      "label": "Image Snapshot",
+      "fieldtype": "Attach Image"
+    },
+    {
+      "fieldname": "payload_sha256",
+      "label": "Payload SHA-256",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "image_sha256",
+      "label": "Image SHA-256",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "line_rich_menu_id",
+      "label": "LINE Rich Menu ID",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "deployment_status",
+      "label": "Deployment Status",
+      "fieldtype": "Select",
+      "options": "Draft\nValidated\nCreating\nCreated\nImage Uploaded\nActive\nRetired\nFailed\nDeleted"
+    },
+    {
+      "fieldname": "activated_at",
+      "label": "Activated At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "retired_at",
+      "label": "Retired At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "error_response",
+      "label": "Error Response",
+      "fieldtype": "Long Text"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-RMD-{#####}"
+}

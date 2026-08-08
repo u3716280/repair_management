@@ -1,0 +1,64 @@
+{
+  "doctype": "DocType",
+  "name": "LINE Rich Menu Audience",
+  "module": "Repair Management",
+  "custom": 0,
+  "istable": 0,
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "audience_name",
+    "line_channel",
+    "enabled",
+    "active_deployment",
+    "description"
+  ],
+  "fields": [
+    {
+      "fieldname": "audience_name",
+      "label": "Audience Name",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "line_channel",
+      "label": "LINE Channel",
+      "fieldtype": "Link",
+      "options": "LINE Channel",
+      "reqd": 1
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": "1"
+    },
+    {
+      "fieldname": "active_deployment",
+      "label": "Active Deployment",
+      "fieldtype": "Link",
+      "options": "LINE Rich Menu Deployment"
+    },
+    {
+      "fieldname": "description",
+      "label": "Description",
+      "fieldtype": "Text Editor"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1,
+  "autoname": "format:LINE-AUD-{#####}",
+  "title_field": "audience_name"
+}
