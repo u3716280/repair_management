@@ -53,5 +53,5 @@ def migrate_legacy_settings():
         "line_account": account.name,
         "webhook_key": account.webhook_key,
         "webhook_url": account.webhook_url
-        or f"{get_url()}/api/method/repair_management.integrations.line.webhook.callback?account={account.webhook_key}",
+        or f"{get_url()}/api/method/repair_management.integrations.line.webhook.endpoint.handle?account={account.webhook_key}",
     }
