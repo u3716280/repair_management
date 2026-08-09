@@ -78,6 +78,12 @@ def process(channel, event_key, event_payload):
                 document_media_upload.select_document(channel, user, reply, params)
             elif action == "document_page":
                 document_media_upload.show_page(channel, user, reply, params)
+            elif action == "document_item_page":
+                document_media_upload.show_item_page(channel, user, reply, params)
+            elif action == "document_item_select":
+                document_media_upload.select_item(channel, user, reply, params)
+            elif action == "burn_in_select":
+                document_media_upload.select_burn_in(channel, user, reply, params)
             elif action == "media_finish":
                 document_media_upload.finish(channel, user, reply, params)
             elif action == "video_attach_help":

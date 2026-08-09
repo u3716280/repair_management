@@ -58,7 +58,7 @@
    "fieldname": "action_type",
    "label": "Action Type",
    "fieldtype": "Select",
-   "options": "Postback\nMessage\nURI",
+   "options": "Postback\nMessage\nURI\nCamera\nCameraRoll\nLocation",
    "reqd": 1
   },
   {
