@@ -1,132 +1,176 @@
 {
- "charts": [],
- "content": "[{\"id\": \"line-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">LINE Integration</span>\", \"col\": 12}}, {\"id\": \"line-shortcut-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Channel\", \"col\": 3}}, {\"id\": \"line-shortcut-2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Recipient\", \"col\": 3}}, {\"id\": \"line-shortcut-3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Webhook Request\", \"col\": 3}}, {\"id\": \"line-shortcut-4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Webhook Event\", \"col\": 3}}, {\"id\": \"line-shortcut-5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Action Registry\", \"col\": 3}}, {\"id\": \"line-shortcut-6\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Business Flow\", \"col\": 3}}, {\"id\": \"line-shortcut-7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Stock Query Configuration\", \"col\": 3}}, {\"id\": \"line-shortcut-8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Document Media Upload Profile\", \"col\": 3}}, {\"id\": \"line-shortcut-9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Rich Menu Definition\", \"col\": 3}}, {\"id\": \"line-shortcut-10\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Rich Menu Deployment\", \"col\": 3}}, {\"id\": \"line-shortcut-11\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Rich Menu Audience\", \"col\": 3}}, {\"id\": \"line-shortcut-12\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Rich Menu Recipient Assignment\", \"col\": 3}}, {\"id\": \"line-shortcut-13\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Rich Menu Recipient Link\", \"col\": 3}}, {\"id\": \"line-shortcut-14\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Flow Session\", \"col\": 3}}, {\"id\": \"line-shortcut-15\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"LINE Integration Log\", \"col\": 3}}]",
+ "charts": [
+  {
+   "chart_name": "LINE - Flow Sessions by Status"
+  },
+  {
+   "chart_name": "LINE - Flow Sessions by Action Key"
+  },
+  {
+   "chart_name": "LINE - Recipients by Enabled"
+  }
+ ],
+ "content": "[{\"id\": \"line-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">LINE Operations</span>\", \"col\": 12}}, {\"id\": \"ef42eeb616\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Recipients\", \"col\": 3}}, {\"id\": \"c882203195\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Rich Menus\", \"col\": 3}}, {\"id\": \"0ac4f37594\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Flow Sessions\", \"col\": 3}}, {\"id\": \"3cf154d36b\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Profiles\", \"col\": 3}}, {\"id\": \"line-kpi-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Overview</span>\", \"col\": 12}}, {\"id\": \"6b53dfc4fc\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Recipients\", \"col\": 3}}, {\"id\": \"fdfd7d5b3c\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Rich Menus\", \"col\": 3}}, {\"id\": \"cfac44c004\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Deployments\", \"col\": 3}}, {\"id\": \"8d46dde555\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Active Flow Sessions\", \"col\": 3}}, {\"id\": \"line-monitor-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Flow Monitoring</span>\", \"col\": 12}}, {\"id\": \"61572e96bf\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Status\", \"col\": 6}}, {\"id\": \"7d4b013e41\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Action Key\", \"col\": 6}}, {\"id\": \"cda9a30e55\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Recipients by Enabled\", \"col\": 6}}, {\"id\": \"4a184f2dd3\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"f1bba1d1e4\", \"type\": \"card\", \"data\": {\"card_name\": \"Rich Menu\", \"col\": 4}}, {\"id\": \"ab6909725b\", \"type\": \"card\", \"data\": {\"card_name\": \"Operations\", \"col\": 4}}]",
  "creation": "2026-08-06 16:47:59.310905",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
  "hide_custom": 0,
- "icon": "message-square",
+ "icon": "line",
  "idx": 0,
  "indicator_color": "green",
  "is_hidden": 0,
  "label": "LINE",
- "links": [],
- "modified": "2026-08-06 16:47:59.310905",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Configuration",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "LINE Channel",
+   "link_count": 0,
+   "link_to": "LINE Channel",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Media Upload Profiles",
+   "link_count": 0,
+   "link_to": "LINE Document Media Upload Profile",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Rich Menu",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Rich Menu Definitions",
+   "link_count": 0,
+   "link_to": "LINE Rich Menu Definition",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Deployments",
+   "link_count": 0,
+   "link_to": "LINE Rich Menu Deployment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Recipient Links",
+   "link_count": 0,
+   "link_to": "LINE Rich Menu Recipient Link",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Operations",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Recipients",
+   "link_count": 0,
+   "link_to": "LINE Recipient",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Flow Sessions",
+   "link_count": 0,
+   "link_to": "LINE Flow Session",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-08-11 20:13:09.039229",
  "modified_by": "Administrator",
  "module": "Repair Management",
  "name": "LINE",
- "number_cards": [],
+ "number_cards": [
+  {
+   "number_card_name": "LINE - Recipients"
+  },
+  {
+   "number_card_name": "LINE - Rich Menus"
+  },
+  {
+   "number_card_name": "LINE - Deployments"
+  },
+  {
+   "number_card_name": "LINE - Active Flow Sessions"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
  "roles": [],
- "sequence_id": 0.0,
+ "sequence_id": 1.0,
  "shortcuts": [
   {
-   "color": "Blue",
+   "color": "Green",
    "doc_view": "List",
-   "label": "LINE Channel",
-   "link_to": "LINE Channel",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Recipient",
+   "label": "Recipients",
    "link_to": "LINE Recipient",
    "type": "DocType"
   },
   {
    "color": "Blue",
    "doc_view": "List",
-   "label": "LINE Webhook Request",
-   "link_to": "LINE Webhook Request",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Webhook Event",
-   "link_to": "LINE Webhook Event",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Action Registry",
-   "link_to": "LINE Action Registry",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Business Flow",
-   "link_to": "LINE Business Flow",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Stock Query Configuration",
-   "link_to": "LINE Stock Query Configuration",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Document Media Upload Profile",
-   "link_to": "LINE Document Media Upload Profile",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Rich Menu Definition",
+   "label": "Rich Menus",
    "link_to": "LINE Rich Menu Definition",
    "type": "DocType"
   },
   {
-   "color": "Blue",
+   "color": "Orange",
    "doc_view": "List",
-   "label": "LINE Rich Menu Deployment",
-   "link_to": "LINE Rich Menu Deployment",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Rich Menu Audience",
-   "link_to": "LINE Rich Menu Audience",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Rich Menu Recipient Assignment",
-   "link_to": "LINE Rich Menu Recipient Assignment",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Rich Menu Recipient Link",
-   "link_to": "LINE Rich Menu Recipient Link",
-   "type": "DocType"
-  },
-  {
-   "color": "Blue",
-   "doc_view": "List",
-   "label": "LINE Flow Session",
+   "label": "Flow Sessions",
    "link_to": "LINE Flow Session",
    "type": "DocType"
   },
   {
-   "color": "Blue",
+   "color": "Purple",
    "doc_view": "List",
-   "label": "LINE Integration Log",
-   "link_to": "LINE Integration Log",
+   "label": "Media Profiles",
+   "link_to": "LINE Document Media Upload Profile",
    "type": "DocType"
   }
  ],

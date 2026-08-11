@@ -63,6 +63,9 @@ doctype_js = {
 # ------------------
 # include app icons in desk
 #app_include_icons = "repair_management/public/icons.svg"
+app_include_icons = [
+    "repair_management/public/icons/line-icons.svg"
+]
 
 # Home Pages
 # ----------
