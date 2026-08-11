@@ -74,6 +74,10 @@ def _upsert_group_chart(chart_name, doctype, group_field):
     doc.chart_name = chart_name
     doc.name = chart_name
     doc.chart_type = "Group By"
+    # "type" (the render component) defaults to "Line" on the doctype, which assumes a
+    # continuous time-series x-axis. Group-by data is categorical, so Line produces
+    # NaN/undefined positions (invalid SVG path) when there are few or no records.
+    doc.type = "Bar"
     doc.document_type = doctype
     doc.group_by_based_on = group_field
     doc.group_by_type = "Count"
