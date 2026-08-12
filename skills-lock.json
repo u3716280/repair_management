@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "skills": {
+    "api-development": {
+      "source": "lubusin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "api-development/SKILL.md",
+      "computedHash": "f9c86c33ba42407adb0318c48efc55e85300fa79fbe57d2502a91dc5843663c6"
+    },
+    "desk-customization": {
+      "source": "lubusin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "desk-customization/SKILL.md",
+      "computedHash": "ba525d19115eea11b6f80eedf8679076e18cd41696e9fbc0a1cff8b516557e85"
+    },
+    "doctype-development": {
+      "source": "lubusin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "doctype-development/SKILL.md",
+      "computedHash": "6d91061013d4d6aef7f3c017955887caed06b03ac67cd25e2909d032c4ef4347"
+    },
+    "frappe-ui": {
+      "source": "frappe/frappe-ui",
+      "sourceType": "github",
+      "skillPath": "skills/frappe-ui/SKILL.md",
+      "computedHash": "7c563d2ad26b69147900ec2dda116fd636d46dbaca494a83a59b4fca67c71fb9"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "4eabc66183767153e404b39d1b839b1c37f2d82d86f0a0d7e880a579d8d62336"
+    },
+    "frontend-development": {
+      "source": "lubusin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "frontend-development/SKILL.md",
+      "computedHash": "34caac5fe50cfc6939ecebc7986d16f79ee9f8feb55e9f51607b78206ca7471b"
+    },
+    "reports": {
+      "source": "lubusin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "reports/SKILL.md",
+      "computedHash": "87dcd2a4b8b05ed428a1edc35d7f6ce08126a177dcf5ebeaa3b1ceeaa7419a81"
+    },
+    "ui-patterns": {
+      "source": "lubusin/agent-skills",
+      "sourceType": "github",
+      "skillPath": "ui-patterns/SKILL.md",
+      "computedHash": "c3baab31cb8b986adf545d5f77a0e7b0ece97c3297b10c7a0adc95eb58d755fd"
+    }
+  }
+}
