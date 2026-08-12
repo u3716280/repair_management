@@ -21,8 +21,8 @@ BASE_EXPRESSION = (
 )
 
 CALENDAR_BASE_EXPRESSION = (
-    '(frappe.conf.get("google_redirect_base_url") '
-    'or get_request_site_address(full_address=True)).rstrip("/")'
+    "(frappe.conf.get('google_redirect_base_url') "
+    "or get_request_site_address(full_address=True)).rstrip('/')"
 )
 
 
@@ -122,6 +122,9 @@ def _target_files() -> list[Path]:
 
 
 def _patch_calendar(content: str) -> tuple[str, int]:
+    if CALENDAR_BASE_EXPRESSION in content:
+        return content, 0
+
     replacement_count = content.count(CALENDAR_OLD)
 
     if replacement_count:
@@ -134,6 +137,9 @@ def _patch_calendar(content: str) -> tuple[str, int]:
 
 
 def _patch_google_oauth(content: str) -> tuple[str, int]:
+    if BASE_EXPRESSION in content:
+        return content, 0
+
     replacement_count = content.count(COMMON_OLD)
 
     if replacement_count:
@@ -159,9 +165,13 @@ def _file_state(path: Path) -> dict[str, Any]:
     content = path.read_text(encoding="utf-8")
 
     if path == _calendar_path():
-        old_count = content.count(CALENDAR_OLD)
+        old_count = content.count(CALENDAR_OLD) - content.count(
+            CALENDAR_BASE_EXPRESSION
+        )
     else:
-        old_count = content.count(COMMON_OLD)
+        old_count = content.count(COMMON_OLD) - content.count(
+            BASE_EXPRESSION
+        )
 
     return {
         "path": str(path.relative_to(_bench_path())),
