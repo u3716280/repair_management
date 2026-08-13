@@ -6,7 +6,7 @@ import frappe
 from frappe.utils import now_datetime, time_diff_in_seconds
 
 from repair_management.integrations.line.actions.registry import dispatch
-from repair_management.integrations.line.flows import document_media_upload, stock_query
+from repair_management.integrations.line.flows import document_media_upload, media_view, stock_query
 from repair_management.integrations.line.flows.base import active
 from repair_management.integrations.line.services.recipient import upsert_from_event
 
@@ -68,7 +68,17 @@ def process(channel, event_key, event_payload):
                 ).items()
             }
             action = params.get("action")
-            if action == "stock_search_type":
+            if action == "media_view":
+                media_view.start(channel, user, reply)
+            elif action == "media_view_document_select":
+                media_view.select_document(channel, user, reply, params)
+            elif action == "media_view_document_page":
+                media_view.document_page(channel, user, reply, params)
+            elif action == "media_view_select":
+                media_view.select_media(channel, user, reply, params)
+            elif action == "media_view_page":
+                media_view.media_page(channel, user, reply, params)
+            elif action == "stock_search_type":
                 stock_query.select_type(channel, user, reply, params)
             elif action == "stock_page":
                 stock_query.show_page(channel, user, reply, params)
@@ -96,11 +106,12 @@ def process(channel, event_key, event_payload):
             message = event.get("message") or {}
             session = active(channel, user)
             if session and message.get("type") == "text":
-                handler = (
-                    stock_query.handle_text
-                    if session.action_key == "stockqry"
-                    else document_media_upload.handle_text
-                )
+                if session.action_key == "stockqry":
+                    handler = stock_query.handle_text
+                elif session.action_key == "media_view":
+                    handler = media_view.handle_text
+                else:
+                    handler = document_media_upload.handle_text
                 handler(channel, user, reply, session, message.get("text", ""))
             elif session and message.get("type") in ("image", "video"):
                 document_media_upload.receive(channel, user, reply, session, message)

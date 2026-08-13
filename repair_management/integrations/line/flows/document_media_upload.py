@@ -489,10 +489,6 @@ def _complete_video_session(channel, session, cleanup_errors=None):
         "current_state": "Completed",
         "error_message": "\n".join(cleanup_errors or [])[:1400] if cleanup_errors else None,
     })
-    LineClient(channel).push(
-        session.line_user_id,
-        [{"type": "text", "text": "แนบ VDO สำเร็จ"}],
-    )
 
 def start(channel, user_id, reply_token, flow, **kwargs):
     p = profile(flow)
@@ -804,7 +800,17 @@ def receive(channel, user_id, reply_token, session, message, **kwargs):
         message=message,
         enqueue_after_commit=True,
     )
-    LineClient(channel).reply(reply_token, [{"type": "text", "text": "กำลังรับไฟล์"}])
+
+    # Acknowledge the inbound media with this webhook event's replyToken.
+    # Do not use a Push message merely to acknowledge receipt.
+    if expected == "image":
+        pending_count = min(int(session.received_files or 0) + 1, maximum)
+        LineClient(channel).reply(reply_token, [_image_continue_message(session, p, pending_count)])
+    else:
+        LineClient(channel).reply(
+            reply_token,
+            [{"type": "text", "text": "ได้รับวิดีโอแล้ว ระบบกำลังรับและประมวลผลไฟล์"}],
+        )
     return True
 
 
@@ -853,10 +859,6 @@ def download(channel, session_name, message):
     if p.media_type == "Video":
         if int(ctx.get("burn_in") or 0):
             session.db_set("current_state", "Finalizing")
-            LineClient(channel).push(
-                session.line_user_id,
-                [{"type": "text", "text": "รับ VDO แล้ว กำลังระบุชื่อสินค้าและแนบไปยังเอกสาร"}],
-            )
             frappe.enqueue(
                 process_video_burnin,
                 queue="long",
@@ -883,10 +885,6 @@ def download(channel, session_name, message):
     maximum = int(p.maximum_files or 8)
     if count >= maximum:
         session.db_set("current_state", "Finalizing")
-        LineClient(channel).push(
-            session.line_user_id,
-            [{"type": "text", "text": f"รับรูปครบ {count}/{maximum} รูปแล้ว กำลังรวมและแนบไปยังเอกสาร"}],
-        )
         frappe.enqueue(
             finalize,
             queue="long",
@@ -895,7 +893,9 @@ def download(channel, session_name, message):
             enqueue_after_commit=True,
         )
     else:
-        LineClient(channel).push(session.line_user_id, [_image_continue_message(session, p, count)])
+        # The receive webhook already replied with the acknowledgement and
+        # continuation controls by replyToken. Avoid a duplicate Push here.
+        pass
 
 
 
@@ -1055,10 +1055,6 @@ def _complete_image_session(channel, session, rows, cleanup_errors=None):
             "current_state": "Completed",
             "error_message": "\n".join(cleanup_errors or [])[:1400] if cleanup_errors else None,
         }
-    )
-    LineClient(channel).push(
-        session.line_user_id,
-        [{"type": "text", "text": "แนบภาพสำเร็จ"}],
     )
 
 

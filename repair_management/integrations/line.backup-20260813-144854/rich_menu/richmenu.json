@@ -1,0 +1,46 @@
+{
+  "size": {
+    "width": 2500,
+    "height": 1686
+  },
+  "selected": true,
+  "name": "EakThai 4-Button v.1",
+  "chatBarText": "เมนูหลัก",
+  "areas": [
+    {
+      "bounds": {"x": 0, "y": 0, "width": 1250, "height": 843},
+      "action": {
+        "type": "postback",
+        "label": "ยืนยันสถานะ",
+        "data": "action=job_status",
+        "displayText": "ยืนยันสถานะ",
+        "inputOption": "closeRichMenu"
+      }
+    },
+    {
+      "bounds": {"x": 1250, "y": 0, "width": 1250, "height": 843},
+      "action": {
+        "type": "camera",
+        "label": "ถ่ายรูป",
+        "displayText": "ถ่ายรูป"
+      }
+    },
+    {
+      "bounds": {"x": 0, "y": 843, "width": 1250, "height": 843},
+      "action": {
+        "type": "cameraRoll",
+        "label": "เลือกรูป",
+        "displayText": "เลือกรูป"
+      }
+    },
+    {
+      "bounds": {"x": 1250, "y": 843, "width": 1250, "height": 843},
+      "action": {
+        "type": "postback",
+	"data": "action=payment_status",
+        "label": "ยืนยันการชำระ",
+        "displayText": "ยืนยันการชำระ"
+      }
+    }
+  ]
+}

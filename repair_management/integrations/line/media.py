@@ -1,86 +1,119 @@
-
 from __future__ import annotations
 
 import hashlib
 import hmac
-import os
+import io
+import mimetypes
+import subprocess
+import tempfile
 import time
+from pathlib import Path
 from urllib.parse import urlencode
 
 import frappe
-from frappe.utils import cint, get_url
+from PIL import Image, ImageOps
+
+from repair_management.integrations.line.utils.public_url import public_base_url
 
 
-def _get_media_secret() -> str:
-    settings = frappe.get_single("LINE Settings")
-    secret = settings.get_password("media_signing_secret")
-    if not secret:
-        frappe.throw("Media Signing Secret is not configured in LINE Settings")
-    return secret
+_METHOD = "repair_management.integrations.line.media.get_media"
 
 
-def _signature(file_name: str, expires: int) -> str:
-    payload = f"{file_name}|{expires}".encode("utf-8")
-    return hmac.new(_get_media_secret().encode("utf-8"), payload, hashlib.sha256).hexdigest()
+def _secret():
+    value = frappe.local.conf.get("encryption_key") or frappe.local.conf.get("secret_key")
+    if not value:
+        frappe.throw("Site encryption_key is required for signed LINE media URLs")
+    return str(value).encode("utf-8")
 
 
-def get_signed_file_url(file_name: str, ttl_seconds: int | None = None) -> str:
-    settings = frappe.get_single("LINE Settings")
-    ttl = max(cint(ttl_seconds or settings.signed_url_expiry_seconds or 3600), 300)
-    expires = int(time.time()) + ttl
-    query = urlencode(
-        {
-            "file": file_name,
-            "expires": expires,
-            "signature": _signature(file_name, expires),
-        }
-    )
+def _signature(file_name, expires, kind):
+    payload = f"{file_name}|{int(expires)}|{kind}".encode("utf-8")
+    return hmac.new(_secret(), payload, hashlib.sha256).hexdigest()
 
-    base_url = (
-        frappe.conf.get("google_redirect_base_url")
-        or frappe.conf.get("host_name")
-        or get_url()
-    ).rstrip("/")
 
-    return f"{base_url}/api/method/repair_management.integrations.line.media.get_file?{query}"
+def signed_media_url(file_name, kind="original", ttl_seconds=900):
+    expires = int(time.time()) + max(int(ttl_seconds), 60)
+    token = _signature(file_name, expires, kind)
+    query = urlencode({"file": file_name, "expires": expires, "kind": kind, "token": token})
+    return f"{public_base_url()}/api/method/{_METHOD}?{query}"
+
+
+def _file_bytes(file_doc):
+    path = Path(frappe.get_site_path(file_doc.file_url.lstrip("/")))
+    if not path.exists():
+        # Frappe file_url uses /private/files/... and /files/...; resolve explicitly.
+        if str(file_doc.file_url).startswith("/private/files/"):
+            path = Path(frappe.get_site_path("private", "files", Path(file_doc.file_url).name))
+        elif str(file_doc.file_url).startswith("/files/"):
+            path = Path(frappe.get_site_path("public", "files", Path(file_doc.file_url).name))
+    if not path.exists():
+        frappe.throw("Media file is missing")
+    return path.read_bytes(), path
+
+
+def _image_preview(data):
+    with Image.open(io.BytesIO(data)) as image:
+        image = ImageOps.exif_transpose(image).convert("RGB")
+        image.thumbnail((1200, 1200), Image.Resampling.LANCZOS)
+        out = io.BytesIO()
+        image.save(out, format="JPEG", quality=82, optimize=True)
+        return out.getvalue()
+
+
+def _video_preview(path):
+    output = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as handle:
+            output = Path(handle.name)
+        cmd = [
+            "ffmpeg", "-y", "-ss", "0.5", "-i", str(path),
+            "-frames:v", "1", "-vf", "scale='min(1200,iw)':-2",
+            "-q:v", "4", str(output),
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+        if result.returncode != 0 or not output.exists() or not output.stat().st_size:
+            frappe.throw("Unable to create video preview")
+        return output.read_bytes()
+    finally:
+        if output:
+            try:
+                output.unlink(missing_ok=True)
+            except Exception:
+                pass
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
-def get_file(file: str | None = None, expires: str | None = None, signature: str | None = None):
-    file_name = (file or "").strip()
-    expiry = cint(expires)
-    supplied_signature = (signature or "").strip()
+def get_media(file=None, expires=None, kind="original", token=None):
+    try:
+        expires_int = int(expires or 0)
+    except (TypeError, ValueError):
+        frappe.throw("Invalid media URL")
+    if expires_int < int(time.time()):
+        frappe.throw("Media URL has expired")
+    if kind not in ("original", "preview"):
+        frappe.throw("Invalid media kind")
+    expected = _signature(file, expires_int, kind)
+    if not token or not hmac.compare_digest(str(token), expected):
+        frappe.throw("Invalid media token")
+    if not file or not frappe.db.exists("File", file):
+        frappe.throw("Media file does not exist")
 
-    if not file_name or not expiry or not supplied_signature:
-        return _deny(400, "Missing signed file parameters")
-    if expiry < int(time.time()):
-        return _deny(410, "Signed file URL has expired")
+    fdoc = frappe.get_doc("File", file)
+    data, path = _file_bytes(fdoc)
+    content_type = mimetypes.guess_type(fdoc.file_name or fdoc.file_url or "")[0] or "application/octet-stream"
+    filename = fdoc.file_name or path.name
 
-    expected = _signature(file_name, expiry)
-    if not hmac.compare_digest(expected, supplied_signature):
-        return _deny(403, "Invalid signed file URL")
+    if kind == "preview":
+        if content_type.startswith("image/"):
+            data = _image_preview(data)
+        elif content_type.startswith("video/"):
+            data = _video_preview(path)
+        else:
+            frappe.throw("Preview is only available for image/video media")
+        content_type = "image/jpeg"
+        filename = f"preview-{Path(filename).stem}.jpg"
 
-    if not frappe.db.exists("File", file_name):
-        return _deny(404, "File not found")
-
-    file_doc = frappe.get_doc("File", file_name)
-    if file_doc.attached_to_doctype != "LINE Delivery Confirmation":
-        return _deny(403, "File is not a LINE delivery confirmation attachment")
-
-    full_path = file_doc.get_full_path()
-    if not os.path.isfile(full_path):
-        return _deny(404, "File content not found")
-
-    with open(full_path, "rb") as handle:
-        content = handle.read()
-
-    frappe.local.response.filename = file_doc.file_name
-    frappe.local.response.filecontent = content
+    frappe.local.response.filename = filename
+    frappe.local.response.filecontent = data
     frappe.local.response.type = "download"
-    frappe.local.response.display_content_as = "inline"
-    return None
-
-
-def _deny(status_code: int, message: str):
-    frappe.local.response["http_status_code"] = status_code
-    return {"ok": False, "error": message}
+    frappe.local.response.content_type = content_type
