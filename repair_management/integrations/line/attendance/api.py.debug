@@ -1,0 +1,101 @@
+from __future__ import annotations
+
+import frappe
+
+from repair_management.integrations.line.attendance.auth import authenticate
+from repair_management.integrations.line.attendance.service import (
+    bootstrap_data,
+    get_attendance_view,
+    submit_attendance as submit_attendance_service,
+)
+
+
+@frappe.whitelist(allow_guest=True)
+def bootstrap(id_token: str, channel_name: str):
+    authenticate(id_token, channel_name)
+    return bootstrap_data()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_attendance(id_token: str, channel_name: str, attendance_date: str):
+    auth = authenticate(id_token, channel_name)
+    return get_attendance_view(auth, attendance_date)
+
+
+@frappe.whitelist(allow_guest=True)
+def submit_attendance(
+    id_token: str,
+    channel_name: str,
+    attendance_date: str,
+    selections=None,
+):
+    auth = authenticate(id_token, channel_name)
+
+    if isinstance(selections, str):
+        selections = frappe.parse_json(selections)
+
+    if selections is None:
+        selections = []
+
+    if not isinstance(selections, list):
+        frappe.throw(
+            "Invalid attendance selection payload.",
+            frappe.ValidationError,
+        )
+
+    return submit_attendance_service(
+        auth,
+        attendance_date,
+        selections,
+    )
+
+
+@frappe.whitelist(allow_guest=True)
+def debug_identity(id_token: str, channel_name: str):
+    """Temporary diagnostic endpoint for LINE MINI App authentication.
+
+    Remove this endpoint after the LINE Login / Recipient mapping issue
+    has been diagnosed.
+    """
+    from repair_management.integrations.line.attendance.auth import (
+        _get_channel,
+        _verify_id_token,
+    )
+
+    channel = _get_channel(channel_name)
+    payload = _verify_id_token(
+        id_token,
+        channel.mini_app_channel_id,
+    )
+
+    line_user_id = payload.get("sub")
+
+    recipients = frappe.get_all(
+        "LINE Recipient",
+        filters={
+            "line_channel": channel.name,
+            "recipient_type": "User",
+        },
+        fields=[
+            "name",
+            "recipient_id",
+            "line_user_id",
+            "enabled",
+            "allow_mark_attendance",
+        ],
+        limit_page_length=0,
+    )
+
+    matching_recipients = [
+        row
+        for row in recipients
+        if row.line_user_id == line_user_id
+        or row.recipient_id == line_user_id
+    ]
+
+    return {
+        "channel": channel.name,
+        "mini_app_channel_id": channel.mini_app_channel_id,
+        "sub": line_user_id,
+        "matching_recipients": matching_recipients,
+    }

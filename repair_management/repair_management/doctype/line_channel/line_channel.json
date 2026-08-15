@@ -1,102 +1,21 @@
 {
-  "doctype": "DocType",
-  "name": "LINE Channel",
-  "module": "Repair Management",
-  "custom": 0,
-  "istable": 0,
-  "editable_grid": 0,
-  "engine": "InnoDB",
-  "field_order": [
-    "channel_name",
-    "enabled",
-    "channel_secret",
-    "channel_access_token",
-    "integration_user",
-    "public_base_url",
-    "webhook_url",
-    "webhook_verification_status",
-    "last_verified_at",
-    "error_message"
-  ],
+  "doctype": "DocType", "name": "LINE Channel", "module": "Repair Management", "custom": 0, "istable": 0, "editable_grid": 0, "engine": "InnoDB",
+  "field_order": ["channel_name","enabled","channel_secret","channel_access_token","integration_user","default_company","mini_app_channel_id","mini_app_liff_id","public_base_url","webhook_url","webhook_verification_status","last_verified_at","error_message"],
   "fields": [
-    {
-      "fieldname": "channel_name",
-      "label": "Channel Name",
-      "fieldtype": "Data",
-      "length": 255,
-      "reqd": 1,
-      "unique": 1
-    },
-    {
-      "fieldname": "enabled",
-      "label": "Enabled",
-      "fieldtype": "Check",
-      "default": "1"
-    },
-    {
-      "fieldname": "channel_secret",
-      "label": "Channel Secret",
-      "fieldtype": "Password",
-      "length": 512,
-      "reqd": 1
-    },
-    {
-      "fieldname": "channel_access_token",
-      "label": "Channel Access Token",
-      "fieldtype": "Password",
-      "length": 512,
-      "reqd": 1
-    },
-    {
-      "fieldname": "integration_user",
-      "label": "Integration User",
-      "fieldtype": "Link",
-      "options": "User",
-      "reqd": 1
-    },
-    {
-      "fieldname": "public_base_url",
-      "label": "Public Base URL",
-      "fieldtype": "Data",
-      "length": 500
-    },
-    {
-      "fieldname": "webhook_url",
-      "label": "Webhook URL",
-      "fieldtype": "Small Text",
-      "read_only": 1
-    },
-    {
-      "fieldname": "webhook_verification_status",
-      "label": "Webhook Verification Status",
-      "fieldtype": "Read Only"
-    },
-    {
-      "fieldname": "last_verified_at",
-      "label": "Last Verified At",
-      "fieldtype": "Datetime"
-    },
-    {
-      "fieldname": "error_message",
-      "label": "Error Message",
-      "fieldtype": "Long Text"
-    }
+    {"fieldname":"channel_name","label":"Channel Name","fieldtype":"Data","length":255,"reqd":1,"unique":1},
+    {"fieldname":"enabled","label":"Enabled","fieldtype":"Check","default":"1"},
+    {"fieldname":"channel_secret","label":"Channel Secret","fieldtype":"Password","length":512,"reqd":1},
+    {"fieldname":"channel_access_token","label":"Channel Access Token","fieldtype":"Password","length":512,"reqd":1},
+    {"fieldname":"integration_user","label":"Integration User","fieldtype":"Link","options":"User","reqd":1},
+    {"fieldname":"default_company","label":"Default Company","fieldtype":"Link","options":"Company"},
+    {"fieldname":"mini_app_channel_id","label":"LINE MINI App Channel ID","fieldtype":"Data","length":255},
+    {"fieldname":"mini_app_liff_id","label":"LINE MINI App LIFF ID","fieldtype":"Data","length":255},
+    {"fieldname":"public_base_url","label":"Public Base URL","fieldtype":"Data","length":500},
+    {"fieldname":"webhook_url","label":"Webhook URL","fieldtype":"Small Text","read_only":1},
+    {"fieldname":"webhook_verification_status","label":"Webhook Verification Status","fieldtype":"Read Only"},
+    {"fieldname":"last_verified_at","label":"Last Verified At","fieldtype":"Datetime"},
+    {"fieldname":"error_message","label":"Error Message","fieldtype":"Long Text"}
   ],
-  "permissions": [
-    {
-      "role": "System Manager",
-      "read": 1,
-      "write": 1,
-      "create": 1,
-      "delete": 1,
-      "report": 1,
-      "export": 1
-    }
-  ],
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "track_changes": 1,
-  "autoname": "field:channel_name",
-  "title_field": "channel_name",
-  "show_title_field_in_link": 1
+  "permissions": [{"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1}],
+  "sort_field":"modified","sort_order":"DESC","track_changes":1,"autoname":"field:channel_name","title_field":"channel_name","show_title_field_in_link":1
 }
