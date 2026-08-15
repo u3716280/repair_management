@@ -15,6 +15,7 @@
     "picture_url",
     "status_message",
     "enabled",
+    "allow_mark_attendance",
     "following_status",
     "first_seen_at",
     "last_seen_at",
@@ -74,6 +75,12 @@
       "label": "Enabled",
       "fieldtype": "Check",
       "default": "1"
+    },
+    {
+      "fieldname": "allow_mark_attendance",
+      "label": "Allow Mark Attendance",
+      "fieldtype": "Check",
+      "default": "0"
     },
     {
       "fieldname": "following_status",
