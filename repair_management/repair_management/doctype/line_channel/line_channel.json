@@ -12,6 +12,9 @@
     "channel_secret",
     "channel_access_token",
     "integration_user",
+    "default_company",
+    "mini_app_channel_id",
+    "mini_app_liff_id",
     "public_base_url",
     "webhook_url",
     "webhook_verification_status",
@@ -53,6 +56,24 @@
       "fieldtype": "Link",
       "options": "User",
       "reqd": 1
+    },
+    {
+      "fieldname": "default_company",
+      "label": "Default Company",
+      "fieldtype": "Link",
+      "options": "Company"
+    },
+    {
+      "fieldname": "mini_app_channel_id",
+      "label": "LINE MINI App Channel ID",
+      "fieldtype": "Data",
+      "length": 255
+    },
+    {
+      "fieldname": "mini_app_liff_id",
+      "label": "LINE MINI App LIFF ID",
+      "fieldtype": "Data",
+      "length": 255
     },
     {
       "fieldname": "public_base_url",
