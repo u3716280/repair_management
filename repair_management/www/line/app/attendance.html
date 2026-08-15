@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
+    <title>Mark Attendance</title>
+    <link rel="stylesheet" href="/assets/repair_management/css/line/attendance.css">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+    <main
+        id="attendance-app"
+        data-configured="{{ 1 if mini_app_configured else 0 }}"
+        data-channel-name="{{ channel_name }}"
+        data-liff-id="{{ liff_id }}"
+    >
+        <header class="page-header">
+            <h1>Mark Attendance</h1>
+        </header>
+
+        <section id="config-error" class="notice error hidden">
+            LINE MINI App ยังไม่ได้ตั้งค่า
+        </section>
+
+        <section id="auth-error" class="notice error hidden">
+            ไม่มีสิทธิ์ใช้งาน
+        </section>
+
+        <section id="main-content" class="hidden">
+            <label class="date-field" for="attendance-date">
+                <span>วันที่</span>
+                <input id="attendance-date" type="date" autocomplete="off">
+            </label>
+
+            <div id="loading" class="notice">กำลังโหลด...</div>
+            <div id="holiday" class="notice hidden">วันนี้เป็นวันหยุด ไม่ต้อง Mark Attendance</div>
+            <div id="empty" class="notice hidden">ไม่พบ</div>
+            <div id="submit-errors" class="notice error hidden"></div>
+
+            <section id="attendance-controls" class="hidden">
+                <button id="all-present" class="secondary-button" type="button">ทุกคนมา</button>
+                <div id="employee-list" class="employee-list"></div>
+                <button id="submit-attendance" class="primary-button" type="button">ยืนยัน Attendance</button>
+            </section>
+        </section>
+    </main>
+
+    <script src="/assets/repair_management/js/line/attendance.js"></script>
+</body>
+</html>
