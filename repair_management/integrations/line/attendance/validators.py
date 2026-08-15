@@ -1,20 +1,17 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 import frappe
-from frappe.utils import add_days, add_months, getdate, now_datetime
+from frappe.utils import add_days, add_months, getdate
 
 BANGKOK_TZ = ZoneInfo("Asia/Bangkok")
 ALLOWED_STATUSES = {"Present", "Absent"}
 
 
 def bangkok_today() -> date:
-    current = now_datetime()
-    if current.tzinfo is None:
-        current = current.replace(tzinfo=ZoneInfo("UTC"))
-    return current.astimezone(BANGKOK_TZ).date()
+    return datetime.now(BANGKOK_TZ).date()
 
 
 def get_date_limits() -> tuple[date, date, date]:
