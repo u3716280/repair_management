@@ -226,16 +226,16 @@ app_include_icons = [
 # 		"doctype": "{doctype_1}",
 # 		"filter_by": "{filter_by}",
 # 		"redact_fields": ["{field_1}", "{field_2}"],
-# 		"partial": 1
+# 		"partial": 1,
 # 	},
 # 	{
 # 		"doctype": "{doctype_2}",
 # 		"filter_by": "{filter_by}",
-# 		"partial": 1
+# 		"partial": 1,
 # 	},
 # 	{
 # 		"doctype": "{doctype_3}",
-# 		"strict": False
+# 		"strict": False,
 # 	},
 # 	{
 # 		"doctype": "{doctype_4}"
@@ -295,10 +295,10 @@ fixtures = [
                     "Sales Order-custom_map",
                     "Sales Order-custom_latitude",
                     "Sales Order-custom_longitude",
-                    "Sales Order-custom_map_html"
-                ]
+                    "Sales Order-custom_map_html",
+                ],
             ]
-        ]
+        ],
     }
 ]
 
@@ -326,33 +326,33 @@ def _asp_add_doc_event(doctype, event, handler):
 _asp_add_doc_event(
     "Additional Salary",
     "before_cancel",
-    "repair_management.additional_salary_payment.events.before_cancel_additional_salary"
+    "repair_management.additional_salary_payment.events.before_cancel_additional_salary",
 )
 _asp_add_doc_event(
     "Payment Entry",
     "validate",
-    "repair_management.additional_salary_payment.events.validate_payment_entry"
+    "repair_management.additional_salary_payment.events.validate_payment_entry",
 )
 _asp_add_doc_event(
     "Payment Entry",
     "on_submit",
-    "repair_management.additional_salary_payment.events.on_submit_payment_entry"
+    "repair_management.additional_salary_payment.events.on_submit_payment_entry",
 )
 _asp_add_doc_event(
     "Payment Entry",
     "on_cancel",
-    "repair_management.additional_salary_payment.events.on_cancel_payment_entry"
+    "repair_management.additional_salary_payment.events.on_cancel_payment_entry",
 )
 _asp_add_doc_event(
     "Payment Entry",
     "on_trash",
-    "repair_management.additional_salary_payment.events.on_trash_payment_entry"
+    "repair_management.additional_salary_payment.events.on_trash_payment_entry",
 )
 
 _asp_add_doc_event(
     "Payment Entry",
     "before_cancel",
-    "repair_management.additional_salary_payment.events.before_cancel_payment_entry"
+    "repair_management.additional_salary_payment.events.before_cancel_payment_entry",
 )
 
 _after_migrate_handler = "repair_management.additional_salary_payment.setup.install"
@@ -373,22 +373,22 @@ doctype_js["Salary Slip"] = "public/js/salary_slip_payment.js"
 _asp_add_doc_event(
     "Salary Slip",
     "before_cancel",
-    "repair_management.additional_salary_payment.events.before_cancel_salary_slip"
+    "repair_management.additional_salary_payment.events.before_cancel_salary_slip",
 )
 _asp_add_doc_event(
     "Payment Entry",
     "validate",
-    "repair_management.additional_salary_payment.events.validate_salary_slip_payment_entry"
+    "repair_management.additional_salary_payment.events.validate_salary_slip_payment_entry",
 )
 _asp_add_doc_event(
     "Payment Entry",
     "on_submit",
-    "repair_management.additional_salary_payment.events.on_submit_salary_slip_payment"
+    "repair_management.additional_salary_payment.events.on_submit_salary_slip_payment",
 )
 _asp_add_doc_event(
     "Payment Entry",
     "on_cancel",
-    "repair_management.additional_salary_payment.events.on_cancel_salary_slip_payment"
+    "repair_management.additional_salary_payment.events.on_cancel_salary_slip_payment",
 )
 
 # END SALARY SLIP PAYMENT
@@ -397,6 +397,6 @@ _asp_add_doc_event(
 _asp_add_doc_event(
     "Attendance",
     "validate",
-    "repair_management.integrations.line.attendance.events.preserve_line_selected_status"
+    "repair_management.integrations.line.attendance.events.preserve_line_selected_status",
 )
 # END LINE MINI APP ATTENDANCE
