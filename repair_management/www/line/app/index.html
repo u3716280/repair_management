@@ -1,9 +1,63 @@
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>LINE MINI App</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<main id="app" data-liff-id="{{ liff_id }}">
+  <p id="status">กำลังเปิด LINE MINI App...</p>
+</main>
 <script>
-(async () => {
-    await liff.init({
-        liffId: "<LIFF_ID>"
-    });
+(() => {
+  "use strict";
+
+  const ENDPOINT_BASE = "/line/app";
+  const DEFAULT_PATH = "/line/app/delivery-confirm";
+  const app = document.getElementById("app");
+  const liffId = app.dataset.liffId || "";
+
+  function setStatus(message) {
+    const el = document.getElementById("status");
+    if (el) el.textContent = message;
+  }
+
+  // After LINE Login, LIFF redirects back to this app's registered Endpoint
+  // URL (this page) with the originally requested path+query preserved in
+  // the `liff.state` query param. URLSearchParams already URL-decodes the
+  // value once. `liff.state` is relative to the Endpoint URL itself (e.g.
+  // "/delivery-confirm"), not the site root, so it needs ENDPOINT_BASE
+  // prepended -- treating it as already-absolute doubles the path. This
+  // page has no UI of its own: it must forward the browser on, or it
+  // renders blank forever.
+  function targetPath() {
+    const params = new URLSearchParams(window.location.search);
+    let state = params.get("liff.state");
+    if (!state) return DEFAULT_PATH;
+    if (state.charAt(0) !== "/") state = "/" + state;
+    if (state === ENDPOINT_BASE || state.indexOf(ENDPOINT_BASE + "/") === 0) {
+      return state;
+    }
+    return ENDPOINT_BASE + state;
+  }
+
+  (async () => {
+    if (!liffId) {
+      setStatus("LINE MINI App ยังไม่ได้ตั้งค่า");
+      return;
+    }
+    try {
+      await liff.init({ liffId });
+    } catch (error) {
+      setStatus("ไม่สามารถเปิด LINE MINI App ได้");
+      return;
+    }
+    window.location.replace(targetPath());
+  })();
 })();
 </script>
+</body>
+</html>
