@@ -32,6 +32,25 @@ def _get_channel(channel_name: str):
     return channel
 
 
+def _sibling_channel_names(channel) -> list[str]:
+    """All enabled LINE Channel rows configured as the same shared MINI App.
+
+    Multiple LINE Channel rows (distinct bots/webhooks) can point at the same
+    LINE Login/LIFF app. A LINE Recipient may be registered under any one of
+    them, so authorization must not be scoped to only the single channel row
+    that happened to be selected as the MINI App's entry point.
+    """
+    return frappe.get_all(
+        "LINE Channel",
+        filters={
+            "enabled": 1,
+            "mini_app_channel_id": channel.mini_app_channel_id,
+            "mini_app_liff_id": channel.mini_app_liff_id,
+        },
+        pluck="name",
+    )
+
+
 def authenticate(id_token: str, channel_name: str):
     """Verify LINE ID token and resolve an enabled POD-authorized Recipient."""
     channel = _get_channel(channel_name)
@@ -50,7 +69,7 @@ def authenticate(id_token: str, channel_name: str):
     rows = frappe.get_all(
         "LINE Recipient",
         filters={
-            "line_channel": channel.name,
+            "line_channel": ["in", _sibling_channel_names(channel)],
             "recipient_type": "User",
         },
         fields=fields,

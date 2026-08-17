@@ -15,12 +15,17 @@ def get_context(context):
             "mini_app_liff_id": ["is", "set"],
             "default_company": ["is", "set"],
         },
-        fields=["channel_name", "mini_app_liff_id"],
-        order_by="modified desc",
-        limit_page_length=2,
+        fields=["channel_name", "mini_app_channel_id", "mini_app_liff_id"],
+        order_by="channel_name",
     )
 
-    if len(channels) != 1:
+    # Multiple LINE Channel rows (distinct bots/webhooks) may legitimately
+    # share one MINI App identity -- only fail when enabled channels disagree
+    # on which LIFF app to open. Which single row is picked as the entry
+    # point doesn't matter: authenticate() checks recipients across every
+    # enabled channel sharing that identity, not just this one.
+    identities = {(row.mini_app_channel_id, row.mini_app_liff_id) for row in channels}
+    if len(identities) != 1:
         context.mini_app_configured = False
         context.channel_name = ""
         context.liff_id = ""

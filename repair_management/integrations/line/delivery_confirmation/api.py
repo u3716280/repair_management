@@ -42,21 +42,28 @@ def config():
         "LINE Channel",
         filters=filters,
         fields=fields,
-        order_by="modified desc",
-        limit_page_length=20,
+        order_by="name",
     )
     # Require the same fields authenticate()/_get_channel() will require, so a
     # channel handed to the browser here never fails validation on the next call.
-    row = next(
-        (
-            item
-            for item in rows
-            if item.get(liff_field) and (not has_channel_id_field or item.get("mini_app_channel_id"))
-        ),
-        None,
-    )
-    if not row:
+    candidates = [
+        item
+        for item in rows
+        if item.get(liff_field) and (not has_channel_id_field or item.get("mini_app_channel_id"))
+    ]
+    if not candidates:
         frappe.throw("LINE MINI App ยังไม่ได้ตั้งค่า", frappe.ValidationError)
+
+    # Multiple LINE Channel rows (distinct bots/webhooks) may legitimately share
+    # one MINI App identity -- only fail when enabled channels disagree on which
+    # LIFF app to open. Which single row is picked below doesn't matter:
+    # authenticate() checks recipients across every enabled channel sharing that
+    # identity, not just this one.
+    identities = {(item.get(liff_field), item.get("mini_app_channel_id")) for item in candidates}
+    if len(identities) != 1:
+        frappe.throw("LINE MINI App configuration is ambiguous.", frappe.ValidationError)
+
+    row = candidates[0]
     return {"channel_name": row.name, "liff_id": row.get(liff_field)}
 
 
