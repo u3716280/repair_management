@@ -1,0 +1,268 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "format:POD-{YYYY}-{#####}",
+  "creation": "2026-08-16 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "status",
+    "request_id",
+    "section_reference",
+    "sales_order",
+    "delivery_note",
+    "attachment_doctype",
+    "attachment_name",
+    "section_customer",
+    "customer",
+    "customer_name",
+    "section_identity",
+    "line_recipient",
+    "line_user_id",
+    "employee",
+    "section_location",
+    "confirmation_datetime",
+    "location_timestamp",
+    "latitude",
+    "longitude",
+    "accuracy",
+    "section_files",
+    "photo_count",
+    "first_image_no",
+    "last_image_no",
+    "section_chat",
+    "chat_notification_status",
+    "chat_notification_error",
+    "chat_notified_at"
+  ],
+  "fields": [
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Processing\nConfirmed\nFailed\nCancelled",
+      "default": "Processing",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "request_id",
+      "fieldtype": "Data",
+      "label": "Request ID",
+      "unique": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_reference",
+      "fieldtype": "Section Break",
+      "label": "Reference"
+    },
+    {
+      "fieldname": "sales_order",
+      "fieldtype": "Link",
+      "label": "Sales Order",
+      "options": "Sales Order",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "delivery_note",
+      "fieldtype": "Link",
+      "label": "Delivery Note",
+      "options": "Delivery Note",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "attachment_doctype",
+      "fieldtype": "Link",
+      "label": "Attachment DocType",
+      "options": "DocType",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "attachment_name",
+      "fieldtype": "Dynamic Link",
+      "label": "Attachment Document",
+      "options": "attachment_doctype",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_customer",
+      "fieldtype": "Section Break",
+      "label": "Customer"
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer",
+      "read_only": 1
+    },
+    {
+      "fieldname": "customer_name",
+      "fieldtype": "Data",
+      "label": "Customer Name",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "section_identity",
+      "fieldtype": "Section Break",
+      "label": "Identity"
+    },
+    {
+      "fieldname": "line_recipient",
+      "fieldtype": "Link",
+      "label": "LINE Recipient",
+      "options": "LINE Recipient",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "line_user_id",
+      "fieldtype": "Data",
+      "label": "LINE User ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "employee",
+      "fieldtype": "Link",
+      "label": "Employee",
+      "options": "Employee",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_location",
+      "fieldtype": "Section Break",
+      "label": "Confirmation & Location"
+    },
+    {
+      "fieldname": "confirmation_datetime",
+      "fieldtype": "Datetime",
+      "label": "Confirmation Datetime",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "location_timestamp",
+      "fieldtype": "Datetime",
+      "label": "Location Timestamp",
+      "read_only": 1
+    },
+    {
+      "fieldname": "latitude",
+      "fieldtype": "Float",
+      "label": "Latitude",
+      "precision": "8",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "longitude",
+      "fieldtype": "Float",
+      "label": "Longitude",
+      "precision": "8",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "accuracy",
+      "fieldtype": "Float",
+      "label": "Accuracy (m)",
+      "precision": "2",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_files",
+      "fieldtype": "Section Break",
+      "label": "Photos"
+    },
+    {
+      "fieldname": "photo_count",
+      "fieldtype": "Int",
+      "label": "Photo Count",
+      "read_only": 1
+    },
+    {
+      "fieldname": "first_image_no",
+      "fieldtype": "Int",
+      "label": "First Image No",
+      "read_only": 1
+    },
+    {
+      "fieldname": "last_image_no",
+      "fieldtype": "Int",
+      "label": "Last Image No",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_chat",
+      "fieldtype": "Section Break",
+      "label": "LINE Chat Notification"
+    },
+    {
+      "fieldname": "chat_notification_status",
+      "fieldtype": "Select",
+      "label": "Chat Notification Status",
+      "options": "Pending\nSent\nFailed",
+      "default": "Pending",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "chat_notification_error",
+      "fieldtype": "Small Text",
+      "label": "Chat Notification Error",
+      "read_only": 1
+    },
+    {
+      "fieldname": "chat_notified_at",
+      "fieldtype": "Datetime",
+      "label": "Chat Notified At",
+      "read_only": 1
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "links": [],
+  "modified": "2026-08-16 17:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Repair Management",
+  "name": "Delivery Confirmation",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 0,
+      "email": 0,
+      "export": 0,
+      "print": 0,
+      "read": 1,
+      "report": 1,
+      "role": "LINE POD Integration",
+      "share": 0,
+      "write": 1
+    }
+  ],
+  "sort_field": "confirmation_datetime",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

@@ -38,6 +38,11 @@ def _finalize_request(request_name):
 
 
 def process(channel, event_key, event_payload):
+    # --- LINE POD echo guard (managed by repair_management_line_pod_v0.2) ---
+    from repair_management.integrations.line.delivery_confirmation.webhook import ignore_pod_echo
+    if ignore_pod_echo(event_key, event_payload):
+        return
+    # --- END LINE POD echo guard ---
     event = event_payload
     row = frappe.get_doc("LINE Webhook Event", event_key)
     original_user = frappe.session.user or "Guest"

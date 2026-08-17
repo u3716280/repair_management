@@ -93,6 +93,12 @@ app_include_icons = [
 # 	"filters": "repair_management.utils.jinja_filters"
 # }
 
+jinja = {
+    "methods": [
+        "repair_management.utils.qr.get_qr_code"
+    ]
+}
+
 # Installation
 # ------------
 
@@ -393,3 +399,22 @@ _asp_add_doc_event(
 )
 
 # END SALARY SLIP PAYMENT
+
+# --- LINE POD dashboard overrides (managed by repair_management_line_pod_v0.2) ---
+_pod_dashboard_overrides = {
+    "Sales Order": "repair_management.overrides.pod_dashboards.sales_order_dashboard",
+    "Delivery Note": "repair_management.overrides.pod_dashboards.delivery_note_dashboard",
+}
+try:
+    override_doctype_dashboards.update(_pod_dashboard_overrides)
+except NameError:
+    override_doctype_dashboards = _pod_dashboard_overrides
+
+_pod_route_rules = [
+    {"from_route": "/line/app/delivery-confirm", "to_route": "line/app/delivery_confirm"},
+]
+try:
+    website_route_rules.extend(_pod_route_rules)
+except NameError:
+    website_route_rules = _pod_route_rules
+# --- END LINE POD dashboard overrides ---

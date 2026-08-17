@@ -9,6 +9,7 @@
   "field_order": [
     "menu_name",
     "line_channel",
+    "alias_id",
     "scope",
     "width",
     "height",
@@ -33,6 +34,13 @@
       "fieldtype": "Link",
       "options": "LINE Channel",
       "reqd": 1
+    },
+    {
+      "fieldname": "alias_id",
+      "label": "Alias ID",
+      "fieldtype": "Data",
+      "length": 32,
+      "description": "Stable LINE Rich Menu Alias ID. Use lowercase a-z, 0-9, underscore (_) or hyphen (-). Keep this stable across deployments."
     },
     {
       "fieldname": "scope",
