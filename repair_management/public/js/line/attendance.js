@@ -60,7 +60,7 @@
                     "application/x-www-form-urlencoded;charset=UTF-8",
             },
             body,
-            credentials: "same-origin",
+            credentials: "omit",
         });
 
         let data;
