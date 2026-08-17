@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>Proof of Delivery</title>
+  <link rel="stylesheet" href="/assets/repair_management/css/line/delivery_confirm.css">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<main id="pod-app">
+  <header class="page-header"><h1>ยืนยันการจัดส่ง</h1></header>
+  <div id="notice" class="notice hidden"></div>
+
+  <section id="loading" class="card">กำลังเตรียมระบบ...</section>
+
+  <section id="scan-view" class="card hidden">
+    <p class="lead">สแกน QR Code ของ Sales Order</p>
+    <button id="scan-button" class="primary-button" type="button">สแกน QR Code</button>
+  </section>
+
+  <section id="order-view" class="card hidden">
+    <div class="label">Sales Order</div><div id="sales-order" class="value strong"></div>
+    <div class="label">ลูกค้า</div><div id="customer-name" class="value"></div>
+    <div class="button-row">
+      <button id="rescan-button" class="secondary-button" type="button">สแกนใหม่</button>
+      <button id="continue-button" class="primary-button" type="button">ดำเนินการต่อ</button>
+    </div>
+  </section>
+
+  <section id="evidence-view" class="card hidden">
+    <div id="location-status" class="location-status">กำลังรับพิกัด...</div>
+    <div id="photos" class="photo-grid"></div>
+    <input id="camera-input" type="file" accept="image/*" capture="environment" class="hidden">
+    <button id="camera-button" class="secondary-button" type="button">ถ่ายรูป</button>
+    <div id="photo-count" class="muted">0 / 8 รูป</div>
+    <div class="button-row">
+      <button id="evidence-rescan" class="secondary-button" type="button">สแกนใหม่</button>
+      <button id="confirm-button" class="primary-button" type="button" disabled>ยืนยันการจัดส่ง</button>
+    </div>
+  </section>
+
+  <section id="success-view" class="card hidden">
+    <div class="success-mark">✓</div>
+    <h2>ยืนยันการจัดส่งเรียบร้อย</h2>
+    <div id="success-order" class="strong"></div>
+    <div id="success-customer"></div>
+    <div id="success-target" class="muted"></div>
+    <div id="success-chat" class="muted"></div>
+    <button id="next-button" class="primary-button" type="button">สแกนรายการถัดไป</button>
+  </section>
+</main>
+<script src="/assets/repair_management/js/line/delivery_confirm.js?v=20260817-pod03"></script>
+</body>
+</html>
