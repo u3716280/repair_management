@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 
 import frappe
-from frappe.utils import cint, flt, get_datetime, now_datetime
+from frappe.utils import cint, convert_utc_to_system_timezone, flt, get_datetime, now_datetime
 
 from repair_management.integrations.line.delivery_confirmation.auth import as_integration_user
 from repair_management.integrations.line.delivery_confirmation.share import create_image_urls
@@ -134,9 +134,16 @@ def _location_datetime(value):
     if not value:
         return None
     try:
-        return get_datetime(value)
+        parsed = get_datetime(value)
     except Exception:
         return None
+    if parsed.tzinfo is not None:
+        # Browser geolocation sends `Date.toISOString()`, a timezone-aware UTC
+        # string. Datetime columns store naive local time (see
+        # frappe.utils.now_datetime()) -- MySQL rejects an aware value outright
+        # ("Incorrect datetime value: '... +00:00'"), so convert then strip tz.
+        parsed = convert_utc_to_system_timezone(parsed).replace(tzinfo=None)
+    return parsed
 
 
 def _create_confirmation(auth, so, target, request_id, latitude, longitude, accuracy, location_timestamp):
