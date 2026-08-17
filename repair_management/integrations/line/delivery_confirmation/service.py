@@ -24,9 +24,15 @@ def _sales_order(name: str):
 
 
 def _delivery_note_names(sales_order: str) -> list[str]:
+    # "Delivery Note Item" is a child table, so frappe.get_list() (permission-
+    # checked) has no parent document to check permission against here and
+    # throws "Delivery Note Item is not a valid parent DocType for Delivery
+    # Note Item". This is only a lookup for candidate parent names -- the
+    # actual read permission is enforced afterward on the resolved Delivery
+    # Note/Sales Order document, so an unchecked get_all() is correct here.
     return list(
         dict.fromkeys(
-            frappe.get_list(
+            frappe.get_all(
                 "Delivery Note Item",
                 filters={"against_sales_order": sales_order},
                 pluck="parent",
