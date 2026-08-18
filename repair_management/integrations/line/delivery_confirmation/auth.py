@@ -32,27 +32,13 @@ def _get_channel(channel_name: str):
     return channel
 
 
-def _sibling_channel_names(channel) -> list[str]:
-    """All enabled LINE Channel rows configured as the same shared MINI App.
-
-    Multiple LINE Channel rows (distinct bots/webhooks) can point at the same
-    LINE Login/LIFF app. A LINE Recipient may be registered under any one of
-    them, so authorization must not be scoped to only the single channel row
-    that happened to be selected as the MINI App's entry point.
-    """
-    return frappe.get_all(
-        "LINE Channel",
-        filters={
-            "enabled": 1,
-            "mini_app_channel_id": channel.mini_app_channel_id,
-            "mini_app_liff_id": channel.mini_app_liff_id,
-        },
-        pluck="name",
-    )
-
-
 def authenticate(id_token: str, channel_name: str):
-    """Verify LINE ID token and resolve an enabled POD-authorized Recipient."""
+    """Verify LINE ID token and resolve an enabled POD-authorized Recipient.
+
+    Authorization is now purely person-level: `LINE Recipient` is one row per
+    physical LINE user (see services/recipient.py), so there is no more
+    per-channel duplication to scan or guess between here.
+    """
     channel = _get_channel(channel_name)
     payload = _verify_id_token(id_token, channel.mini_app_channel_id)
     line_user_id = (payload.get("sub") or "").strip()
@@ -60,38 +46,18 @@ def authenticate(id_token: str, channel_name: str):
         frappe.throw("LINE identity is missing", frappe.AuthenticationError)
 
     meta = frappe.get_meta("LINE Recipient")
-    fields = ["name", "recipient_id", "line_user_id", "enabled"]
-    if meta.has_field(ALLOW_FIELD):
-        fields.append(ALLOW_FIELD)
-    if meta.has_field("employee"):
-        fields.append("employee")
-
-    rows = frappe.get_all(
-        "LINE Recipient",
-        filters={
-            "line_channel": ["in", _sibling_channel_names(channel)],
-            "recipient_type": "User",
-        },
-        fields=fields,
-        limit_page_length=0,
-    )
-    row = next(
-        (
-            item
-            for item in rows
-            if (item.line_user_id == line_user_id or item.recipient_id == line_user_id)
-        ),
-        None,
-    )
-    if not row or not cint(row.enabled):
-        frappe.throw("ไม่มีสิทธิ์ใช้งาน Proof of Delivery", frappe.PermissionError)
-
     if not meta.has_field(ALLOW_FIELD):
         frappe.throw(
             "LINE Recipient ยังไม่มีฟิลด์ Allow Delivery Confirm กรุณารัน POD setup",
             frappe.ValidationError,
         )
-    if not cint(row.get(ALLOW_FIELD)):
+
+    fields = ["name", "enabled", ALLOW_FIELD]
+    if meta.has_field("employee"):
+        fields.append("employee")
+
+    row = frappe.db.get_value("LINE Recipient", line_user_id, fields, as_dict=True)
+    if not row or not cint(row.enabled) or not cint(row.get(ALLOW_FIELD)):
         frappe.throw("ไม่มีสิทธิ์ใช้งาน Proof of Delivery", frappe.PermissionError)
 
     return frappe._dict(

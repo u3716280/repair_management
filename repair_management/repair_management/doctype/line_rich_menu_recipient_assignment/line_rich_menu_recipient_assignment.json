@@ -23,9 +23,9 @@
   "fields": [
     {
       "fieldname": "recipient",
-      "label": "LINE Recipient",
+      "label": "LINE Recipient Channel",
       "fieldtype": "Link",
-      "options": "LINE Recipient",
+      "options": "LINE Recipient Channel",
       "reqd": 1
     },
     {

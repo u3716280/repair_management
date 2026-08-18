@@ -1,0 +1,17 @@
+{
+  "doctype":"DocType","name":"LINE Recipient Channel","module":"Repair Management","custom":0,"istable":0,"editable_grid":0,"engine":"InnoDB",
+  "field_order":["line_recipient","line_channel","recipient_id","display_name","following_status","enabled","first_seen_at","last_seen_at","last_event_type"],
+  "fields":[
+    {"fieldname":"line_recipient","label":"LINE Recipient","fieldtype":"Link","options":"LINE Recipient","reqd":1},
+    {"fieldname":"line_channel","label":"LINE Channel","fieldtype":"Link","options":"LINE Channel","reqd":1},
+    {"fieldname":"recipient_id","label":"Recipient ID","fieldtype":"Data","length":255,"read_only":1,"fetch_from":"line_recipient.recipient_id"},
+    {"fieldname":"display_name","label":"Display Name","fieldtype":"Data","length":255,"read_only":1,"fetch_from":"line_recipient.display_name"},
+    {"fieldname":"following_status","label":"Following Status","fieldtype":"Select","options":"Unknown\nFollowing\nUnfollowed","default":"Unknown"},
+    {"fieldname":"enabled","label":"Enabled","fieldtype":"Check","default":"1"},
+    {"fieldname":"first_seen_at","label":"First Seen At","fieldtype":"Datetime","read_only":1},
+    {"fieldname":"last_seen_at","label":"Last Seen At","fieldtype":"Datetime","read_only":1},
+    {"fieldname":"last_event_type","label":"Last Event Type","fieldtype":"Data","length":140,"read_only":1}
+  ],
+  "permissions":[{"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1}],
+  "sort_field":"last_seen_at","sort_order":"DESC","track_changes":1,"title_field":"display_name","show_title_field_in_link":1
+}

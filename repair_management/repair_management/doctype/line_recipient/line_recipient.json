@@ -1,23 +1,19 @@
 {
   "doctype":"DocType","name":"LINE Recipient","module":"Repair Management","custom":0,"istable":0,"editable_grid":0,"engine":"InnoDB",
-  "field_order":["line_channel","recipient_type","recipient_id","line_user_id","display_name","picture_url","status_message","enabled","allow_mark_attendance","following_status","first_seen_at","last_seen_at","last_event_type","last_profile_sync_at","profile_sync_error"],
+  "field_order":["recipient_type","recipient_id","line_user_id","display_name","picture_url","status_message","enabled","allow_mark_attendance","last_profile_sync_at","profile_sync_error"],
   "fields":[
-    {"fieldname":"line_channel","label":"LINE Channel","fieldtype":"Link","options":"LINE Channel","reqd":1},
     {"fieldname":"recipient_type","label":"Recipient Type","fieldtype":"Select","options":"User\nGroup\nRoom","reqd":1},
-    {"fieldname":"recipient_id","label":"Recipient ID","fieldtype":"Data","length":255,"reqd":1},
+    {"fieldname":"recipient_id","label":"Recipient ID","fieldtype":"Data","length":255,"reqd":1,"read_only":1},
     {"fieldname":"line_user_id","label":"LINE User ID","fieldtype":"Data","length":255,"read_only":1},
     {"fieldname":"display_name","label":"Display Name","fieldtype":"Data","length":255},
     {"fieldname":"picture_url","label":"Picture URL","fieldtype":"Small Text","read_only":1},
     {"fieldname":"status_message","label":"Status Message","fieldtype":"Small Text","read_only":1},
     {"fieldname":"enabled","label":"Enabled","fieldtype":"Check","default":"1"},
     {"fieldname":"allow_mark_attendance","label":"Allow Mark Attendance","fieldtype":"Check","default":"0"},
-    {"fieldname":"following_status","label":"Following Status","fieldtype":"Select","options":"Unknown\nFollowing\nUnfollowed","default":"Unknown"},
-    {"fieldname":"first_seen_at","label":"First Seen At","fieldtype":"Datetime","read_only":1},
-    {"fieldname":"last_seen_at","label":"Last Seen At","fieldtype":"Datetime","read_only":1},
-    {"fieldname":"last_event_type","label":"Last Event Type","fieldtype":"Data","length":140,"read_only":1},
     {"fieldname":"last_profile_sync_at","label":"Last Profile Sync At","fieldtype":"Datetime","read_only":1},
     {"fieldname":"profile_sync_error","label":"Profile Sync Error","fieldtype":"Long Text","read_only":1}
   ],
   "permissions":[{"role":"System Manager","read":1,"write":1,"create":1,"delete":1,"report":1,"export":1}],
-  "sort_field":"last_seen_at","sort_order":"DESC","track_changes":1,"title_field":"display_name","show_title_field_in_link":1
+  "sort_field":"modified","sort_order":"DESC","track_changes":1,"title_field":"display_name","show_title_field_in_link":1,
+  "autoname":"field:recipient_id"
 }

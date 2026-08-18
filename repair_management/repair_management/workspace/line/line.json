@@ -10,8 +10,8 @@
    "chart_name": "LINE - Recipients by Enabled"
   }
  ],
- "content": "[{\"id\": \"line-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">LINE Operations</span>\", \"col\": 12}}, {\"id\": \"line-channel-quota-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>LINE Channel \u2014 Message Quota</b></span>\", \"col\": 12}}, {\"id\": \"line-quota-line-erpnext-server-monthly-quota\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Monthly Quota\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-used-this-month\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Used This Month\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-remaining\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Remaining\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-usage\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Usage %\", \"col\": 3}}, {\"id\": \"b5e9ad5c87\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Recipients\", \"col\": 3}}, {\"id\": \"4451e1b7d7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Rich Menus\", \"col\": 3}}, {\"id\": \"83f46f9e8b\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Flow Sessions\", \"col\": 3}}, {\"id\": \"a5089663a9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Profiles\", \"col\": 3}}, {\"id\": \"line-kpi-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Overview</span>\", \"col\": 12}}, {\"id\": \"cc0729cc69\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Recipients\", \"col\": 3}}, {\"id\": \"b9b9d3887e\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Rich Menus\", \"col\": 3}}, {\"id\": \"ab6c4af0ef\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Deployments\", \"col\": 3}}, {\"id\": \"110c851bd5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Active Flow Sessions\", \"col\": 3}}, {\"id\": \"line-monitor-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Flow Monitoring</span>\", \"col\": 12}}, {\"id\": \"dc15d72e46\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Status\", \"col\": 6}}, {\"id\": \"f84c68b022\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Action Key\", \"col\": 6}}, {\"id\": \"6a3b5c5ead\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Recipients by Enabled\", \"col\": 6}}, {\"id\": \"4c5b870a58\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"25a5c2f0e1\", \"type\": \"card\", \"data\": {\"card_name\": \"Rich Menu\", \"col\": 4}}, {\"id\": \"7d017e2186\", \"type\": \"card\", \"data\": {\"card_name\": \"Operations\", \"col\": 4}}]",
- "creation": "2026-08-06 16:47:59.310905",
+ "content": "[{\"id\": \"line-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">LINE Operations</span>\", \"col\": 12}}, {\"id\": \"line-channel-quota-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>LINE Channel \\u2014 Message Quota</b></span>\", \"col\": 12}}, {\"id\": \"line-quota-line-erpnext-server-monthly-quota\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Monthly Quota\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-used-this-month\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Used This Month\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-remaining\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Remaining\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-usage\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Usage %\", \"col\": 3}}, {\"id\": \"b5e9ad5c87\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Recipients\", \"col\": 3}}, {\"id\": \"4451e1b7d7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Rich Menus\", \"col\": 3}}, {\"id\": \"83f46f9e8b\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Flow Sessions\", \"col\": 3}}, {\"id\": \"a5089663a9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Profiles\", \"col\": 3}}, {\"id\": \"line-kpi-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Overview</span>\", \"col\": 12}}, {\"id\": \"cc0729cc69\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Recipients\", \"col\": 3}}, {\"id\": \"b9b9d3887e\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Rich Menus\", \"col\": 3}}, {\"id\": \"ab6c4af0ef\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Deployments\", \"col\": 3}}, {\"id\": \"110c851bd5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Active Flow Sessions\", \"col\": 3}}, {\"id\": \"line-monitor-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Flow Monitoring</span>\", \"col\": 12}}, {\"id\": \"dc15d72e46\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Status\", \"col\": 6}}, {\"id\": \"f84c68b022\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Action Key\", \"col\": 6}}, {\"id\": \"6a3b5c5ead\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Recipients by Enabled\", \"col\": 6}}, {\"id\": \"de20708fc1\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"6973280e99\", \"type\": \"card\", \"data\": {\"card_name\": \"Business Flows\", \"col\": 4}}, {\"id\": \"c22cc94eb0\", \"type\": \"card\", \"data\": {\"card_name\": \"Rich Menu\", \"col\": 4}}, {\"id\": \"521e03e9b8\", \"type\": \"card\", \"data\": {\"card_name\": \"Operations\", \"col\": 4}}, {\"id\": \"632e04870d\", \"type\": \"card\", \"data\": {\"card_name\": \"Logs\", \"col\": 4}}]",
+ "creation": "2026-08-18 20:52:19.519518",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -47,6 +47,45 @@
    "label": "Media Upload Profiles",
    "link_count": 0,
    "link_to": "LINE Document Media Upload Profile",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Query Configuration",
+   "link_count": 0,
+   "link_to": "LINE Stock Query Configuration",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Business Flows",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Business Flows",
+   "link_count": 0,
+   "link_to": "LINE Business Flow",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Action Registry",
+   "link_count": 0,
+   "link_to": "LINE Action Registry",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -93,6 +132,26 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Recipient Assignments",
+   "link_count": 0,
+   "link_to": "LINE Rich Menu Recipient Assignment",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Audiences",
+   "link_count": 0,
+   "link_to": "LINE Rich Menu Audience",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Operations",
    "link_count": 0,
    "link_type": "DocType",
@@ -112,15 +171,74 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Recipient Channels",
+   "link_count": 0,
+   "link_to": "LINE Recipient Channel",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Flow Sessions",
    "link_count": 0,
    "link_to": "LINE Flow Session",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Media Files",
+   "link_count": 0,
+   "link_to": "LINE Media File",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Logs",
+   "link_count": 0,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Webhook Requests",
+   "link_count": 0,
+   "link_to": "LINE Webhook Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Webhook Events",
+   "link_count": 0,
+   "link_to": "LINE Webhook Event",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Integration Log",
+   "link_count": 0,
+   "link_to": "LINE Integration Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-08-13 13:35:16.783300",
+ "modified": "2026-08-18 21:48:00.873851",
  "modified_by": "Administrator",
  "module": "Repair Management",
  "name": "LINE",
