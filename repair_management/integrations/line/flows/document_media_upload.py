@@ -37,7 +37,7 @@ def _postback(action, **params):
     return urlencode({"action": action, **params})
 
 
-def _video_prompt_message(session, display=None, help_mode=False):
+def _video_prompt_message(session, display=None, help_mode=False, p=None):
     title = f"เลือกเอกสารแล้ว\n{display}\n\n" if display else ""
     if help_mode:
         body = (
@@ -52,6 +52,9 @@ def _video_prompt_message(session, display=None, help_mode=False):
             "• เปิดกล้อง: สำหรับถ่าย VDO ใหม่\n"
             "• แนบ VDO: ดูวิธีเลือกวิดีโอที่มีอยู่ในเครื่อง"
         )
+        if p is not None:
+            maximum = int(p.maximum_files or 8)
+            body += f"\n\nส่งได้ 1–{maximum} คลิป"
     return {
         "type": "text",
         "text": title + body,
@@ -415,7 +418,7 @@ def _media_prompt_message(session, p):
                 ]
             },
         }
-    return _video_prompt_message(session, display=display)
+    return _video_prompt_message(session, display=display, p=p)
 
 
 def _verify_attachment(file_name, doctype, docname):
@@ -483,12 +486,37 @@ def _image_burnin_text(item_name, burn_in_date):
         text = f"{text}\n{str(burn_in_date).strip()}"
     return text
 
+def _record_cleanup_errors(session, errors):
+    """Videos are processed independently, so each process_video_burnin()
+    call's cleanup errors need to be accumulated (not overwritten) until the
+    session actually completes -- an earlier video's job may finish well
+    before the one that ends up triggering completion.
+    """
+    if not errors:
+        return
+    ctx = context(session)
+    combined = list(ctx.get("cleanup_errors") or [])
+    combined.extend(errors)
+    ctx["cleanup_errors"] = combined
+    set_context(session, ctx)
+
+
 def _complete_video_session(channel, session, cleanup_errors=None):
+    all_errors = list(context(session).get("cleanup_errors") or [])
+    all_errors.extend(cleanup_errors or [])
+    count = frappe.db.count(
+        "LINE Media File",
+        {"flow_session": session.name, "media_type": "Video", "processing_status": "Finalized"},
+    )
     session.db_set({
         "status": "Completed",
         "current_state": "Completed",
-        "error_message": "\n".join(cleanup_errors or [])[:1400] if cleanup_errors else None,
+        "error_message": "\n".join(all_errors)[:1400] if all_errors else None,
     })
+    LineClient(channel).push(
+        session.line_user_id,
+        [{"type": "text", "text": f"แนบวิดีโอเรียบร้อย ({count} คลิป) เข้ากับ {session.target_document} แล้ว"}],
+    )
 
 def start(channel, user_id, reply_token, flow, **kwargs):
     p = profile(flow)
@@ -688,6 +716,37 @@ def _image_continue_message(session, p, count):
     return message
 
 
+def _video_continue_message(session, p, count):
+    maximum = int(p.maximum_files or 8)
+    remaining = max(maximum - int(count or 0), 0)
+    text = f"รับวิดีโอแล้ว {count}/{maximum} คลิป"
+    if remaining:
+        text += "\nสามารถส่งวิดีโอเพิ่ม หรือกด เสร็จสิ้น เพื่อแนบไปยังเอกสาร"
+    else:
+        text += "\nรับวิดีโอครบจำนวนสูงสุดแล้ว ระบบกำลังแนบไฟล์"
+
+    items = []
+    if remaining:
+        items.extend([
+            {"type": "action", "action": {"type": "camera", "label": "ถ่ายเพิ่ม"}},
+            {
+                "type": "action",
+                "action": {
+                    "type": "postback",
+                    "label": "แนบ VDO เพิ่ม",
+                    "displayText": "แนบ VDO เพิ่ม",
+                    "data": _postback("video_attach_help", session=session.name),
+                },
+            },
+            {"type": "action", "action": {"type": "postback", "label": "เสร็จสิ้น", "displayText": "เสร็จสิ้นการส่งวิดีโอ", "data": _postback("media_finish", session=session.name)}},
+        ])
+    items.append({"type": "action", "action": {"type": "postback", "label": "ยกเลิก", "displayText": "ยกเลิก", "data": _postback("media_cancel", session=session.name)}})
+
+    message = {"type": "text", "text": text}
+    if items:
+        message["quickReply"] = {"items": items}
+    return message
+
 
 def video_attach_help(channel, user_id, reply_token, params, **kwargs):
     session = _load_owned_session(channel, user_id, params.get("session"), WAITING_MEDIA)
@@ -717,24 +776,126 @@ def cancel(channel, user_id, reply_token, params, **kwargs):
     LineClient(channel).reply(reply_token, [{"type": "text", "text": "ยกเลิกรายการแล้ว"}])
 
 
+def _downloaded_image_count(session):
+    return frappe.db.count(
+        "LINE Media File",
+        {
+            "flow_session": session.name,
+            "media_type": "Image",
+            "processing_status": ["in", ["Downloaded", "Finalized"]],
+        },
+    )
+
+
+def _finalized_video_count(session):
+    return frappe.db.count(
+        "LINE Media File",
+        {
+            "flow_session": session.name,
+            "media_type": "Video",
+            "processing_status": "Finalized",
+        },
+    )
+
+
+def _remember_finish_request(session, expected_count):
+    ctx = context(session)
+    ctx["finish_requested"] = True
+    ctx["finish_expected"] = expected_count
+    set_context(session, ctx)
+
+
+def _check_pending_finish(channel, session, p):
+    """Call after a single media item reaches its terminal processed state
+    (an image download, or a video's own Finalized attach/burn-in). If an
+    earlier "finish" tap (or hitting maximum_files) is now satisfied by this
+    completion, finish the session.
+    """
+    expected = int(context(session).get("finish_expected") or 0)
+    if expected:
+        _try_complete_media_session(channel, session, p, expected)
+
+
+def _try_complete_media_session(channel, session, p, expected_count):
+    """Complete the session once every media item the user has been told was
+    "accepted" (see receive()) has actually finished processing.
+
+    Images are batched: finalize() merges every Downloaded/Finalized image
+    into one collage/burn-in attachment, so this enqueues that job once all
+    expected images have at least downloaded.
+
+    Videos are processed independently as each one arrives (no merge step),
+    so this just waits for every expected video to reach Finalized and then
+    marks the session Completed directly -- no separate job to enqueue.
+
+    Either way, if some items are still in flight on the async download() (or
+    process_video_burnin()) job, remember the request so the call that
+    completes the last one triggers this again instead of the session
+    finishing early with a partial set of files.
+    """
+    lock_key = frappe.cache.make_key(f"line-media-finish:{session.name}")
+    with frappe.cache.lock(lock_key, timeout=60, blocking_timeout=15):
+        session.reload()
+        if p.media_type == "Image":
+            if session.current_state != WAITING_MEDIA:
+                return session.current_state == "Finalizing"
+            if _downloaded_image_count(session) < expected_count:
+                _remember_finish_request(session, expected_count)
+                return False
+            session.db_set("current_state", "Finalizing")
+            frappe.enqueue(finalize, queue="long", channel=channel, session_name=session.name, enqueue_after_commit=True)
+            return True
+
+        if session.current_state != WAITING_MEDIA:
+            return session.status == "Completed"
+        if _finalized_video_count(session) < expected_count:
+            _remember_finish_request(session, expected_count)
+            return False
+        _complete_video_session(channel, session)
+        return True
+
+
+def _after_video_finalized(channel, session, p):
+    """Call once a single video has reached its terminal Finalized state
+    (either synchronously in download() or from the async
+    process_video_burnin() job). Completes the whole session once enough
+    videos -- per maximum_files, or an earlier "finish" tap -- have all
+    finished processing.
+    """
+    session.reload()
+    ctx = context(session)
+    accepted = int(ctx.get("accepted_media") or 0)
+    maximum = int(p.maximum_files or 8)
+    if accepted and accepted >= maximum:
+        _try_complete_media_session(channel, session, p, accepted)
+    else:
+        _check_pending_finish(channel, session, p)
+
+
 def finish(channel, user_id, reply_token, params, **kwargs):
     session = _load_owned_session(channel, user_id, params.get("session"), WAITING_MEDIA)
     if not session:
         LineClient(channel).reply(reply_token, [{"type": "text", "text": "รายการนี้หมดอายุแล้ว กรุณาเริ่มรายการใหม่"}])
         return
     p = _session_profile(session)
-    count = int(session.received_files or 0)
+    is_image = p.media_type == "Image"
+    unit = "รูป" if is_image else "คลิป"
+    ctx = context(session)
+    accepted = int(ctx.get("accepted_media") or 0)
     minimum = int(p.minimum_files or 1)
     maximum = int(p.maximum_files or 8)
-    if count < minimum:
-        LineClient(channel).reply(reply_token, [{"type": "text", "text": f"กรุณาส่งรูปอย่างน้อย {minimum} รูปก่อนกดเสร็จสิ้น"}])
+    if accepted < minimum:
+        LineClient(channel).reply(reply_token, [{"type": "text", "text": f"กรุณาส่งอย่างน้อย {minimum} {unit}ก่อนกดเสร็จสิ้น"}])
         return
-    if count > maximum:
-        LineClient(channel).reply(reply_token, [{"type": "text", "text": f"จำนวนไฟล์เกินกำหนดสูงสุด {maximum} รูป"}])
+    if accepted > maximum:
+        LineClient(channel).reply(reply_token, [{"type": "text", "text": f"จำนวนไฟล์เกินกำหนดสูงสุด {maximum} {unit}"}])
         return
-    session.db_set("current_state", "Finalizing")
-    LineClient(channel).reply(reply_token, [{"type": "text", "text": "กำลังรวมและแนบรูป กรุณารอสักครู่"}])
-    frappe.enqueue(finalize, queue="long", channel=channel, session_name=session.name, enqueue_after_commit=True)
+
+    if _try_complete_media_session(channel, session, p, accepted):
+        text = "กำลังรวมและแนบรูป กรุณารอสักครู่" if is_image else "กำลังแนบวิดีโอ กรุณารอสักครู่"
+        LineClient(channel).reply(reply_token, [{"type": "text", "text": text}])
+    else:
+        LineClient(channel).reply(reply_token, [{"type": "text", "text": f"ระบบกำลังรับ{unit}ที่เหลือ เมื่อครบจะแนบให้อัตโนมัติ"}])
 
 
 def handle_text(channel, user_id, reply_token, session, text, **kwargs):
@@ -788,9 +949,22 @@ def receive(channel, user_id, reply_token, session, message, **kwargs):
         return True
 
     maximum = int(p.maximum_files or 8)
-    if int(session.received_files or 0) >= maximum:
+    accepted = int(ctx.get("accepted_media") or 0)
+    if accepted >= maximum:
         LineClient(channel).reply(reply_token, [{"type": "text", "text": f"รับไฟล์ครบจำนวนสูงสุด {maximum} ไฟล์แล้ว"}])
         return True
+
+    # Count this item as accepted synchronously, on the fast webhook queue,
+    # instead of relying on session.received_files -- that field (and the
+    # per-video Finalized count) is only updated later by the async
+    # download()/process_video_burnin() jobs (queue="long"), which can still
+    # be in flight when a quick "finish" tap arrives right behind the last
+    # file. Without this, finish() (or the maximum check above) can read a
+    # stale, too-low count and finish with fewer files than the user
+    # actually sent.
+    accepted += 1
+    ctx["accepted_media"] = accepted
+    set_context(session, ctx)
 
     frappe.enqueue(
         download,
@@ -804,13 +978,9 @@ def receive(channel, user_id, reply_token, session, message, **kwargs):
     # Acknowledge the inbound media with this webhook event's replyToken.
     # Do not use a Push message merely to acknowledge receipt.
     if expected == "image":
-        pending_count = min(int(session.received_files or 0) + 1, maximum)
-        LineClient(channel).reply(reply_token, [_image_continue_message(session, p, pending_count)])
+        LineClient(channel).reply(reply_token, [_image_continue_message(session, p, accepted)])
     else:
-        LineClient(channel).reply(
-            reply_token,
-            [{"type": "text", "text": "ได้รับวิดีโอแล้ว ระบบกำลังรับและประมวลผลไฟล์"}],
-        )
+        LineClient(channel).reply(reply_token, [_video_continue_message(session, p, accepted)])
     return True
 
 
@@ -856,46 +1026,44 @@ def download(channel, session_name, message):
     if p.media_type == "Image":
         _remember_burnin_date(session)
 
-    if p.media_type == "Video":
-        if int(ctx.get("burn_in") or 0):
-            session.db_set("current_state", "Finalizing")
-            frappe.enqueue(
-                process_video_burnin,
-                queue="long",
-                channel=channel,
-                session_name=session.name,
-                media_row_name=media_row.name,
-                enqueue_after_commit=True,
-            )
-            return
-
-        attachments.relink(file_doc.name, session.target_doctype, session.target_document)
-        if not _verify_attachment(file_doc.name, session.target_doctype, session.target_document):
-            frappe.throw("Video attachment verification failed")
-        frappe.db.set_value(
-            "LINE Media File",
-            media_row.name,
-            {"processing_status": "Finalized"},
-            update_modified=False,
-        )
-        _remember_final_file(session, file_doc.name)
-        _complete_video_session(channel, session)
+        maximum = int(p.maximum_files or 8)
+        if count >= maximum:
+            _try_complete_media_session(channel, session, p, count)
+        else:
+            # ctx was loaded when this job started and may predate a
+            # concurrent finish() call, so re-read the session context fresh
+            # from the DB rather than trusting the stale local copy.
+            session.reload()
+            _check_pending_finish(channel, session, p)
+        # The receive webhook already replied with the acknowledgement and
+        # continuation controls by replyToken. Avoid a duplicate Push here.
         return
 
-    maximum = int(p.maximum_files or 8)
-    if count >= maximum:
-        session.db_set("current_state", "Finalizing")
+    # Video: each accepted video is processed to its own terminal Finalized
+    # state independently as it arrives -- there is no cross-video merge
+    # step like the image collage, so the session only needs to wait for
+    # every accepted video to reach Finalized before it can complete.
+    if int(ctx.get("burn_in") or 0):
         frappe.enqueue(
-            finalize,
+            process_video_burnin,
             queue="long",
             channel=channel,
             session_name=session.name,
+            media_row_name=media_row.name,
             enqueue_after_commit=True,
         )
-    else:
-        # The receive webhook already replied with the acknowledgement and
-        # continuation controls by replyToken. Avoid a duplicate Push here.
-        pass
+        return
+
+    attachments.relink(file_doc.name, session.target_doctype, session.target_document)
+    if not _verify_attachment(file_doc.name, session.target_doctype, session.target_document):
+        frappe.throw("Video attachment verification failed")
+    frappe.db.set_value(
+        "LINE Media File",
+        media_row.name,
+        {"processing_status": "Finalized"},
+        update_modified=False,
+    )
+    _after_video_finalized(channel, session, p)
 
 
 
@@ -903,18 +1071,19 @@ def process_video_burnin(channel, session_name, media_row_name):
     session = frappe.get_doc("LINE Flow Session", session_name)
     p = _session_profile(session)
     ctx = context(session)
+    media_row = frappe.get_doc("LINE Media File", media_row_name)
 
     try:
+        if media_row.processing_status == "Finalized":
+            # Already processed by an earlier attempt at this exact job (a
+            # redelivered webhook / retried RQ job); nothing left to redo,
+            # just make sure session completion still gets checked.
+            _after_video_finalized(channel, session, p)
+            return
+
         row, reason = _revalidate_target_item(session, p)
         if reason:
             frappe.throw("Target document or item is no longer eligible")
-
-        existing = _existing_final_file(session)
-        media_row = frappe.get_doc("LINE Media File", media_row_name)
-        if existing:
-            cleanup_errors = _cleanup_original_media([media_row])
-            _complete_video_session(channel, session, cleanup_errors)
-            return
 
         if not media_row.temporary_file or not frappe.db.exists("File", media_row.temporary_file):
             frappe.throw("Original video File is missing")
@@ -939,9 +1108,11 @@ def process_video_burnin(channel, session_name, media_row_name):
 
             burnin.burn_in_video(source_path, output_path, item_name)
 
+            # Filename must be unique per video, not just per session -- a
+            # session can now hold more than one video (maximum_files > 1).
             final_doc = attachments.save(
                 output_path.read_bytes(),
-                f"LINE-VIDEO-BURNIN-{session.target_document}-{session.name}.mp4",
+                f"LINE-VIDEO-BURNIN-{session.target_document}-{media_row.name}.mp4",
                 session.target_doctype,
                 session.target_document,
                 bool(p.private_file),
@@ -949,9 +1120,10 @@ def process_video_burnin(channel, session_name, media_row_name):
             if not _verify_attachment(final_doc.name, session.target_doctype, session.target_document):
                 frappe.throw("Final video attachment verification failed")
 
-            _remember_final_file(session, final_doc.name)
             cleanup_errors = _cleanup_original_media([media_row])
-            _complete_video_session(channel, session, cleanup_errors)
+            if cleanup_errors:
+                _record_cleanup_errors(session, cleanup_errors)
+            _after_video_finalized(channel, session, p)
         finally:
             if output_path:
                 try:
@@ -1055,6 +1227,13 @@ def _complete_image_session(channel, session, rows, cleanup_errors=None):
             "current_state": "Completed",
             "error_message": "\n".join(cleanup_errors or [])[:1400] if cleanup_errors else None,
         }
+    )
+    # finalize() runs on a background queue well after the reply_token from
+    # the last chat message has expired, so a push is the only way to tell
+    # the user the merge/attach actually happened (and with how many photos).
+    LineClient(channel).push(
+        session.line_user_id,
+        [{"type": "text", "text": f"แนบรูปเรียบร้อย ({len(rows)} รูป) เข้ากับ {session.target_document} แล้ว"}],
     )
 
 
