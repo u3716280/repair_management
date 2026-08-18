@@ -95,13 +95,33 @@ def _get_authorized_recipient(channel_names: list[str], line_user_id: str):
             "allow_mark_attendance": 1,
         },
         or_filters={"line_user_id": line_user_id, "recipient_id": line_user_id},
-        fields=["name", "line_user_id", "recipient_id"],
-        limit_page_length=2,
+        fields=["name", "line_channel", "line_user_id", "recipient_id"],
+        order_by="last_seen_at desc, modified desc",
+        limit_page_length=0,
     )
     if not recipients:
         frappe.throw("ไม่มีสิทธิ์ใช้งาน", frappe.PermissionError)
+
     if len(recipients) > 1:
-        frappe.throw("LINE Recipient configuration is ambiguous.", frappe.ValidationError)
+        # The same physical LINE identity can end up with a separate `LINE
+        # Recipient` row per sibling channel (each channel's webhook upserts
+        # its own row independently -- see services/recipient.py). Rather
+        # than block the user from marking attendance, resolve to the most
+        # recently active row, mirroring the dedup strategy already used in
+        # services/recipient.py::_existing_recipient, and log it so the
+        # duplicate rows can be cleaned up.
+        frappe.log_error(
+            title="Duplicate LINE Recipient for attendance",
+            message=frappe.as_json(
+                {
+                    "line_user_id": line_user_id,
+                    "channel_names": channel_names,
+                    "chosen": recipients[0].name,
+                    "duplicates": [r.name for r in recipients],
+                }
+            ),
+        )
+
     return recipients[0]
 
 
