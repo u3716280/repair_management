@@ -198,6 +198,25 @@ def quota_usage_percent(filters=None):
     }
 
 
+def _format_quota_usage(used, limit) -> str:
+    if used is None:
+        return "N/A"
+    used_display = f"{int(used):,}"
+    if limit is None:
+        return f"{used_display} / Unlimited"
+    return f"{used_display} / {int(limit):,}"
+
+
+@frappe.whitelist()
+def quota_usage_display(filters=None):
+    data = _safe_snapshot(filters)
+    return {
+        "value": _format_quota_usage(data["used"], data["limit"]),
+        "fieldtype": "Data",
+        **_route(data["channel"]),
+    }
+
+
 @frappe.whitelist()
 def check(channel: str | None = None):
     if not channel:

@@ -10,7 +10,7 @@
    "chart_name": "LINE - Recipients by Enabled"
   }
  ],
- "content": "[{\"id\": \"line-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">LINE Operations</span>\", \"col\": 12}}, {\"id\": \"line-channel-quota-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>LINE Channel \\u2014 Message Quota</b></span>\", \"col\": 12}}, {\"id\": \"line-quota-line-erpnext-server-monthly-quota\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Monthly Quota\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-used-this-month\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Used This Month\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-remaining\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Remaining\", \"col\": 3}}, {\"id\": \"line-quota-line-erpnext-server-usage\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Usage %\", \"col\": 3}}, {\"id\": \"b5e9ad5c87\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Recipients\", \"col\": 3}}, {\"id\": \"4451e1b7d7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Rich Menus\", \"col\": 3}}, {\"id\": \"83f46f9e8b\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Flow Sessions\", \"col\": 3}}, {\"id\": \"a5089663a9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Profiles\", \"col\": 3}}, {\"id\": \"line-kpi-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Overview</span>\", \"col\": 12}}, {\"id\": \"cc0729cc69\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Recipients\", \"col\": 3}}, {\"id\": \"b9b9d3887e\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Rich Menus\", \"col\": 3}}, {\"id\": \"ab6c4af0ef\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Deployments\", \"col\": 3}}, {\"id\": \"110c851bd5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Active Flow Sessions\", \"col\": 3}}, {\"id\": \"line-monitor-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Flow Monitoring</span>\", \"col\": 12}}, {\"id\": \"dc15d72e46\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Status\", \"col\": 6}}, {\"id\": \"f84c68b022\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Action Key\", \"col\": 6}}, {\"id\": \"6a3b5c5ead\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Recipients by Enabled\", \"col\": 6}}, {\"id\": \"de20708fc1\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"6973280e99\", \"type\": \"card\", \"data\": {\"card_name\": \"Business Flows\", \"col\": 4}}, {\"id\": \"c22cc94eb0\", \"type\": \"card\", \"data\": {\"card_name\": \"Rich Menu\", \"col\": 4}}, {\"id\": \"521e03e9b8\", \"type\": \"card\", \"data\": {\"card_name\": \"Operations\", \"col\": 4}}, {\"id\": \"632e04870d\", \"type\": \"card\", \"data\": {\"card_name\": \"Logs\", \"col\": 4}}]",
+ "content": "[{\"id\": \"line-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">LINE Operations</span>\", \"col\": 12}}, {\"id\": \"line-channel-quota-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>LINE Channel \u2014 Message Quota</b></span>\", \"col\": 12}}, {\"id\": \"line-quota-channel-erp-delivery\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>ERP_Delivery</b></span>\", \"col\": 12}}, {\"id\": \"line-quota-line-erp-delivery-message-quota\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ERP_Delivery - Message Quota\", \"col\": 4}}, {\"id\": \"line-quota-line-erp-delivery-remaining\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ERP_Delivery - Remaining\", \"col\": 4}}, {\"id\": \"line-quota-line-erp-delivery-usage\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ERP_Delivery - Usage %\", \"col\": 4}}, {\"id\": \"line-quota-channel-erp-hr\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>ERP_HR</b></span>\", \"col\": 12}}, {\"id\": \"line-quota-line-erp-hr-message-quota\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ERP_HR - Message Quota\", \"col\": 4}}, {\"id\": \"line-quota-line-erp-hr-remaining\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ERP_HR - Remaining\", \"col\": 4}}, {\"id\": \"line-quota-line-erp-hr-usage\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ERP_HR - Usage %\", \"col\": 4}}, {\"id\": \"line-quota-channel-erpnext-server\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h5\\\"><b>ErpNext Server</b></span>\", \"col\": 12}}, {\"id\": \"line-quota-line-erpnext-server-message-quota\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Message Quota\", \"col\": 4}}, {\"id\": \"line-quota-line-erpnext-server-remaining\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Remaining\", \"col\": 4}}, {\"id\": \"line-quota-line-erpnext-server-usage\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - ErpNext Server - Usage %\", \"col\": 4}}, {\"id\": \"b5e9ad5c87\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Recipients\", \"col\": 3}}, {\"id\": \"4451e1b7d7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Rich Menus\", \"col\": 3}}, {\"id\": \"83f46f9e8b\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Flow Sessions\", \"col\": 3}}, {\"id\": \"a5089663a9\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Media Profiles\", \"col\": 3}}, {\"id\": \"line-kpi-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Overview</span>\", \"col\": 12}}, {\"id\": \"cc0729cc69\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Recipients\", \"col\": 3}}, {\"id\": \"b9b9d3887e\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Rich Menus\", \"col\": 3}}, {\"id\": \"ab6c4af0ef\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Deployments\", \"col\": 3}}, {\"id\": \"110c851bd5\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"LINE - Active Flow Sessions\", \"col\": 3}}, {\"id\": \"line-monitor-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">Flow Monitoring</span>\", \"col\": 12}}, {\"id\": \"dc15d72e46\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Status\", \"col\": 6}}, {\"id\": \"f84c68b022\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Flow Sessions by Action Key\", \"col\": 6}}, {\"id\": \"6a3b5c5ead\", \"type\": \"chart\", \"data\": {\"chart_name\": \"LINE - Recipients by Enabled\", \"col\": 6}}, {\"id\": \"de20708fc1\", \"type\": \"card\", \"data\": {\"card_name\": \"Configuration\", \"col\": 4}}, {\"id\": \"6973280e99\", \"type\": \"card\", \"data\": {\"card_name\": \"Business Flows\", \"col\": 4}}, {\"id\": \"c22cc94eb0\", \"type\": \"card\", \"data\": {\"card_name\": \"Rich Menu\", \"col\": 4}}, {\"id\": \"521e03e9b8\", \"type\": \"card\", \"data\": {\"card_name\": \"Operations\", \"col\": 4}}, {\"id\": \"632e04870d\", \"type\": \"card\", \"data\": {\"card_name\": \"Logs\", \"col\": 4}}]",
  "creation": "2026-08-18 20:52:19.519518",
  "custom_blocks": [],
  "docstatus": 0,
@@ -238,7 +238,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-08-18 21:48:00.873851",
+ "modified": "2026-08-19 15:45:48.094134",
  "modified_by": "Administrator",
  "module": "Repair Management",
  "name": "LINE",
@@ -256,16 +256,31 @@
    "number_card_name": "LINE - Active Flow Sessions"
   },
   {
-   "number_card_name": "LINE - ErpNext Server - Monthly Quota"
-  },
-  {
-   "number_card_name": "LINE - ErpNext Server - Used This Month"
+   "number_card_name": "LINE - ERP_Delivery - Message Quota"
   },
   {
    "number_card_name": "LINE - ErpNext Server - Remaining"
   },
   {
+   "number_card_name": "LINE - ERP_Delivery - Remaining"
+  },
+  {
    "number_card_name": "LINE - ErpNext Server - Usage %"
+  },
+  {
+   "number_card_name": "LINE - ERP_Delivery - Usage %"
+  },
+  {
+   "number_card_name": "LINE - ERP_HR - Message Quota"
+  },
+  {
+   "number_card_name": "LINE - ERP_HR - Remaining"
+  },
+  {
+   "number_card_name": "LINE - ERP_HR - Usage %"
+  },
+  {
+   "number_card_name": "LINE - ErpNext Server - Message Quota"
   }
  ],
  "owner": "Administrator",
