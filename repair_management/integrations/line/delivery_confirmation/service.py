@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime
 
@@ -7,7 +8,6 @@ import frappe
 from frappe.utils import cint, convert_utc_to_system_timezone, flt, get_datetime, now_datetime
 
 from repair_management.integrations.line.delivery_confirmation.auth import as_integration_user
-from repair_management.integrations.line.delivery_confirmation.share import create_image_urls
 from repair_management.integrations.line.services import attachments, burnin
 
 
@@ -186,44 +186,6 @@ def _existing_confirmation_response(existing):
     frappe.throw("request_id นี้เคยประมวลผลไม่สำเร็จ กรุณาลองยืนยันใหม่", frappe.ValidationError)
 
 
-def _confirmation_files(doc) -> list[dict]:
-    first_no = cint(doc.first_image_no)
-    last_no = cint(doc.last_image_no)
-    if doc.status != "Confirmed" or first_no <= 0 or last_no < first_no:
-        return []
-
-    day_text = _day_text(get_datetime(doc.confirmation_datetime))
-    expected = {
-        f"LINE-POD-{doc.sales_order}-{day_text}-{image_no:02d}.jpg": image_no
-        for image_no in range(first_no, last_no + 1)
-    }
-    rows = frappe.get_list(
-        "File",
-        filters={
-            "attached_to_doctype": doc.attachment_doctype,
-            "attached_to_name": doc.attachment_name,
-            "file_name": ["in", list(expected)],
-        },
-        fields=["name", "file_name", "file_url", "is_private"],
-        limit_page_length=0,
-    )
-    result = []
-    for row in rows:
-        image_no = expected.get(row.file_name)
-        if image_no is not None:
-            result.append(
-                {
-                    "image_no": image_no,
-                    "file": row.name,
-                    "file_name": row.file_name,
-                    "file_url": row.file_url,
-                    "is_private": cint(row.is_private),
-                }
-            )
-    result.sort(key=lambda row: row["image_no"])
-    return result
-
-
 def confirm(auth, *, sales_order_name: str, request_id: str, latitude, longitude, accuracy=None, location_timestamp=None, photos=None):
     photos = list(photos or [])
     if len(photos) < MIN_PHOTOS or len(photos) > MAX_PHOTOS:
@@ -304,6 +266,8 @@ def confirm(auth, *, sales_order_name: str, request_id: str, latitude, longitude
                     "last_image_no": start_no + len(created_files) - 1,
                     "status": "Confirmed",
                 }
+                if confirmation.meta.has_field("photo_files"):
+                    values["photo_files"] = json.dumps(created_files)
                 if confirmation.meta.has_field("chat_notification_status"):
                     values["chat_notification_status"] = "Pending"
                     values["chat_notification_error"] = None
@@ -353,19 +317,6 @@ def report_chat_notification(auth, confirmation_name: str, status: str, error: s
 
 
 def _confirmation_result(doc):
-    files = _confirmation_files(doc)
-    chat_images = []
-    if doc.status == "Confirmed":
-        for row in files:
-            urls = create_image_urls(doc.name, row["file"])
-            chat_images.append(
-                {
-                    "image_no": row["image_no"],
-                    "file_name": row["file_name"],
-                    **urls,
-                }
-            )
-
     return {
         "confirmation": doc.name,
         "status": doc.status,
@@ -378,7 +329,6 @@ def _confirmation_result(doc):
         "latitude": doc.latitude,
         "longitude": doc.longitude,
         "accuracy": doc.accuracy,
-        "chat_images": chat_images,
-        "chat_text": "[POD] ส่งของแล้ว",
+        "chat_text": f"[POD] ส่งของแล้ว {doc.sales_order}",
         "chat_notification_status": getattr(doc, "chat_notification_status", None),
     }

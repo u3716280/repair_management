@@ -30,6 +30,7 @@
     "photo_count",
     "first_image_no",
     "last_image_no",
+    "photo_files",
     "section_chat",
     "chat_notification_status",
     "chat_notification_error",
@@ -199,6 +200,13 @@
       "fieldtype": "Int",
       "label": "Last Image No",
       "read_only": 1
+    },
+    {
+      "fieldname": "photo_files",
+      "fieldtype": "Small Text",
+      "label": "Photo File Names (JSON)",
+      "read_only": 1,
+      "hidden": 1
     },
     {
       "fieldname": "section_chat",

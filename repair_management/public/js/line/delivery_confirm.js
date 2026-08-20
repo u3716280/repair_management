@@ -140,27 +140,10 @@
     }
   }
 
-  function chunks(items, size) {
-    const result = [];
-    for (let index = 0; index < items.length; index += size) result.push(items.slice(index, index + size));
-    return result;
-  }
-
   async function sendPodToChat(result) {
     if (!liff.sendMessages) throw new Error("LINE chat_message.write ไม่พร้อมใช้งาน");
-    const images = Array.isArray(result.chat_images) ? result.chat_images : [];
-    if (!images.length) throw new Error("ไม่พบ Final POD Image สำหรับส่งเข้า LINE Chat");
-
-    const imageMessages = images.map((item) => ({
-      type:"image",
-      originalContentUrl:item.original_content_url,
-      previewImageUrl:item.preview_image_url,
-    }));
-
-    for (const batch of chunks(imageMessages, 5)) {
-      await liff.sendMessages(batch);
-    }
-    await liff.sendMessages([{type:"text", text:result.chat_text || "[POD] ส่งของแล้ว"}]);
+    const text = result.chat_text || `[POD] ส่งของแล้ว ${result.sales_order || ""}`.trim();
+    await liff.sendMessages([{type:"text", text}]);
   }
 
   async function confirmPod() {
@@ -187,15 +170,15 @@
       $("success-order").textContent = result.sales_order;
       $("success-customer").textContent = result.customer_name || "";
       $("success-target").textContent = `แนบ ${result.photo_count} รูป → ${result.attachment_target.doctype} ${result.attachment_target.name}`;
-      $("success-chat").textContent = "กำลังส่งรูปเข้า LINE Chat...";
+      $("success-chat").textContent = "กำลังส่งข้อความเข้า LINE Chat...";
       showView("success-view");
 
       try {
         await sendPodToChat(result);
-        $("success-chat").textContent = "ส่งรูปและข้อความเข้า LINE Chat แล้ว";
+        $("success-chat").textContent = "ส่งข้อความยืนยันเข้า LINE Chat แล้ว";
         await reportChatNotification(result.confirmation, "Sent");
       } catch (chatError) {
-        $("success-chat").textContent = "บันทึก POD สำเร็จ แต่ส่งรูปเข้า LINE Chat ไม่สำเร็จ";
+        $("success-chat").textContent = "บันทึก POD สำเร็จ แต่ส่งข้อความเข้า LINE Chat ไม่สำเร็จ";
         await reportChatNotification(result.confirmation, "Failed", chatError.message || "sendMessages_failed");
       }
     } catch (error) {
