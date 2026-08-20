@@ -379,6 +379,6 @@ def _confirmation_result(doc):
         "longitude": doc.longitude,
         "accuracy": doc.accuracy,
         "chat_images": chat_images,
-        "chat_text": f"[POD] ยืนยันการจัดส่ง {doc.sales_order} เรียบร้อยแล้ว",
+        "chat_text": "[POD] ส่งของแล้ว",
         "chat_notification_status": getattr(doc, "chat_notification_status", None),
     }

@@ -160,7 +160,7 @@
     for (const batch of chunks(imageMessages, 5)) {
       await liff.sendMessages(batch);
     }
-    await liff.sendMessages([{type:"text", text:result.chat_text || `[POD] ยืนยันการจัดส่ง ${result.sales_order} เรียบร้อยแล้ว`}]);
+    await liff.sendMessages([{type:"text", text:result.chat_text || "[POD] ส่งของแล้ว"}]);
   }
 
   async function confirmPod() {
