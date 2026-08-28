@@ -1,0 +1,26 @@
+bench --site local.147 execute repair_management.patches.public_form_link_base_url.apply
+bench --site local.147 execute repair_management.patches.public_form_link_base_url.check
+bench --site local.147 execute repair_management.patches.public_form_link_base_url.revert
+
+Patches frappe/utils/data.py::get_url_to_form() (used by get_link_to_form()
+too, and by ~144 call sites across frappe/erpnext/hrms: delete/cancel "is
+linked with" errors, assignment & workflow notification emails, various
+ERPNext/HRMS validation messages, etc.) so every user-facing document link
+uses site_config.json's google_redirect_base_url (the public HTTPS domain)
+instead of host_name (intentionally pinned to http://127.0.0.1:8000 for
+wkhtmltopdf, see repair_management/patches/google_redirect_base_url).
+
+Supersedes repair_management/patches/delete_doc_public_link, which only
+fixed one of the 144 call sites (frappe/model/delete_doc.py). That narrower
+patch can be reverted once this one is applied and verified, but leaving
+both applied is harmless (delete_doc.py's patched code no longer calls
+get_url_to_form, so there's no conflict).
+
+Does NOT change host_name and does NOT touch wkhtmltopdf/PDF rendering,
+which uses a separate code path (frappe.utils.get_host_name() -> bare
+get_url() with no uri) not touched by this patch. Verified zero usages of
+get_url_to_form/get_link_to_form under frappe/printing/ or frappe/www/.
+
+This edits an installed Frappe core file directly, so it will be
+overwritten by `bench update` / reinstalling the frappe app and will need
+to be re-applied afterwards.

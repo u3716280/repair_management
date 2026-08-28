@@ -501,7 +501,7 @@ def _record_cleanup_errors(session, errors):
     set_context(session, ctx)
 
 
-def _complete_video_session(channel, session, cleanup_errors=None):
+def _complete_video_session(channel, session, cleanup_errors=None, reply_token=None):
     all_errors = list(context(session).get("cleanup_errors") or [])
     all_errors.extend(cleanup_errors or [])
     count = frappe.db.count(
@@ -513,10 +513,14 @@ def _complete_video_session(channel, session, cleanup_errors=None):
         "current_state": "Completed",
         "error_message": "\n".join(all_errors)[:1400] if all_errors else None,
     })
-    LineClient(channel).push(
-        session.line_user_id,
-        [{"type": "text", "text": f"แนบวิดีโอเรียบร้อย ({count} คลิป) เข้ากับ {session.target_document} แล้ว"}],
-    )
+    text = f"แนบวิดีโอเรียบร้อย ({count} คลิป) เข้ากับ {session.target_document} แล้ว"
+    if reply_token:
+        # Called synchronously from finish() with a still-live reply_token --
+        # reply instead of push so this doesn't race/duplicate with finish()'s
+        # own reply, and doesn't burn a push message when a reply is free.
+        LineClient(channel).reply(reply_token, [{"type": "text", "text": text}])
+    else:
+        LineClient(channel).push(session.line_user_id, [{"type": "text", "text": text}])
 
 def start(channel, user_id, reply_token, flow, **kwargs):
     p = profile(flow)
@@ -816,7 +820,7 @@ def _check_pending_finish(channel, session, p):
         _try_complete_media_session(channel, session, p, expected)
 
 
-def _try_complete_media_session(channel, session, p, expected_count):
+def _try_complete_media_session(channel, session, p, expected_count, reply_token=None):
     """Complete the session once every media item the user has been told was
     "accepted" (see receive()) has actually finished processing.
 
@@ -851,7 +855,7 @@ def _try_complete_media_session(channel, session, p, expected_count):
         if _finalized_video_count(session) < expected_count:
             _remember_finish_request(session, expected_count)
             return False
-        _complete_video_session(channel, session)
+        _complete_video_session(channel, session, reply_token=reply_token)
         return True
 
 
@@ -891,11 +895,18 @@ def finish(channel, user_id, reply_token, params, **kwargs):
         LineClient(channel).reply(reply_token, [{"type": "text", "text": f"จำนวนไฟล์เกินกำหนดสูงสุด {maximum} {unit}"}])
         return
 
-    if _try_complete_media_session(channel, session, p, accepted):
-        text = "กำลังรวมและแนบรูป กรุณารอสักครู่" if is_image else "กำลังแนบวิดีโอ กรุณารอสักครู่"
-        LineClient(channel).reply(reply_token, [{"type": "text", "text": text}])
+    if _try_complete_media_session(channel, session, p, accepted, reply_token=reply_token):
+        if is_image:
+            text = f"ได้รับรูปทั้งหมด {accepted} รูปแล้ว กำลังรวมและแนบรูป กรุณารอสักครู่"
+            LineClient(channel).reply(reply_token, [{"type": "text", "text": text}])
+        # else: video completed synchronously above, which already replied
+        # with the completion message using this same reply_token.
     else:
-        LineClient(channel).reply(reply_token, [{"type": "text", "text": f"ระบบกำลังรับ{unit}ที่เหลือ เมื่อครบจะแนบให้อัตโนมัติ"}])
+        if is_image:
+            text = f"ได้รับรูปทั้งหมด {accepted} รูป ระบบกำลังรับ{unit}ที่เหลือ เมื่อครบจะแนบให้อัตโนมัติ"
+        else:
+            text = f"ระบบกำลังรับ{unit}ที่เหลือ เมื่อครบจะแนบให้อัตโนมัติ"
+        LineClient(channel).reply(reply_token, [{"type": "text", "text": text}])
 
 
 def handle_text(channel, user_id, reply_token, session, text, **kwargs):
@@ -977,8 +988,17 @@ def receive(channel, user_id, reply_token, session, message, **kwargs):
 
     # Acknowledge the inbound media with this webhook event's replyToken.
     # Do not use a Push message merely to acknowledge receipt.
+    #
+    # Images (parts_confirm) can run up to maximum_files=8+ per session, and
+    # LINE's monthly message quota counts reply messages too -- replying
+    # after every single photo burned quota fast. Only send the
+    # continue/"เสร็จสิ้น" prompt once, right after the first photo, so the
+    # finish button is still reachable; later photos in the same session are
+    # accepted silently, and finish() reports the total count in one reply
+    # instead.
     if expected == "image":
-        LineClient(channel).reply(reply_token, [_image_continue_message(session, p, accepted)])
+        if accepted == 1:
+            LineClient(channel).reply(reply_token, [_image_continue_message(session, p, accepted)])
     else:
         LineClient(channel).reply(reply_token, [_video_continue_message(session, p, accepted)])
     return True
@@ -992,6 +1012,11 @@ def download(channel, session_name, message):
     row, reason = _revalidate_target_item(session, p)
     if reason:
         session.db_set({"status": "Failed", "current_state": "Failed", "error_message": "Target document or item is no longer valid"})
+        unit = "รูป" if p.media_type == "Image" else "คลิป"
+        LineClient(channel).push(
+            session.line_user_id,
+            [{"type": "text", "text": f"เอกสารหรือรายการสินค้าเปลี่ยนแปลง จึงยังไม่ได้แนบ{unit}"}],
+        )
         return
 
     content, content_type = LineClient(channel).get_content(message["id"])
@@ -1245,6 +1270,10 @@ def finalize(channel, session_name):
 
     if not session.target_doctype or not session.target_document:
         session.db_set({"status": "Failed", "current_state": "Failed", "error_message": "Missing target document"})
+        LineClient(channel).push(
+            session.line_user_id,
+            [{"type": "text", "text": "ไม่พบข้อมูลเอกสารเป้าหมาย จึงยังไม่ได้แนบรูป"}],
+        )
         return
 
     row, reason = _revalidate_target_item(session, p)

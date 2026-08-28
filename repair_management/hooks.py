@@ -64,7 +64,8 @@ doctype_js = {
 # include app icons in desk
 #app_include_icons = "repair_management/public/icons.svg"
 app_include_icons = [
-    "repair_management/icons/line-icons.svg"
+     "repair_management/icons/line-icons.svg",
+     "repair_management/icons/31-fa-icons.svg"
 ]
 
 # Home Pages
@@ -418,3 +419,19 @@ try:
 except NameError:
     website_route_rules = _pod_route_rules
 # --- END LINE POD dashboard overrides ---
+
+# BEGIN CORE PATCH REAPPLY (google_redirect_base_url / public_form_link_base_url)
+# bench update overwrites the frappe core files these patches edit; re-apply
+# them on every migrate so they survive a core update. See
+# repair_management/patches/reapply_core_patches.py.
+_core_patch_reapply_handler = "repair_management.patches.reapply_core_patches.after_migrate"
+_current_after_migrate = globals().get("after_migrate")
+if not _current_after_migrate:
+    after_migrate = _core_patch_reapply_handler
+elif isinstance(_current_after_migrate, (list, tuple)):
+    after_migrate = list(_current_after_migrate)
+    if _core_patch_reapply_handler not in after_migrate:
+        after_migrate.append(_core_patch_reapply_handler)
+elif _current_after_migrate != _core_patch_reapply_handler:
+    after_migrate = [_current_after_migrate, _core_patch_reapply_handler]
+# END CORE PATCH REAPPLY

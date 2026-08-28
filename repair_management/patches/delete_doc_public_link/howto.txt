@@ -1,0 +1,13 @@
+bench --site local.147 execute repair_management.patches.delete_doc_public_link.apply
+bench --site local.147 execute repair_management.patches.delete_doc_public_link.check
+bench --site local.147 execute repair_management.patches.delete_doc_public_link.revert
+
+Patches frappe/model/delete_doc.py::raise_link_exists_exception so the
+"Cannot delete or cancel because ... is linked with ..." dialog links use
+site_config.json's google_redirect_base_url (the public HTTPS domain)
+instead of host_name (intentionally pinned to http://127.0.0.1:8000 for
+wkhtmltopdf, see repair_management/patches/google_redirect_base_url).
+
+This edits an installed Frappe core file directly, so it will be
+overwritten by `bench update` / reinstalling the frappe app and will need
+to be re-applied afterwards.

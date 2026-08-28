@@ -108,6 +108,43 @@ def _make_material_transfer(doc, from_warehouse: str, to_warehouse: str) -> str:
     se.submit()
     return se.name
 
+def _make_cancel_reversal(doc, from_warehouse: str, to_warehouse: str):
+    """สร้าง Stock Entry ย้อนสต็อกตอน cancel เฉพาะจำนวนที่ยังไม่ได้รับคืน (qty - returned_qty)"""
+    rows = []
+    for it in doc.items:
+        if not it.item_code:
+            continue
+        remaining = float(it.qty or 0) - float(getattr(it, "returned_qty", 0) or 0)
+        if remaining <= 0:
+            continue
+        row = {
+            "item_code": it.item_code,
+            "qty": remaining,
+            "s_warehouse": from_warehouse,
+            "t_warehouse": to_warehouse,
+            "uom": it.uom or frappe.db.get_value("Item", it.item_code, "stock_uom"),
+        }
+        if getattr(it, "serial_no", None):
+            row["serial_no"] = it.serial_no
+        if getattr(it, "batch_no", None):
+            row["batch_no"] = it.batch_no
+        rows.append(row)
+
+    if not rows:
+        return None
+
+    se = frappe.new_doc("Stock Entry")
+    se.stock_entry_type = "Material Transfer"
+    se.company = doc.company
+    se.from_warehouse = from_warehouse
+    se.to_warehouse = to_warehouse
+    for row in rows:
+        se.append("items", row)
+    se.insert(ignore_permissions=True)
+    se.submit()
+    return se.name
+
+
 @frappe.whitelist()
 def receive_return(
     docname: str,
@@ -305,18 +342,19 @@ class RepairList(Document):
             self.db_set("status", "In Repair", update_modified=False)
 
     def on_cancel(self):
-        # ถ้าต้องย้อนสต็อกอัตโนมัติ: reverse transfer กลับ
-        # ใช้เลขที่ SE ที่เก็บไว้ ถ้าไม่มี ให้ทำใหม่โดย swap คลัง
+        # ถ้าต้องย้อนสต็อกอัตโนมัติ: reverse transfer กลับเฉพาะจำนวนที่ยังไม่ได้รับคืน
+        # (ส่วนที่รับคืนแล้วผ่าน receive_return ถูกย้อนสต็อกไปแล้ว ไม่ต้องทำซ้ำ)
         try:
             # ป้องกันเคสฟิลด์ไม่มี/ว่าง
             _ = getattr(self, "from_warehouse")
             _ = getattr(self, "target_warehouse")
 
-            # Reverse โอนกลับ
-            _make_material_transfer(self, self.target_warehouse, self.from_warehouse)
-
-            if hasattr(self, "status"):
-                self.db_set("status", "Cancelled", update_modified=False)
+            # Reverse โอนกลับเฉพาะยอดคงเหลือ
+            _make_cancel_reversal(self, self.target_warehouse, self.from_warehouse)
         except Exception:
             # ไม่บล็อกการ cancel เอกสารหลัก หากย้อนสต็อกล้มเหลว
             frappe.msgprint("คำเตือน: ย้อน Stock Entry ไม่สำเร็จ โปรดตรวจสอบด้วยตนเอง")
+        finally:
+            # สถานะต้องสอดคล้องกับ docstatus เสมอ ไม่ว่าการย้อนสต็อกจะสำเร็จหรือไม่
+            if hasattr(self, "status"):
+                self.db_set("status", "Cancelled", update_modified=False)
