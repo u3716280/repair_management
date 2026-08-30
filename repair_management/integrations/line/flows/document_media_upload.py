@@ -514,13 +514,13 @@ def _complete_video_session(channel, session, cleanup_errors=None, reply_token=N
         "error_message": "\n".join(all_errors)[:1400] if all_errors else None,
     })
     text = f"แนบวิดีโอเรียบร้อย ({count} คลิป) เข้ากับ {session.target_document} แล้ว"
-    if reply_token:
+    #if reply_token:
         # Called synchronously from finish() with a still-live reply_token --
         # reply instead of push so this doesn't race/duplicate with finish()'s
         # own reply, and doesn't burn a push message when a reply is free.
-        LineClient(channel).reply(reply_token, [{"type": "text", "text": text}])
-    else:
-        LineClient(channel).push(session.line_user_id, [{"type": "text", "text": text}])
+        #LineClient(channel).reply(reply_token, [{"type": "text", "text": text}])
+    #else:
+    #    LineClient(channel).push(session.line_user_id, [{"type": "text", "text": text}])
 
 def start(channel, user_id, reply_token, flow, **kwargs):
     p = profile(flow)
@@ -1256,10 +1256,10 @@ def _complete_image_session(channel, session, rows, cleanup_errors=None):
     # finalize() runs on a background queue well after the reply_token from
     # the last chat message has expired, so a push is the only way to tell
     # the user the merge/attach actually happened (and with how many photos).
-    LineClient(channel).push(
-        session.line_user_id,
-        [{"type": "text", "text": f"แนบรูปเรียบร้อย ({len(rows)} รูป) เข้ากับ {session.target_document} แล้ว"}],
-    )
+    #LineClient(channel).push(
+    #    session.line_user_id,
+    #    [{"type": "text", "text": f"แนบรูปเรียบร้อย ({len(rows)} รูป) เข้ากับ {session.target_document} แล้ว"}],
+    #)
 
 
 

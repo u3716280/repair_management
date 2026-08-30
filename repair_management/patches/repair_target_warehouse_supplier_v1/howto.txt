@@ -1,0 +1,3 @@
+bench --site local.147 execute repair_management.patches.repair_target_warehouse_supplier_v1.apply.apply
+bench --site local.147 execute repair_management.patches.repair_target_warehouse_supplier_v1.check.check
+bench --site local.147 execute repair_management.patches.repair_target_warehouse_supplier_v1.revert.revert

@@ -1,5 +1,22 @@
+// กรอง Target Warehouse ให้เหลือเฉพาะคลังของ Supplier ที่เลือก (ถ้าคลังนั้นผูก Supplier ไว้แล้ว)
+// บวกกับคลังที่ยังไม่ได้ผูก Supplier ใดๆ (เผื่อยังตั้งค่าไม่ครบ) — เป็นตัวช่วยกรองแบบ soft
+// ไม่ได้บล็อกการเลือกคลังอื่น ฝั่ง server มี _warn_if_target_warehouse_mismatched_supplier
+// เตือนซ้ำอีกชั้นตอน validate() แบบไม่บล็อกเช่นกัน
+function set_target_warehouse_query(frm) {
+  frm.set_query('target_warehouse', () => {
+    if (!frm.doc.supplier) return {};
+    return {
+      filters: [
+        ["Warehouse", "custom_supplier", "in", [frm.doc.supplier, ""]],
+      ],
+    };
+  });
+}
+
 frappe.ui.form.on('Repair List', {
   refresh(frm) {
+    set_target_warehouse_query(frm);
+
     // เงื่อนไขแสดงปุ่ม: ต้องเป็นเอกสาร Submit และสถานะอยู่ในช่วงรับกลับ
     const can_return =
       frm.doc.docstatus === 1 &&
@@ -298,5 +315,9 @@ frappe.ui.form.on('Repair List', {
       },
       __("Actions")
     );
+  },
+
+  supplier(frm) {
+    set_target_warehouse_query(frm);
   }
 });
