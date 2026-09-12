@@ -142,7 +142,9 @@
 
   async function sendPodToChat(result) {
     if (!liff.sendMessages) throw new Error("LINE chat_message.write ไม่พร้อมใช้งาน");
-    const text = result.chat_text || `[POD] ส่งของแล้ว ${result.sales_order || ""}`.trim();
+    const so = result.sales_order || "";
+    const fallback = `[POD] ส่งของแล้ว ${so}\n${window.location.origin}/app/sales-order/${encodeURIComponent(so)}`.trim();
+    const text = result.chat_text || fallback;
     await liff.sendMessages([{type:"text", text}]);
   }
 

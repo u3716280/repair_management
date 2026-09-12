@@ -23,7 +23,7 @@ def after_migrate() -> None:
 
 
 def _reapply_google_redirect_base_url() -> None:
-	from repair_management.patches.google_redirect_base_url.apply import apply
+	from repair_management.patches.google_redirect_base_url import apply
 
 	# Preserve whatever public_url is already configured instead of clobbering
 	# it back to the hardcoded default on every migrate.
@@ -42,7 +42,7 @@ def _reapply_google_redirect_base_url() -> None:
 
 
 def _reapply_public_form_link_base_url() -> None:
-	from repair_management.patches.public_form_link_base_url.apply import apply
+	from repair_management.patches.public_form_link_base_url import apply
 
 	try:
 		result = apply()

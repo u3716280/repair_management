@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 import re
 from datetime import datetime
+from urllib.parse import quote
 
 import frappe
-from frappe.utils import cint, convert_utc_to_system_timezone, flt, get_datetime, now_datetime
+from frappe.utils import cint, convert_utc_to_system_timezone, flt, get_datetime, get_url, now_datetime
 
 from repair_management.integrations.line.delivery_confirmation.auth import as_integration_user
 from repair_management.integrations.line.services import attachments, burnin
@@ -237,6 +238,7 @@ def confirm(auth, *, sales_order_name: str, request_id: str, latitude, longitude
             day_text = _day_text(confirmation.confirmation_datetime)
             start_no = _existing_max_image_no(so.name, day_text) + 1
             created_files: list[str] = []
+            gallery_files: list[str] = []
             try:
                 customer_name = (so.customer_name or so.customer or "").strip()
                 for offset, upload in enumerate(photos):
@@ -260,6 +262,18 @@ def confirm(auth, *, sales_order_name: str, request_id: str, latitude, longitude
                     if not _verify_attachment(final_doc.name, target.doctype, target.name):
                         frappe.throw(f"Attachment verification failed: {file_name}")
 
+                    # Also attach the same photo to the Delivery Confirmation itself so it
+                    # shows up in its "Photo Gallery" field (which just renders the doc's
+                    # own attachments) -- independent of wherever `target` resolves to.
+                    gallery_doc = attachments.save(
+                        final_bytes,
+                        file_name,
+                        "Delivery Confirmation",
+                        confirmation.name,
+                        True,
+                    )
+                    gallery_files.append(gallery_doc.name)
+
                 values = {
                     "photo_count": len(created_files),
                     "first_image_no": start_no,
@@ -275,9 +289,10 @@ def confirm(auth, *, sales_order_name: str, request_id: str, latitude, longitude
                 confirmation.db_set(values, update_modified=True)
                 return _confirmation_result(frappe.get_doc("Delivery Confirmation", confirmation.name))
             except Exception:
-                # Remove partial final attachments. Since no Original File is persisted,
-                # retry starts clean and can safely reuse the filenames.
-                for file_name in reversed(created_files):
+                # Remove partial final attachments (both the target-doctype copy and its
+                # Delivery Confirmation gallery copy). Since no Original File is
+                # persisted, retry starts clean and can safely reuse the filenames.
+                for file_name in reversed(gallery_files + created_files):
                     try:
                         if frappe.db.exists("File", file_name):
                             frappe.delete_doc("File", file_name)
@@ -316,6 +331,14 @@ def report_chat_notification(auth, confirmation_name: str, status: str, error: s
         return {"confirmation": doc.name, "status": status}
 
 
+def _sales_order_url(name: str) -> str:
+    # LINE text messages auto-linkify bare URLs, so appending the full Desk URL
+    # makes the Sales Order tappable straight from the chat confirmation.
+    conf = getattr(frappe, "conf", None) or {}
+    base = str(conf.get("google_redirect_base_url") or conf.get("host_name") or get_url()).rstrip("/")
+    return f"{base}/app/sales-order/{quote(name or '', safe='')}"
+
+
 def _confirmation_result(doc):
     return {
         "confirmation": doc.name,
@@ -329,6 +352,6 @@ def _confirmation_result(doc):
         "latitude": doc.latitude,
         "longitude": doc.longitude,
         "accuracy": doc.accuracy,
-        "chat_text": f"[POD] ส่งของแล้ว {doc.sales_order}",
+        "chat_text": f"[POD] ส่งของแล้ว {doc.sales_order}\n{_sales_order_url(doc.sales_order)}",
         "chat_notification_status": getattr(doc, "chat_notification_status", None),
     }

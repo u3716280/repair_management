@@ -55,7 +55,8 @@ page_js = {
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 doctype_js = {
-    "Customer": "public/js/customer_heatmap.js"
+    "Customer": "public/js/customer_heatmap.js",
+    "Delivery Confirmation": "public/js/line/delivery_confirmation.js"
 }
 
 

@@ -1,276 +1,281 @@
 {
-  "actions": [],
-  "allow_rename": 0,
-  "autoname": "format:POD-{YYYY}-{#####}",
-  "creation": "2026-08-16 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "status",
-    "request_id",
-    "section_reference",
-    "sales_order",
-    "delivery_note",
-    "attachment_doctype",
-    "attachment_name",
-    "section_customer",
-    "customer",
-    "customer_name",
-    "section_identity",
-    "line_recipient",
-    "line_user_id",
-    "employee",
-    "section_location",
-    "confirmation_datetime",
-    "location_timestamp",
-    "latitude",
-    "longitude",
-    "accuracy",
-    "section_files",
-    "photo_count",
-    "first_image_no",
-    "last_image_no",
-    "photo_files",
-    "section_chat",
-    "chat_notification_status",
-    "chat_notification_error",
-    "chat_notified_at"
-  ],
-  "fields": [
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "Status",
-      "options": "Processing\nConfirmed\nFailed\nCancelled",
-      "default": "Processing",
-      "read_only": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "request_id",
-      "fieldtype": "Data",
-      "label": "Request ID",
-      "unique": 1,
-      "read_only": 1
-    },
-    {
-      "fieldname": "section_reference",
-      "fieldtype": "Section Break",
-      "label": "Reference"
-    },
-    {
-      "fieldname": "sales_order",
-      "fieldtype": "Link",
-      "label": "Sales Order",
-      "options": "Sales Order",
-      "reqd": 1,
-      "read_only": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "delivery_note",
-      "fieldtype": "Link",
-      "label": "Delivery Note",
-      "options": "Delivery Note",
-      "read_only": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "attachment_doctype",
-      "fieldtype": "Link",
-      "label": "Attachment DocType",
-      "options": "DocType",
-      "reqd": 1,
-      "read_only": 1
-    },
-    {
-      "fieldname": "attachment_name",
-      "fieldtype": "Dynamic Link",
-      "label": "Attachment Document",
-      "options": "attachment_doctype",
-      "reqd": 1,
-      "read_only": 1
-    },
-    {
-      "fieldname": "section_customer",
-      "fieldtype": "Section Break",
-      "label": "Customer"
-    },
-    {
-      "fieldname": "customer",
-      "fieldtype": "Link",
-      "label": "Customer",
-      "options": "Customer",
-      "read_only": 1
-    },
-    {
-      "fieldname": "customer_name",
-      "fieldtype": "Data",
-      "label": "Customer Name",
-      "read_only": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "section_identity",
-      "fieldtype": "Section Break",
-      "label": "Identity"
-    },
-    {
-      "fieldname": "line_recipient",
-      "fieldtype": "Link",
-      "label": "LINE Recipient",
-      "options": "LINE Recipient",
-      "reqd": 1,
-      "read_only": 1
-    },
-    {
-      "fieldname": "line_user_id",
-      "fieldtype": "Data",
-      "label": "LINE User ID",
-      "read_only": 1
-    },
-    {
-      "fieldname": "employee",
-      "fieldtype": "Link",
-      "label": "Employee",
-      "options": "Employee",
-      "read_only": 1
-    },
-    {
-      "fieldname": "section_location",
-      "fieldtype": "Section Break",
-      "label": "Confirmation & Location"
-    },
-    {
-      "fieldname": "confirmation_datetime",
-      "fieldtype": "Datetime",
-      "label": "Confirmation Datetime",
-      "reqd": 1,
-      "read_only": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "location_timestamp",
-      "fieldtype": "Datetime",
-      "label": "Location Timestamp",
-      "read_only": 1
-    },
-    {
-      "fieldname": "latitude",
-      "fieldtype": "Float",
-      "label": "Latitude",
-      "precision": "8",
-      "reqd": 1,
-      "read_only": 1
-    },
-    {
-      "fieldname": "longitude",
-      "fieldtype": "Float",
-      "label": "Longitude",
-      "precision": "8",
-      "reqd": 1,
-      "read_only": 1
-    },
-    {
-      "fieldname": "accuracy",
-      "fieldtype": "Float",
-      "label": "Accuracy (m)",
-      "precision": "2",
-      "read_only": 1
-    },
-    {
-      "fieldname": "section_files",
-      "fieldtype": "Section Break",
-      "label": "Photos"
-    },
-    {
-      "fieldname": "photo_count",
-      "fieldtype": "Int",
-      "label": "Photo Count",
-      "read_only": 1
-    },
-    {
-      "fieldname": "first_image_no",
-      "fieldtype": "Int",
-      "label": "First Image No",
-      "read_only": 1
-    },
-    {
-      "fieldname": "last_image_no",
-      "fieldtype": "Int",
-      "label": "Last Image No",
-      "read_only": 1
-    },
-    {
-      "fieldname": "photo_files",
-      "fieldtype": "Small Text",
-      "label": "Photo File Names (JSON)",
-      "read_only": 1,
-      "hidden": 1
-    },
-    {
-      "fieldname": "section_chat",
-      "fieldtype": "Section Break",
-      "label": "LINE Chat Notification"
-    },
-    {
-      "fieldname": "chat_notification_status",
-      "fieldtype": "Select",
-      "label": "Chat Notification Status",
-      "options": "Pending\nSent\nFailed",
-      "default": "Pending",
-      "read_only": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "chat_notification_error",
-      "fieldtype": "Small Text",
-      "label": "Chat Notification Error",
-      "read_only": 1
-    },
-    {
-      "fieldname": "chat_notified_at",
-      "fieldtype": "Datetime",
-      "label": "Chat Notified At",
-      "read_only": 1
-    }
-  ],
-  "index_web_pages_for_search": 0,
-  "links": [],
-  "modified": "2026-08-16 17:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "Repair Management",
-  "name": "Delivery Confirmation",
-  "naming_rule": "Expression",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 0,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "System Manager",
-      "share": 1,
-      "write": 1
-    },
-    {
-      "create": 1,
-      "delete": 0,
-      "email": 0,
-      "export": 0,
-      "print": 0,
-      "read": 1,
-      "report": 1,
-      "role": "LINE POD Integration",
-      "share": 0,
-      "write": 1
-    }
-  ],
-  "sort_field": "confirmation_datetime",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "autoname": "format:POD-{YYYY}-{#####}",
+ "creation": "2026-08-16 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "request_id",
+  "section_reference",
+  "sales_order",
+  "delivery_note",
+  "attachment_doctype",
+  "attachment_name",
+  "section_customer",
+  "customer",
+  "customer_name",
+  "section_identity",
+  "line_recipient",
+  "line_user_id",
+  "employee",
+  "section_location",
+  "confirmation_datetime",
+  "location_timestamp",
+  "latitude",
+  "longitude",
+  "accuracy",
+  "location_map",
+  "section_files",
+  "photo_gallery",
+  "photo_count",
+  "first_image_no",
+  "last_image_no",
+  "photo_files",
+  "section_chat",
+  "chat_notification_status",
+  "chat_notification_error",
+  "chat_notified_at"
+ ],
+ "fields": [
+  {
+   "default": "Processing",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Processing\nConfirmed\nFailed\nCancelled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "Request ID",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "section_reference",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Sales Order",
+   "options": "Sales Order",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "delivery_note",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Delivery Note",
+   "options": "Delivery Note",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attachment_doctype",
+   "fieldtype": "Link",
+   "label": "Attachment DocType",
+   "options": "DocType",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "attachment_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Attachment Document",
+   "options": "attachment_doctype",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_customer",
+   "fieldtype": "Section Break",
+   "label": "Customer"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_identity",
+   "fieldtype": "Section Break",
+   "label": "Identity"
+  },
+  {
+   "fieldname": "line_recipient",
+   "fieldtype": "Link",
+   "label": "LINE Recipient",
+   "options": "LINE Recipient",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "line_user_id",
+   "fieldtype": "Data",
+   "label": "LINE User ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_location",
+   "fieldtype": "Section Break",
+   "label": "Confirmation & Location"
+  },
+  {
+   "fieldname": "confirmation_datetime",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Confirmation Datetime",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "location_timestamp",
+   "fieldtype": "Datetime",
+   "label": "Location Timestamp",
+   "read_only": 1
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "8",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "8",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "accuracy",
+   "fieldtype": "Float",
+   "label": "Accuracy (m)",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "location_map",
+   "fieldtype": "HTML",
+   "label": "Location Map"
+  },
+  {
+   "fieldname": "section_files",
+   "fieldtype": "Section Break",
+   "label": "Photos"
+  },
+  {
+   "fieldname": "photo_gallery",
+   "fieldtype": "Attachment Gallery",
+   "label": "Photo Gallery"
+  },
+  {
+   "fieldname": "photo_count",
+   "fieldtype": "Int",
+   "label": "Photo Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "first_image_no",
+   "fieldtype": "Int",
+   "label": "First Image No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_image_no",
+   "fieldtype": "Int",
+   "label": "Last Image No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "photo_files",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Photo File Names (JSON)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_chat",
+   "fieldtype": "Section Break",
+   "label": "LINE Chat Notification"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "chat_notification_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Chat Notification Status",
+   "options": "Pending\nSent\nFailed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "chat_notification_error",
+   "fieldtype": "Small Text",
+   "label": "Chat Notification Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "chat_notified_at",
+   "fieldtype": "Datetime",
+   "label": "Chat Notified At",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-09-10 16:40:04.502515",
+ "modified_by": "chang@eakthai.com",
+ "module": "Repair Management",
+ "name": "Delivery Confirmation",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "LINE POD Integration",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "confirmation_datetime",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

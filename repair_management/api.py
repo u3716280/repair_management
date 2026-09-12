@@ -223,3 +223,15 @@ def sync_stock_entry_serial_text(stock_entry):
         "updated_rows": updated_rows,
         "message": f"Synced serial text for {updated_rows} row(s)"
     }
+
+
+@frappe.whitelist()
+def get_google_maps_api_key():
+    """Browser-key for Google Maps, read from site_config.
+
+    The Desk already loads the Maps JS API with this key via the `app_include_js`
+    hook, so it is a public browser key by design -- this only lets client scripts
+    (e.g. the Delivery Confirmation static map) build URLs without hardcoding it
+    a second time.
+    """
+    return frappe.conf.get("google_maps_api_key") or ""
