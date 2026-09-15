@@ -168,19 +168,29 @@ def get_demand_history(
 	exceptions: list[DataException] = []
 
 	for r in sle_rows:
-		key = (r["voucher_type"], r["voucher_no"], r["voucher_detail_no"], r["warehouse"], r["item_code"])
+		# actual_qty is part of the key so that a same-warehouse Material
+		# Transfer (s_warehouse == t_warehouse) doesn't false-positive here:
+		# ERPNext creates two real SLE rows off that one detail row -- one
+		# -qty leg and one +qty leg -- both sharing the same (voucher_type,
+		# voucher_no, voucher_detail_no, warehouse, item_code) tuple since
+		# source and target warehouse are identical. Including actual_qty
+		# still catches a genuine duplicate (same sign, same everything).
+		key = (
+			r["voucher_type"], r["voucher_no"], r["voucher_detail_no"], r["warehouse"], r["item_code"],
+			flt(r["actual_qty"]),
+		)
 		if key in seen_keys:
 			exceptions.append(
 				DataException(
 					ExceptionCode.DUPLICATE_SOURCE_ROW,
-					"Duplicate (voucher_type, voucher_no, voucher_detail_no, warehouse, item_code) row",
+					"Duplicate (voucher_type, voucher_no, voucher_detail_no, warehouse, item_code, actual_qty) row",
 					item_code=r["item_code"],
 					warehouse=r["warehouse"],
 					voucher_type=r["voucher_type"],
 					voucher_no=r["voucher_no"],
 					voucher_detail_no=r["voucher_detail_no"],
 					posting_date=str(r["posting_date"]),
-					context={"sle": r["name"]},
+					context={"sle": r["name"], "actual_qty": r["actual_qty"]},
 				)
 			)
 			continue

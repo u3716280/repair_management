@@ -1,13 +1,11 @@
 # Copyright (c) 2026, Chirayut D. and Contributors
 # See license.txt
 
-from unittest.mock import patch
-
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import nowdate
 
-from repair_management.repair_management.inventory.reorder import demand, service
+from repair_management.repair_management.inventory.reorder import service
 from repair_management.repair_management.inventory.reorder.calculation import (
 	DEFAULT_OPTIONS,
 	STATUS_CRITICAL,
@@ -16,6 +14,13 @@ from repair_management.repair_management.inventory.reorder.calculation import (
 
 
 class TestReorderService(FrappeTestCase):
+	"""Covers analyze_item/analyze_items operating on a plain LEAF warehouse
+	(the "group of one" case -- group.resolve_planning_warehouse_group
+	resolves a leaf to itself, so these exercise the same code path as a
+	real group, just with one leaf instead of several). Real multi-leaf
+	group behavior (the เอกไทย - ET tree, no-N+1 across leaves, one row per
+	item per group) is covered separately in test_group.py."""
+
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
@@ -98,6 +103,7 @@ class TestReorderService(FrappeTestCase):
 		self.assertGreaterEqual(result["demand_events"], 1)
 		self.assertIn(result["status"], {"Critical", "Reorder", "Review", "OK", "No History"})
 		self.assertIn(result["confidence"], {"High", "Medium", "Low"})
+		self.assertIn(result["policy"], {"STOCKED", "INTERMITTENT", "SLOW_CRITICAL", "ONE_TIME", "NO_HISTORY", "REVIEW"})
 		# actual stock reflects the net of the baseline, the seed, and the issues
 		self.assertEqual(result["actual_qty"], baseline + 50 - 10)
 
@@ -109,6 +115,7 @@ class TestReorderService(FrappeTestCase):
 		self.assertEqual(result["demand_events"], 0)
 		self.assertEqual(result["confidence"], "Low")
 		self.assertEqual(result["status"], STATUS_NO_HISTORY)
+		self.assertEqual(result["policy"], "NO_HISTORY")
 
 	def test_status_critical_when_planning_position_non_positive(self):
 		self._seed_stock(self.warehouse_a, 10)
@@ -132,55 +139,78 @@ class TestReorderService(FrappeTestCase):
 		)
 		self.assertTrue(any("average-based estimate" in r for r in result["confidence_reason"]))
 
-	def test_analyze_items_batches_by_warehouse_not_by_item(self):
-		self._seed_stock(self.warehouse_a, 20, item_code=self.item_code)
-		self._issue(self.warehouse_a, 2, item_code=self.item_code)
-		self._seed_stock(self.warehouse_a, 20, item_code=self.item_code_2)
-		self._issue(self.warehouse_a, 2, item_code=self.item_code_2)
-		self._seed_stock(self.warehouse_b, 20, item_code=self.item_code)
-		self._seed_stock(self.warehouse_b, 20, item_code=self.item_code_2)
-
-		filters = {
-			"company": self.company,
-			"warehouses": [self.warehouse_a, self.warehouse_b],
-			"item_codes": [self.item_code, self.item_code_2],
-			"status": None,
-			"demand_type": None,
-			"confidence": None,
-		}
-
-		with patch.object(demand, "get_demand_history", wraps=demand.get_demand_history) as spy:
-			rows = service.analyze_items(filters, self._options())
-
-		# called once per warehouse (2), never once per (item, warehouse) pair (4)
-		self.assertEqual(spy.call_count, 2)
-		returned_pairs = {(r["item_code"], r["warehouse"]) for r in rows}
-		self.assertIn((self.item_code, self.warehouse_a), returned_pairs)
-		self.assertIn((self.item_code_2, self.warehouse_a), returned_pairs)
-
 	def test_analyze_items_respects_status_filter(self):
 		self._seed_stock(self.warehouse_a, 10, item_code=self.item_code)
 		self._issue(self.warehouse_a, 10, item_code=self.item_code)  # -> Critical
 
 		filters = {
 			"company": self.company,
-			"warehouses": [self.warehouse_a],
+			"planning_warehouse": self.warehouse_a,
 			"item_codes": [self.item_code],
 			"status": ["OK"],
 			"demand_type": None,
+			"policy": None,
 			"confidence": None,
 		}
 		rows = service.analyze_items(filters, self._options())
 		self.assertFalse(any(r["item_code"] == self.item_code and r["warehouse"] == self.warehouse_a for r in rows))
 
-	def test_reserved_qty_and_late_incoming_excluded_correctly_from_position(self):
+	def test_analyze_items_respects_policy_filter(self):
+		self._seed_stock(self.warehouse_a, 15, item_code=self.item_code)  # zero demand events -> NO_HISTORY policy
+
+		filters = {
+			"company": self.company,
+			"planning_warehouse": self.warehouse_a,
+			"item_codes": [self.item_code],
+			"status": None,
+			"demand_type": None,
+			"policy": ["STOCKED"],
+			"confidence": None,
+		}
+		rows = service.analyze_items(filters, self._options())
+		self.assertFalse(any(r["item_code"] == self.item_code and r["warehouse"] == self.warehouse_a for r in rows))
+
+	def test_default_batch_scope_excludes_non_eligible_policy_for_multi_item_query(self):
+		# NO_HISTORY (no demand events) is not in ELIGIBLE_FOR_BATCH -- with
+		# more than one item_code requested and no explicit policy filter,
+		# it must be excluded from the default batch view.
+		self._seed_stock(self.warehouse_a, 15, item_code=self.item_code)
+		self._seed_stock(self.warehouse_a, 15, item_code=self.item_code_2)
+
+		filters = {
+			"company": self.company,
+			"planning_warehouse": self.warehouse_a,
+			"item_codes": [self.item_code, self.item_code_2],
+			"status": None,
+			"demand_type": None,
+			"policy": None,
+			"confidence": None,
+		}
+		rows = service.analyze_items(filters, self._options())
+		self.assertFalse(any(r["item_code"] == self.item_code for r in rows))
+
+	def test_single_item_selection_bypasses_default_policy_eligibility(self):
+		# The "Manual Analysis" exemption: selecting exactly one Item still
+		# shows it even if its policy (NO_HISTORY here) isn't batch-eligible.
+		self._seed_stock(self.warehouse_a, 15, item_code=self.item_code)
+
+		filters = {
+			"company": self.company,
+			"planning_warehouse": self.warehouse_a,
+			"item_codes": [self.item_code],
+			"status": None,
+			"demand_type": None,
+			"policy": None,
+			"confidence": None,
+		}
+		rows = service.analyze_items(filters, self._options())
+		self.assertTrue(any(r["item_code"] == self.item_code for r in rows))
+
+	def test_planning_position_equals_actual_qty_with_no_incoming_or_reserved(self):
 		self._seed_stock(self.warehouse_a, 15)
 		result = service.analyze_item(self.item_code, self.warehouse_a, self._options())
-		# no reservation/incoming seeded -> planning_position should equal
-		# actual_qty exactly (reserved=0, reliable_incoming=0), proving late
-		# incoming (also 0 here) is never added and reserved is subtracted,
-		# not ignored, when present.
 		self.assertEqual(result["planning_position"], result["actual_qty"])
+		self.assertEqual(result["total_outstanding_qty"], 0)
 
 
 if __name__ == "__main__":

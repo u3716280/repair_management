@@ -18,6 +18,12 @@ class ExceptionCode:
 	MISSING_WAREHOUSE = "MISSING_WAREHOUSE"
 	MISSING_ITEM = "MISSING_ITEM"
 	DUPLICATE_SOURCE_ROW = "DUPLICATE_SOURCE_ROW"
+	# Phase 2 (Model Validation & Backtest) additions -- these describe model/
+	# policy-level observations, not raw data-quality problems, but reuse the
+	# same DataException/severity mechanism for consistency.
+	LEAD_TIME_MISMATCH = "LEAD_TIME_MISMATCH"
+	ABNORMAL_DEMAND = "ABNORMAL_DEMAND"
+	ONE_TIME_PROJECT_CANDIDATE = "ONE_TIME_PROJECT_CANDIDATE"
 
 
 SEVERITY = {
@@ -31,6 +37,9 @@ SEVERITY = {
 	ExceptionCode.MISSING_WAREHOUSE: "error",
 	ExceptionCode.MISSING_ITEM: "error",
 	ExceptionCode.DUPLICATE_SOURCE_ROW: "error",
+	ExceptionCode.LEAD_TIME_MISMATCH: "flag",
+	ExceptionCode.ABNORMAL_DEMAND: "flag",
+	ExceptionCode.ONE_TIME_PROJECT_CANDIDATE: "info",
 }
 
 

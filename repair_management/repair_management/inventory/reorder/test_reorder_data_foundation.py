@@ -43,7 +43,14 @@ class TestReorderDataFoundation(FrappeTestCase):
 		receipt.stock_entry_type = "Material Receipt"
 		receipt.company = self.company
 		receipt.append(
-			"items", {"item_code": self.item_code, "qty": qty, "t_warehouse": warehouse, "uom": self.stock_uom}
+			"items",
+			{
+				"item_code": self.item_code,
+				"qty": qty,
+				"t_warehouse": warehouse,
+				"uom": self.stock_uom,
+				"allow_zero_valuation_rate": 1,
+			},
 		)
 		receipt.insert(ignore_permissions=True)
 		receipt.submit()
@@ -167,6 +174,41 @@ class TestReorderDataFoundation(FrappeTestCase):
 		for row in result_a["rows"] + result_b["rows"]:
 			if row["voucher_type"] == "Stock Entry":
 				self.assertEqual(row["classification"], "TRANSFER")
+
+	def test_same_warehouse_transfer_legs_are_not_flagged_as_duplicate(self):
+		# ERPNext's own Stock Entry validation normally blocks a Material
+		# Transfer whose source and target warehouse are the same real
+		# warehouse, but real production data on this site (found while
+		# investigating a real DUPLICATE_SOURCE_ROW report) has documents
+		# where this happened anyway -- likely created through a path that
+		# bypasses that validation. Each such document produces two real SLE
+		# rows off one detail row -- a -qty leg and a +qty leg -- that share
+		# every field except actual_qty, since source and target warehouse
+		# are identical. Mocked here (ERPNext's own validation makes this
+		# unreproducible through a normal document insert, confirmed by
+		# trying) to directly exercise the dedup guard's key: actual_qty
+		# must keep the two real legs from being mistaken for
+		# DUPLICATE_SOURCE_ROW.
+		self._seed_stock(self.warehouse_a, 20)
+
+		real_get_all = frappe.get_all
+
+		def two_leg_transfer_get_all(doctype, *args, **kwargs):
+			rows = real_get_all(doctype, *args, **kwargs)
+			if doctype != "Stock Ledger Entry":
+				return rows
+			receipt = rows[-1]
+			opposite_leg = dict(receipt, actual_qty=-receipt["actual_qty"], name=receipt["name"] + "-other-leg")
+			return rows + [opposite_leg]
+
+		with patch(
+			"repair_management.repair_management.inventory.reorder.demand.frappe.get_all",
+			side_effect=two_leg_transfer_get_all,
+		):
+			result = self._demand(self.warehouse_a)
+
+		codes = {e.code for e in result["exceptions"]}
+		self.assertNotIn(ExceptionCode.DUPLICATE_SOURCE_ROW, codes)
 
 	def test_partial_po_receipt_remaining_qty(self):
 		po = self._make_po(self.warehouse_a, qty=100)

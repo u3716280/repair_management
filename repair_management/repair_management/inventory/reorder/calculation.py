@@ -13,6 +13,7 @@ window" means.
 import math
 import statistics
 
+import frappe
 from frappe.utils import cint, date_diff, getdate
 
 from .classification import NET_SIGN
@@ -27,7 +28,7 @@ DEFAULT_OPTIONS = {
 	"planning_lead_time_days": None,
 	"review_period_days": 1,
 	"extra_coverage_days": 30,
-	"service_level": "Auto",  # "Auto" | "P80" | "P90" | "P95" | "P99"
+	"service_level": "Auto",  # "Auto" | "P85" | "P95" (Phase 2 narrowed from P80/P90/P95/P99)
 }
 
 DEFAULT_PLANNING_LEAD_TIME_DAYS = 120
@@ -36,8 +37,12 @@ LEAD_TIME_SOURCE_OVERRIDE = "override"
 LEAD_TIME_SOURCE_ITEM_MASTER = "item_master"
 LEAD_TIME_SOURCE_SYSTEM_DEFAULT = "system_default"
 
-CRITICALITY_TO_PERCENTILE = {"Low": 80, "Normal": 90, "Critical": 95}
-DEFAULT_CRITICALITY = "Normal"
+# Phase 2: Criticality (never really used -- everyone defaulted to "Normal")
+# is replaced by the Replenishment Policy classification itself as the
+# criticality signal. SLOW_CRITICAL is the sole P95 trigger; every other
+# batch-eligible policy gets P85. See policy.py.
+POLICY_TO_PERCENTILE = {"SLOW_CRITICAL": 95, "STOCKED": 85, "INTERMITTENT": 85}
+DEFAULT_POLICY_PERCENTILE = 85
 
 # Reuses reorder_point_calcul.py's MIN_EVENTS_FOR_PERCENTILE value, for
 # consistency across the app's two reorder-related pages.
@@ -175,11 +180,18 @@ def compute_target_stock(daily_series: list, target_horizon_days, service_percen
 	return _rolling_window_percentile(daily_series, target_horizon_days, service_percentile)
 
 
-def compute_planning_position(actual_qty, reliable_incoming_qty, reserved_qty) -> float:
-	"""Planning Position = Actual Qty + Reliable Incoming - Reserved Qty.
-	Late Incoming is deliberately excluded -- surfaced separately, never
-	counted as available supply."""
-	return float(actual_qty) + float(reliable_incoming_qty) - float(reserved_qty)
+def compute_planning_position(actual_qty, total_outstanding_qty, reserved_qty) -> float:
+	"""Planning Position = Actual Qty + Total Outstanding PO (ALL reliability,
+	RELIABLE and LATE alike) - Reserved Qty.
+
+	Phase 2 change: late/overdue POs are now treated as good as arrived --
+	the model must not double-order just because a schedule_date looks
+	stale, and a Schedule Date's accuracy is a Purchase Follow-up concern,
+	not a Planning Position one. This deliberately REVERSES Phase 1's
+	formula, which excluded Late Incoming entirely (see PHASE2_NOTES.md
+	Breaking Changes). Lateness is still surfaced separately (see group.py's
+	`follow_up`), just never subtracted here."""
+	return float(actual_qty) + float(total_outstanding_qty) - float(reserved_qty)
 
 
 def compute_recommended_qty(planning_position: float, rop: float, target_stock: float) -> float:
@@ -223,12 +235,19 @@ def compute_status(planning_position: float, rop: float, demand_type: str, confi
 	return STATUS_OK
 
 
-def resolve_service_percentile(service_level: str | None, criticality: str) -> float:
-	"""'Auto' (or falsy) -> CRITICALITY_TO_PERCENTILE[criticality]; an
-	explicit override like 'P90'/'P95' wins outright."""
+def resolve_service_percentile(service_level: str | None, policy: str) -> float:
+	"""'Auto' (or falsy) -> POLICY_TO_PERCENTILE.get(policy, DEFAULT_POLICY_PERCENTILE);
+	an explicit override must be 'P85' or 'P95' -- Phase 2 narrows service
+	levels to just these two. Any other explicit "P" value (P80/P90/P99,
+	valid in Phase 1) is now a hard error, a deliberate stop rather than a
+	silent reinterpretation, so nobody believes they got P90 math when they
+	didn't."""
 	if service_level and service_level.upper().startswith("P"):
-		return float(service_level[1:])
-	return float(CRITICALITY_TO_PERCENTILE.get(criticality, CRITICALITY_TO_PERCENTILE[DEFAULT_CRITICALITY]))
+		pct = float(service_level[1:])
+		if pct not in (85.0, 95.0):
+			frappe.throw(f"Unsupported service_level override: {service_level!r} (only P85/P95 are allowed)")
+		return pct
+	return float(POLICY_TO_PERCENTILE.get(policy, DEFAULT_POLICY_PERCENTILE))
 
 
 def calculate_item_reorder(
@@ -251,12 +270,14 @@ def calculate_item_reorder(
 	"""Top-level pipeline. Returns every Calculation Contract field, PLUS
 	detail-only extras (rop_method, target_method, rop_rolling_values,
 	actual_lead_time_avg, actual_lead_time_p90, lead_time_sample_count,
-	criticality_used, is_default_criticality) that service.analyze_items()
-	strips before returning bulk rows. Order of computation matters: demand
-	stats -> demand-type classification -> ROP/Target/Position -> confidence
-	(needs ROP method + demand type) -> status (needs confidence)."""
+	policy_reasons) that service.analyze_items() strips before returning
+	bulk rows. Order of computation matters: demand stats -> demand-type
+	classification -> Replenishment Policy (needs a preliminary ROP-method
+	read, see below) -> service_percentile (policy-driven) -> ROP/Target/
+	Position -> confidence -> status (needs confidence)."""
 	from .confidence import compute_confidence
 	from .demand import summarize_demand
+	from .policy import classify_replenishment_policy
 
 	analysis_days = date_diff(getdate(to_date), getdate(from_date)) + 1
 
@@ -285,8 +306,24 @@ def calculate_item_reorder(
 	protection_period = compute_protection_period(planning_lead_time, review_period)
 	target_horizon = compute_target_horizon(planning_lead_time, review_period, extra_coverage)
 
-	criticality = options.get("criticality") or DEFAULT_CRITICALITY
-	service_percentile = resolve_service_percentile(options.get("service_level"), criticality)
+	# Whether a full protection-period rolling window fits in the available
+	# history depends only on daily_series/protection_period, never on which
+	# percentile will eventually be used -- so this can be determined before
+	# Policy/service_percentile are known, breaking what would otherwise be
+	# a circular dependency (Policy's SLOW_CRITICAL-vs-REVIEW branch needs to
+	# know this "percentile" vs "average_fallback" method).
+	preliminary_rop_method = "percentile" if rolling_sum(daily_series, protection_period) else "average_fallback"
+
+	policy_result = classify_replenishment_policy(
+		demand_type=demand_type,
+		demand_events=demand_events,
+		analysis_days=analysis_days,
+		rop_method=preliminary_rop_method,
+		manual_policy_override=options.get("manual_policy_override"),
+	)
+	policy = policy_result["policy"]
+
+	service_percentile = resolve_service_percentile(options.get("service_level"), policy)
 
 	rop_result = compute_rop(daily_series, protection_period, service_percentile)
 	target_result = compute_target_stock(daily_series, target_horizon, service_percentile)
@@ -298,8 +335,9 @@ def calculate_item_reorder(
 
 	reliable_incoming = sum(r["remaining_qty_stock_uom"] for r in incoming_rows if r["reliability"] == "RELIABLE")
 	late_incoming = sum(r["remaining_qty_stock_uom"] for r in incoming_rows if r["reliability"] == "LATE")
+	total_outstanding_qty = reliable_incoming + late_incoming
 
-	planning_position = compute_planning_position(actual_qty, reliable_incoming, reserved_qty)
+	planning_position = compute_planning_position(actual_qty, total_outstanding_qty, reserved_qty)
 	recommended_qty = compute_recommended_qty(planning_position, rop_result["value"], target_result["value"])
 
 	all_exceptions = list(demand_exceptions) + list(incoming_exceptions)
@@ -349,10 +387,12 @@ def calculate_item_reorder(
 		"reserved_qty": reserved_qty,
 		"reliable_incoming": reliable_incoming,
 		"late_incoming": late_incoming,
+		"total_outstanding_qty": total_outstanding_qty,
 		"planning_position": planning_position,
 		"target_horizon": target_horizon,
 		"target_stock": target_result["value"],
 		"recommended_qty": recommended_qty,
+		"policy": policy,
 		"status": status,
 		"confidence": confidence["level"],
 		"confidence_reason": confidence["reasons"],
@@ -366,8 +406,7 @@ def calculate_item_reorder(
 		"actual_lead_time_p90": actual_lead_time_p90,
 		"lead_time_sample_count": len(lead_time_rows),
 		"lead_time_source": lead_time_source,
-		"criticality_used": criticality,
-		"is_default_criticality": "criticality" not in options,
+		"policy_reasons": policy_result["reasons"],
 	}
 
 
@@ -377,6 +416,7 @@ CONTRACT_FIELDS = [
 	"configured_lead_time", "planning_lead_time", "review_period", "protection_period",
 	"service_level", "service_percentile", "rolling_mean", "rolling_median", "rolling_p80",
 	"rolling_p90", "rolling_p95", "rolling_max", "reorder_point", "actual_qty", "reserved_qty",
-	"reliable_incoming", "late_incoming", "planning_position", "target_horizon", "target_stock",
-	"recommended_qty", "status", "confidence", "confidence_reason", "exception_count", "exceptions",
+	"reliable_incoming", "late_incoming", "total_outstanding_qty", "planning_position",
+	"target_horizon", "target_stock", "recommended_qty", "policy", "status", "confidence",
+	"confidence_reason", "exception_count", "exceptions",
 ]

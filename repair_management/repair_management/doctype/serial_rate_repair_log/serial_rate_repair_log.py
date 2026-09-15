@@ -1,5 +1,5 @@
 from frappe.model.document import Document
 
 
-class SerialPurchaseRateRepairLog(Document):
+class SerialRateRepairLog(Document):
     pass

@@ -15,6 +15,18 @@ loosely related subsystems sharing one app, not one cohesive product.
 This is a real production app tied to a live site (`local.147`) — there is no separate dev/staging
 site in this bench. Be careful with anything that touches the database directly.
 
+**Never delete data from `local.147`, for any reason** — no ad-hoc `frappe.db.sql("delete ...")` /
+`frappe.db.delete(...)` / `frappe.db.truncate(...)` / `frappe.delete_doc(...)` run via `bench
+console`, `bench execute`, or a throwaway script, and no test/cleanup code that deletes or
+truncates real doctype data, unless the user explicitly asks for that specific deletion in that
+specific moment. This app's own `site_config.json` has `"allow_tests": false`; `bench run-tests`
+against `local.147` requires flipping that on, which removes Frappe's only guardrail against test
+code mutating production data — a prior session did this and a blanket delete (source and exact
+command unrecovered — no DB binlog, no shell history) wiped every row out of `tabItem Price`
+site-wide, with no on-bench backup old enough to contain the data. Treat `allow_tests` as something
+that stays `false` on this site; if tests genuinely need to run, ask the user first and prefer
+pointing `bench run-tests` at a separate test site rather than enabling `allow_tests` here.
+
 ## Commands
 
 All commands run from the bench root (`/home/chang/frappe-bench`), not from this app directory,

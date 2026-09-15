@@ -155,7 +155,7 @@ class TestComputeStatus(unittest.TestCase):
 
 class TestPlanningPositionAndRecommendedQty(unittest.TestCase):
 	def test_planning_position_formula(self):
-		self.assertEqual(compute_planning_position(actual_qty=11, reliable_incoming_qty=2, reserved_qty=3), 10)
+		self.assertEqual(compute_planning_position(actual_qty=11, total_outstanding_qty=2, reserved_qty=3), 10)
 
 	def test_recommended_qty_when_at_or_below_rop(self):
 		self.assertEqual(compute_recommended_qty(planning_position=10, rop=18, target_stock=24), 14)
@@ -187,6 +187,62 @@ def _minimal_reorder_call(configured_lead_time_days, options_overrides=None):
 		to_date="2026-01-10",
 		options=options,
 	)
+
+
+class TestLateIncomingCountsFully(unittest.TestCase):
+	"""Phase 2's confirmed reversal of Phase 1's Planning Position formula:
+	late/overdue incoming now counts the same as on-time incoming, via
+	total_outstanding_qty = reliable_incoming + late_incoming. reliable_
+	incoming/late_incoming are still both computed and returned separately
+	(for Purchase Follow-up display), but the calculation no longer excludes
+	the late portion."""
+
+	def _call_with_incoming(self, incoming_rows):
+		options = dict(DEFAULT_OPTIONS)
+		return calculate_item_reorder(
+			item_code="TEST-ITEM",
+			warehouse="TEST-WAREHOUSE",
+			item_name="Test Item",
+			stock_uom="Nos",
+			configured_lead_time_days=30,
+			demand_rows=[],
+			demand_exceptions=[],
+			stock_row={"actual_qty": 5, "reserved_qty": 0},
+			incoming_rows=incoming_rows,
+			incoming_exceptions=[],
+			lead_time_rows=[],
+			from_date="2026-01-01",
+			to_date="2026-01-10",
+			options=options,
+		)
+
+	def test_all_reliable_incoming_counted(self):
+		result = self._call_with_incoming([{"remaining_qty_stock_uom": 10, "reliability": "RELIABLE"}])
+		self.assertEqual(result["reliable_incoming"], 10)
+		self.assertEqual(result["late_incoming"], 0)
+		self.assertEqual(result["total_outstanding_qty"], 10)
+		self.assertEqual(result["planning_position"], 15)
+
+	def test_all_late_incoming_still_counted_fully(self):
+		# The whole point of the reversal: a fully-overdue PO must count
+		# exactly the same as an on-time one.
+		result = self._call_with_incoming([{"remaining_qty_stock_uom": 10, "reliability": "LATE"}])
+		self.assertEqual(result["reliable_incoming"], 0)
+		self.assertEqual(result["late_incoming"], 10)
+		self.assertEqual(result["total_outstanding_qty"], 10)
+		self.assertEqual(result["planning_position"], 15)
+
+	def test_mixed_reliability_sums_to_the_same_position(self):
+		reliable_only = self._call_with_incoming([{"remaining_qty_stock_uom": 10, "reliability": "RELIABLE"}])
+		late_only = self._call_with_incoming([{"remaining_qty_stock_uom": 10, "reliability": "LATE"}])
+		mixed = self._call_with_incoming(
+			[
+				{"remaining_qty_stock_uom": 4, "reliability": "RELIABLE"},
+				{"remaining_qty_stock_uom": 6, "reliability": "LATE"},
+			]
+		)
+		self.assertEqual(reliable_only["planning_position"], late_only["planning_position"])
+		self.assertEqual(mixed["planning_position"], reliable_only["planning_position"])
 
 
 class TestPlanningLeadTimeResolution(unittest.TestCase):
@@ -238,7 +294,7 @@ class TestWorkedExample(unittest.TestCase):
 		target_result = compute_rop(series, target_horizon, service_percentile=90)
 		self.assertEqual(target_result["value"], 28.0)
 
-		planning_position = compute_planning_position(actual_qty=20, reliable_incoming_qty=2, reserved_qty=8)
+		planning_position = compute_planning_position(actual_qty=20, total_outstanding_qty=2, reserved_qty=8)
 		self.assertEqual(planning_position, 14.0)
 
 		status = compute_status(planning_position, rop_result["value"], DEMAND_REGULAR, "High")
