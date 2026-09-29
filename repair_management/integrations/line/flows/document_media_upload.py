@@ -489,6 +489,7 @@ def _verify_attachment(file_name, doctype, docname):
 
 
 def _remember_final_file(session, file_name):
+	_lock_session(session)
 	ctx = context(session)
 	ctx["final_file"] = file_name
 	set_context(session, ctx)
@@ -520,6 +521,7 @@ def _image_quality(profile_doc):
 
 
 def _remember_burnin_date(session):
+	_lock_session(session)
 	ctx = context(session)
 	if not ctx.get("burn_in_date"):
 		ctx["burn_in_date"] = nowdate()
@@ -544,6 +546,9 @@ def _record_cleanup_errors(session, errors):
 	"""
 	if not errors:
 		return
+	# process_video_burnin() loaded `session` before a long ffmpeg run; re-read
+	# under the row lock so receive()/finish() writes made meanwhile survive.
+	_lock_session(session)
 	ctx = context(session)
 	combined = list(ctx.get("cleanup_errors") or [])
 	combined.extend(errors)
