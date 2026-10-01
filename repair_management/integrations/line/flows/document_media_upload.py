@@ -1181,6 +1181,67 @@ def receive(channel, user_id, reply_token, session, message, **kwargs):
 	return True
 
 
+def _handle_download_failure(channel, session, p, message):
+	"""A media item could not be fetched from LINE even after retries.
+
+	Record it as Failed, stop counting it as accepted -- so a pending Finish
+	completes with the files that did arrive instead of waiting forever -- and
+	tell the user which item to resend.
+	"""
+	traceback = frappe.get_traceback()
+	frappe.log_error(title="LINE media download failed", message=traceback)
+
+	_lock_session(session)
+	image_set = message.get("imageSet") or {}
+	index = image_set.get("index")
+	frappe.get_doc(
+		{
+			"doctype": "LINE Media File",
+			"flow_session": session.name,
+			"line_message_id": message.get("id"),
+			"image_set_id": image_set.get("id"),
+			"image_index": index,
+			"media_type": p.media_type,
+			"processing_status": "Failed",
+			"error_message": traceback.strip().splitlines()[-1][:1000],
+		}
+	).insert()
+
+	ctx = context(session)
+	accepted = max(int(ctx.get("accepted_media") or 0) - 1, 0)
+	expected = int(ctx.get("finish_expected") or 0)
+	ctx["accepted_media"] = accepted
+	if expected:
+		expected = max(expected - 1, 0)
+		ctx["finish_expected"] = expected
+	set_context(session, ctx)
+
+	unit = "รูป" if p.media_type == "Image" else "คลิป"
+	label = f"{unit}ที่ {index}" if index else unit
+	if expected:
+		text = (
+			f"{label} ดาวน์โหลดจาก LINE ไม่สำเร็จ (เชื่อมต่อไม่ได้)\n"
+			f"ระบบจะแนบ{unit}ที่เหลือ {expected} {unit} หากต้องการเพิ่ม{unit}นี้ กรุณาเริ่มรายการใหม่"
+		)
+	elif ctx.get("finish_requested"):
+		# Finish was pressed and nothing usable arrived.
+		session.db_set(
+			{"status": "Failed", "current_state": "Failed", "error_message": "All media downloads failed"}
+		)
+		text = f"ดาวน์โหลด{unit}จาก LINE ไม่สำเร็จ กรุณาเริ่มรายการใหม่และส่ง{unit}อีกครั้ง"
+	else:
+		text = f"{label} ดาวน์โหลดจาก LINE ไม่สำเร็จ (เชื่อมต่อไม่ได้) กรุณาส่ง{unit}นี้ใหม่"
+
+	try:
+		LineClient(channel).push(session.line_user_id, [{"type": "text", "text": text}])
+	except Exception:
+		# The network may still be down; the session state above must still commit.
+		frappe.log_error(title="LINE media download failure notice not sent", message=frappe.get_traceback())
+
+	if expected:
+		_check_pending_finish(channel, session, p)
+
+
 def download(channel, session_name, message):
 	session = frappe.get_doc("LINE Flow Session", session_name)
 	p = _session_profile(session)
@@ -1202,7 +1263,12 @@ def download(channel, session_name, message):
 		)
 		return
 
-	content, content_type = LineClient(channel).get_content(message["id"])
+	try:
+		content, content_type = LineClient(channel).get_content(message["id"])
+	except Exception:
+		# get_content() already retried transient network errors.
+		_handle_download_failure(channel, session, p, message)
+		return
 	# Take the session lock before inserting the media row (same order as
 	# finish(): session row first, then media rows) so the two can't deadlock.
 	_lock_session(session)
