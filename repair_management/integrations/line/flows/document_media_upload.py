@@ -1134,9 +1134,22 @@ def receive(channel, user_id, reply_token, session, message, **kwargs):
 		LineClient(channel).reply(reply_token, [{"type": "text", "text": "ชนิดไฟล์ไม่ตรงกับรายการที่กำลังยืนยัน"}])
 		return True
 
+	# Photos picked together in one LINE send arrive as separate events sharing
+	# an imageSet id. Count every event of the set (accepted or over the
+	# maximum) so the acknowledgement below fires once the whole set is in.
+	image_set = message.get("imageSet") or {}
+	set_id = image_set.get("id") if expected == "image" else None
+	set_complete = True
+	if set_id:
+		image_sets = ctx.setdefault("image_sets", {})
+		image_sets[set_id] = int(image_sets.get(set_id) or 0) + 1
+		set_complete = image_sets[set_id] >= int(image_set.get("total") or 1)
+
 	maximum = int(p.maximum_files or 8)
 	accepted = int(ctx.get("accepted_media") or 0)
 	if accepted >= maximum:
+		if set_id:
+			set_context(session, ctx)
 		LineClient(channel).reply(
 			reply_token, [{"type": "text", "text": f"รับไฟล์ครบจำนวนสูงสุด {maximum} ไฟล์แล้ว"}]
 		)
@@ -1168,13 +1181,13 @@ def receive(channel, user_id, reply_token, session, message, **kwargs):
 	#
 	# Images (parts_confirm) can run up to maximum_files=8+ per session, and
 	# LINE's monthly message quota counts reply messages too -- replying
-	# after every single photo burned quota fast. Only send the
-	# continue/"เสร็จสิ้น" prompt once, right after the first photo, so the
-	# finish button is still reachable; later photos in the same session are
-	# accepted silently, and finish() reports the total count in one reply
-	# instead.
+	# after every single photo burned quota fast. Send the continue/"เสร็จสิ้น"
+	# prompt once per send action instead: for a multi-photo imageSet only the
+	# event that completes the set replies (with the session-wide total), the
+	# other photos of the set are accepted silently; a photo sent on its own
+	# replies right away.
 	if expected == "image":
-		if accepted == 1:
+		if set_complete:
 			LineClient(channel).reply(reply_token, [_image_continue_message(session, p, accepted)])
 	else:
 		LineClient(channel).reply(reply_token, [_video_continue_message(session, p, accepted)])
