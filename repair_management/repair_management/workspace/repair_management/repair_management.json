@@ -1,0 +1,95 @@
+{
+ "charts": [],
+ "content": "[{\"id\": \"rm-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Repair Management</b></span>\", \"col\": 12}}, {\"id\": \"rm-shortcut-0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Sales Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-purchase-tax\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Purchase Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Selling Item Each Month\", \"col\": 3}}, {\"id\": \"rm-spacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"rm-reports-card\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "creation": "2026-10-23 14:49:05.283049",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "tool",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Repair Management",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "Sales Tax Invoice",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Total Sales Tax Each Month Chart Report",
+   "link_count": 0,
+   "link_to": "Total Sales Tax Each Month Chart Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "Purchase Tax Invoice",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Total Purchase Tax Each Month Chart Report",
+   "link_count": 0,
+   "link_to": "Total Purchase Tax Each Month Chart Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "Sales Order",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Total Selling Item Each Month",
+   "link_count": 0,
+   "link_to": "Total Selling Item Each Month",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-23 15:08:51.433137",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "Repair Management",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 3.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "Total Sales Tax Each Month Chart Report",
+   "link_to": "Total Sales Tax Each Month Chart Report",
+   "report_ref_doctype": "Sales Tax Invoice",
+   "type": "Report"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "",
+   "label": "Total Purchase Tax Each Month Chart Report",
+   "link_to": "Total Purchase Tax Each Month Chart Report",
+   "report_ref_doctype": "Purchase Tax Invoice",
+   "type": "Report"
+  },
+  {
+   "color": "Green",
+   "doc_view": "",
+   "label": "Total Selling Item Each Month",
+   "link_to": "Total Selling Item Each Month",
+   "report_ref_doctype": "Sales Order",
+   "type": "Report"
+  }
+ ],
+ "title": "Repair Management"
+}
