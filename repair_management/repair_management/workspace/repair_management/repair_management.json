@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\": \"rm-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Repair Management</b></span>\", \"col\": 12}}, {\"id\": \"rm-shortcut-0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Sales Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-purchase-tax\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Purchase Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Selling Item Each Month\", \"col\": 3}}, {\"id\": \"rm-spacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"rm-reports-card\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "content": "[{\"id\": \"rm-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Repair Management</b></span>\", \"col\": 12}}, {\"id\": \"rm-shortcut-0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Sales Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-purchase-tax\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Purchase Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Selling Item Each Month\", \"col\": 3}}, {\"id\": \"rm-shortcut-multi-year-sales\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Multi-Year Sales Invoice Trends\", \"col\": 3}}, {\"id\": \"rm-spacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"rm-reports-card\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
  "creation": "2026-10-23 14:49:05.283049",
  "custom_blocks": [],
  "docstatus": 0,
@@ -16,7 +16,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Reports",
-   "link_count": 3,
+   "link_count": 4,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -53,9 +53,20 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "dependencies": "Sales Invoice",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Multi-Year Sales Invoice Trends",
+   "link_count": 0,
+   "link_to": "Multi-Year Sales Invoice Trends",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-10-23 15:08:51.433137",
+ "modified": "2026-10-31 15:30:00.000000",
  "modified_by": "Administrator",
  "module": "Repair Management",
  "name": "Repair Management",
@@ -88,6 +99,14 @@
    "label": "Total Selling Item Each Month",
    "link_to": "Total Selling Item Each Month",
    "report_ref_doctype": "Sales Order",
+   "type": "Report"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "",
+   "label": "Multi-Year Sales Invoice Trends",
+   "link_to": "Multi-Year Sales Invoice Trends",
+   "report_ref_doctype": "Sales Invoice",
    "type": "Report"
   }
  ],
