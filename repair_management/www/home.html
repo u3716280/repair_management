@@ -1,18 +1,237 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>My Website</title>
-    <link rel="stylesheet" href="./style.css">
-    <link rel="icon" href="./favicon.ico" type="image/x-icon">
-  </head>
-  <body>
-    <main>
-        <h1>Welcome to My Website</h1>  
-	Home - HTML
-    </main>
-    <script src="index.js"></script>
-  </body>
+<html lang="th">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>เอกไทย เทคนิคเคิล | ระบบระบายอากาศ ดูดควันครัว ลมชดเชย อากาศบริสุทธิ์ และดูดฝุ่น</title>
+	<meta name="description" content="เอกไทย เทคนิคเคิล ดูแลงานระบบระบายอากาศ ทั้งระบบดูดควันครัว ลมชดเชย อากาศบริสุทธิ์ และระบบดูดฝุ่น โดยเริ่มจากการคำนวณปริมาณลมและความดันของหน้างานจริง">
+	<meta property="og:title" content="เอกไทย เทคนิคเคิล | ระบบระบายอากาศสำหรับครัว โรงงาน และอาคาร">
+	<meta property="og:description" content="ระบบดูดควันครัว ลมชดเชย อากาศบริสุทธิ์ และระบบดูดฝุ่น ออกแบบจากการคำนวณหน้างานจริง">
+	<meta property="og:type" content="website">
+	{% if favicon_url %}<link rel="icon" href="{{ favicon_url }}">{% endif %}
+	<link rel="preload" href="/assets/repair_management/landing/fonts/ChakraPetch-Bold.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="stylesheet" href="/assets/repair_management/landing/landing.css?v=12">
+</head>
+<body>
+<a class="skip" href="#main">ข้ามไปที่เนื้อหา</a>
+
+<header class="site-header">
+	<a class="brand" href="/home">
+		{% if logo_url %}<img src="{{ logo_url }}" alt="" width="48" height="48">{% endif %}
+		<span>เอกไทย เทคนิคเคิล</span>
+	</a>
+	<nav class="site-nav" aria-label="เมนูหลัก">
+		<a href="#systems">ระบบที่เราดูแล</a>
+		<a href="#process">วิธีทำงาน</a>
+		<a href="#quote">ขอใบเสนอราคา</a>
+		<div class="staff" data-staff-menu>
+			<button type="button" aria-expanded="false" aria-controls="staff-links">สำหรับพนักงาน</button>
+			<ul id="staff-links" hidden>
+				<li>{% if is_logged_in %}<a href="/app">เปิด ERPNext</a>{% else %}<a href="/login">เข้าสู่ระบบ ERPNext</a>{% endif %}</li>
+				<li><a href="/app/kruger-fan-selector">Fan Selector</a></li>
+				<li><a href="/app/query-report/StockQty">StockQry</a></li>
+			</ul>
+		</div>
+	</nav>
+</header>
+
+<main id="main">
+	<section class="hero">
+		<div class="hero-copy">
+			<h1>อากาศในอาคารต้องมีทางเข้า และมีทางออก</h1>
+			<p>เอกไทย เทคนิคเคิล ดูแลงานระบบระบายอากาศ ตั้งแต่ควันครัว ฝุ่นจากการผลิต ไปจนถึงลมชดเชยและอากาศบริสุทธิ์ โดยเริ่มจากการคำนวณปริมาณลมและความดันของหน้างานจริง</p>
+			<a class="button" href="#quote">ขอใบเสนอราคา</a>
+		</div>
+		<figure class="plant">
+			<img class="plant-image" src="/assets/repair_management/landing/ventilation-system-1915.webp" srcset="/assets/repair_management/landing/ventilation-system-960.webp 960w, /assets/repair_management/landing/ventilation-system-1915.webp 1915w" sizes="100vw" width="1915" height="821" fetchpriority="high" alt="ภาพตัดอาคารแสดงระบบระบายอากาศ ควันจากฮูดครัวถูกดูดผ่านท่อขึ้นสู่พัดลมบนหลังคา เครื่องปรับอากาศบนหลังคาจ่ายลมเข้าส่วนรับประทานอาหาร และฝุ่นจากหัวดูดผ่านเครื่องกรองฝุ่นก่อนปล่อยออก">
+			<ul class="legend">
+				<li><a class="is-kitchen" href="#kitchen"><i></i>ดูดควันครัว</a></li>
+				<li><a class="is-makeup" href="#makeup"><i></i>ลมชดเชย</a></li>
+				<li><a class="is-fresh" href="#fresh"><i></i>อากาศบริสุทธิ์</a></li>
+				<li><a class="is-dust" href="#dust"><i></i>ดูดฝุ่นและมลพิษ</a></li>
+			</ul>
+		</figure>
+	</section>
+
+	<div id="systems">
+		<section class="system system-kitchen" id="kitchen">
+			<div class="system-head">
+				<h2>ระบบดูดควันครัว</h2>
+				<p>ดึงควัน ความร้อน และไอน้ำมันออกจากเตา ก่อนลอยไปทั่วครัว</p>
+			</div>
+			<div class="system-body">
+				<div>
+					<h3>อาการที่พบ</h3>
+					<p>ควันลอยออกนอกฮูด ครัวร้อน กลิ่นอาหารเข้าโซนลูกค้า และคราบไขมันสะสมในท่อ</p>
+				</div>
+				<div>
+					<h3>ระบบที่ออกแบบถูกต้อง</h3>
+					<p>ฮูดมีขนาดเหมาะกับเตา ท่อและพัดลมให้ปริมาณลมเพียงพอ และเปิดท่อทำความสะอาดได้</p>
+				</div>
+			</div>
+			<figure class="system-figure">
+				<a href="/assets/repair_management/landing/kitchen-exhaust-1672.webp">
+					<img src="/assets/repair_management/landing/kitchen-exhaust-1672.webp" srcset="/assets/repair_management/landing/kitchen-exhaust-960.webp 960w, /assets/repair_management/landing/kitchen-exhaust-1672.webp 1672w" sizes="(min-width: 1500px) 1380px, 100vw" width="1672" height="941" loading="lazy" decoding="async" alt="ภาพระบบดูดควันครัวและระบบเติมอากาศในห้องครัว ฮูดดูดควันเหนือเตา ต่อกับท่อดูดควันขึ้นสู่พัดลมบนหลังคา มีท่อเติมอากาศ (Make Up Air) จ่ายลมเข้าห้องครัว และช่องเปิดทำความสะอาดท่อ (Access Door) ระบบที่ออกแบบถูกต้องมีฮูดขนาดเหมาะกับเตา ท่อและพัดลมให้ปริมาณลมเพียงพอ พร้อมการเติมอากาศสำหรับห้องครัว และเปิดท่อทำความสะอาดได้">
+				</a>
+			</figure>
+		</section>
+
+		<section class="system system-makeup" id="makeup">
+			<div class="system-head">
+				<h2>ระบบลมชดเชย</h2>
+				<p>เติมอากาศกลับเข้าห้อง แทนส่วนที่พัดลมดูดออกไป</p>
+			</div>
+			<div class="system-body">
+				<div>
+					<h3>อาการที่พบ</h3>
+					<p>ประตูเปิดยาก มีลมแรงดูดเข้าทางประตู และฮูดดูดควันไม่ขึ้นทั้งที่พัดลมยังทำงาน</p>
+				</div>
+				<div>
+					<h3>ระบบที่ออกแบบถูกต้อง</h3>
+					<p>ปริมาณลมเติมสมดุลกับลมที่ดูดออก และจุดจ่ายลมไม่รบกวนการดูดควันของฮูด</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="system system-fresh" id="fresh">
+			<div class="system-head">
+				<h2>ระบบอากาศบริสุทธิ์</h2>
+				<p>นำอากาศภายนอกที่ผ่านการกรองเข้ามาในห้องที่ปิดสนิทและมีคนใช้งาน</p>
+			</div>
+			<div class="system-body">
+				<div>
+					<h3>อาการที่พบ</h3>
+					<p>อยู่ในห้องนานแล้วอึดอัด ง่วง อากาศอับ แม้แอร์ยังเย็นตามปกติ</p>
+				</div>
+				<div>
+					<h3>ระบบที่ออกแบบถูกต้อง</h3>
+					<p>ปริมาณอากาศเหมาะกับจำนวนคนและการใช้ห้อง มีไส้กรองที่เปลี่ยนได้ และสมดุลกับระบบปรับอากาศ</p>
+				</div>
+			</div>
+			<figure class="system-figure">
+				<a href="/assets/repair_management/landing/fresh-air-1671.webp">
+					<img src="/assets/repair_management/landing/fresh-air-1671.webp" srcset="/assets/repair_management/landing/fresh-air-960.webp 960w, /assets/repair_management/landing/fresh-air-1671.webp 1671w" sizes="(min-width: 1500px) 1380px, 100vw" width="1671" height="941" loading="lazy" decoding="async" alt="ภาพระบบอากาศบริสุทธิ์ในห้องประชุม รับอากาศภายนอกผ่านชุดเติมอากาศที่มีไส้กรองบนหลังคา แล้วจ่ายลงห้องผ่านหัวจ่ายบนฝ้าเพดาน ทำงานร่วมกับเครื่องปรับอากาศ อาการที่พบคืออยู่ในห้องนานแล้วอึดอัด ง่วง ไม่มีสมาธิ อากาศอับ แม้แอร์ยังเย็นตามปกติ ระบบที่ออกแบบถูกต้องมีปริมาณอากาศเหมาะกับจำนวนคนและการใช้ห้อง มีไส้กรองที่เปลี่ยนได้ และสมดุลกับระบบปรับอากาศ">
+				</a>
+			</figure>
+		</section>
+
+		<section class="system system-dust" id="dust">
+			<div class="system-head">
+				<h2>ระบบดูดฝุ่นและมลพิษ</h2>
+				<p>จับฝุ่นที่จุดเกิด ก่อนฟุ้งไปทั่วพื้นที่ทำงานหรือออกนอกอาคาร</p>
+			</div>
+			<div class="system-body">
+				<div>
+					<h3>อาการที่พบ</h3>
+					<p>ฝุ่นฟุ้งในพื้นที่ทำงาน เกาะเครื่องจักร ตกค้างในท่อ และออกสู่ภายนอกอาคาร</p>
+				</div>
+				<div>
+					<h3>ระบบที่ออกแบบถูกต้อง</h3>
+					<p>หัวดูดอยู่ใกล้จุดเกิดฝุ่น ความเร็วลมในท่อสูงพอไม่ให้ฝุ่นตกค้าง และกรองก่อนปล่อยออก</p>
+				</div>
+			</div>
+			<figure class="system-figure">
+				<a href="/assets/repair_management/landing/dust-collector-1448.webp">
+					<img src="/assets/repair_management/landing/dust-collector-1448.webp" srcset="/assets/repair_management/landing/dust-collector-960.webp 960w, /assets/repair_management/landing/dust-collector-1448.webp 1448w" sizes="(min-width: 1100px) 60vw, 100vw" width="1448" height="1086" loading="lazy" decoding="async" alt="ภาพระบบดูดฝุ่นในโรงงาน หัวดูดฝุ่นอยู่เหนือจุดเจียรโลหะ ต่อท่อดูดฝุ่นไปยังชุดกรองฝุ่น (Dust Collector) และพัดลมดูดฝุ่น แล้วปล่อยอากาศหลังกรองออกทางปล่อง อาการที่พบคือฝุ่นฟุ้งในพื้นที่ทำงาน เกาะเครื่องจักร ตกค้างในท่อ และออกสู่ภายนอกอาคาร เหมาะกับงานเจียรและขัด">
+				</a>
+			</figure>
+		</section>
+	</div>
+
+	<section class="process" id="process">
+		<h2>เราเริ่มจากตัวเลขของ<span>หน้างาน</span> ก่อนเลือกอุปกรณ์</h2>
+		<ol>
+			<li>
+				<h3>ดูหน้างาน</h3>
+				<p>ดูขนาดพื้นที่ แหล่งควันหรือฝุ่น แนวท่อที่เดินได้ และปัญหาที่เจออยู่</p>
+			</li>
+			<li>
+				<h3>คำนวณลมและความดัน</h3>
+				<p>หาปริมาณลมที่ต้องใช้ แล้วคิดความดันสูญเสียตลอดแนวท่อและข้อต่อ</p>
+			</li>
+			<li>
+				<h3>เลือกพัดลมจากกราฟสมรรถนะ</h3>
+				<p>ใช้เครื่องมือคัดเลือกพัดลมของเรา เทียบจุดทำงานจริงของแต่ละรุ่น</p>
+			</li>
+			<li>
+				<h3>สรุปรายการและราคา</h3>
+				<p>ส่งรายการอุปกรณ์พร้อมใบเสนอราคา เพื่อให้คุณตรวจสอบก่อนตัดสินใจ</p>
+			</li>
+		</ol>
+	</section>
+
+	<section class="quote" id="quote">
+		<div class="quote-intro">
+			<h2>เล่าปัญหาของหน้างานให้เราฟัง</h2>
+			<p>กรอกข้อมูลเท่าที่ทราบ ยังไม่ต้องมีแบบหรือตัวเลขครบ ทีมงานจะโทรกลับเพื่อสอบถามรายละเอียดเพิ่ม</p>
+			{% if contact.phone or contact.line_url %}
+			<div class="contact-actions">
+				{% if contact.phone %}<a class="button button-line" href="tel:{{ phone_href }}">โทร {{ contact.phone }}</a>{% endif %}
+				{% if contact.line_url %}<a class="button button-line" href="{{ contact.line_url }}" rel="noopener">แชตทาง LINE</a>{% endif %}
+			</div>
+			{% endif %}
+		</div>
+
+		<form class="quote-form" data-quote-form data-csrf="{{ form_csrf_token }}">
+			<div class="field-pair">
+				<div class="field">
+					<label for="q-name">ชื่อผู้ติดต่อ</label>
+					<input id="q-name" name="full_name" required maxlength="140" autocomplete="name">
+				</div>
+				<div class="field">
+					<label for="q-phone">เบอร์โทรศัพท์</label>
+					<input id="q-phone" name="phone" type="tel" required maxlength="20" autocomplete="tel" inputmode="tel">
+				</div>
+			</div>
+			<div class="field-pair">
+				<div class="field">
+					<label for="q-email">อีเมล <small>(ไม่บังคับ)</small></label>
+					<input id="q-email" name="email" type="email" maxlength="140" autocomplete="email">
+				</div>
+				<div class="field">
+					<label for="q-company">บริษัทหรือร้าน <small>(ไม่บังคับ)</small></label>
+					<input id="q-company" name="company" maxlength="140" autocomplete="organization">
+				</div>
+			</div>
+			<div class="field">
+				<label for="q-system">ระบบที่ต้องการ</label>
+				<select id="q-system" name="system" required>
+					<option value="">เลือกระบบ</option>
+					<option value="kitchen">ระบบดูดควันครัว</option>
+					<option value="makeup">ระบบลมชดเชย</option>
+					<option value="fresh">ระบบอากาศบริสุทธิ์</option>
+					<option value="dust">ระบบดูดฝุ่นและมลพิษ</option>
+					<option value="other">ยังไม่แน่ใจ</option>
+				</select>
+			</div>
+			<div class="field">
+				<label for="q-details">ปัญหาหรือรายละเอียดหน้างาน <small>(ไม่บังคับ)</small></label>
+				<textarea id="q-details" name="details" maxlength="2000" placeholder="เช่น ฮูดยาว 3 เมตร ควันลอยออกนอกฮูดตอนเปิดเตาพร้อมกัน"></textarea>
+			</div>
+			<div class="trap" aria-hidden="true">
+				<label for="q-website">เว็บไซต์</label>
+				<input id="q-website" name="website" tabindex="-1" autocomplete="off">
+			</div>
+			<label class="consent">
+				<input type="checkbox" name="consent" value="1" required>
+				<span>ฉันยินยอมให้เอกไทย เทคนิคเคิล เก็บและใช้ข้อมูลนี้เพื่อติดต่อกลับเรื่องคำขอใบเสนอราคา</span>
+			</label>
+			<p class="form-status" data-form-status role="alert"></p>
+			<div><button class="button" type="submit">ส่งคำขอใบเสนอราคา</button></div>
+		</form>
+
+		<div class="quote-success" data-quote-success tabindex="-1" hidden>
+			<h3>ส่งคำขอใบเสนอราคาแล้ว</h3>
+			<p>ทีมงานจะติดต่อกลับตามเบอร์โทรศัพท์ที่ให้ไว้</p>
+		</div>
+	</section>
+</main>
+
+<footer class="site-footer">
+	<strong>เอกไทย เทคนิคเคิล</strong>
+	{% if contact.address %}<p>{{ contact.address }}</p>{% endif %}
+</footer>
+
+<script src="/assets/repair_management/landing/landing.js?v=2"></script>
+</body>
 </html>
