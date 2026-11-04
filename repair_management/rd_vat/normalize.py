@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import unicodedata
+from datetime import date
 
 # Column order of RD's CSV files.
 CSV_FIELDS = (
@@ -142,6 +143,13 @@ def format_be_date(value) -> str:
 	text = clean(value)
 	match = _DATE.match(text)
 	return f"{match.group(3)}/{match.group(2)}/{match.group(1)}" if match else text
+
+
+def latest_valid_be_date(values, today=None) -> str:
+	"""Latest Buddhist Era date, ignoring typos in RD's data such as the year 3114."""
+	today = today or date.today()
+	limit = f"{today.year + 543:04d}-{today.month:02d}-{today.day:02d}"
+	return max((value for value in values if value and _DATE.match(value) and value <= limit), default="")
 
 
 def to_display(row: dict) -> dict:

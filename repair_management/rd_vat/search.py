@@ -302,7 +302,7 @@ def get_status() -> dict:
 		logs = frappe.get_all(
 			LOG,
 			filters={"dataset": dataset, "status": ("in", ("Success", "Needs Review"))},
-			fields=["file_date", "finished_at", "valid_rows"],
+			fields=["file_date", "finished_at", "valid_rows", "latest_registration_date"],
 			order_by="started_at desc",
 			limit=1,
 		)

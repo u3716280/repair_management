@@ -40,11 +40,19 @@ function vatinfo_be_date(value) {
 	return match ? `${match[3]}/${match[2]}/${Number(match[1]) + 543}` : "";
 }
 
-// RD lists these files as monthly, so anything well past that deserves a visible warning.
-function vatinfo_freshness(file_date) {
-	if (!file_date) return { color: "gray", note: "" };
-	const age = Date.now() - new Date(`${String(file_date).slice(0, 10)}T00:00:00`).getTime();
-	const months = Math.floor(age / (30.44 * 24 * 60 * 60 * 1000));
+// Buddhist Era date as stored in RD's data (2569-07-31).
+function vatinfo_be_text(value) {
+	const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || "");
+	return match ? `${match[3]}/${match[2]}/${match[1]}` : "";
+}
+
+// How current the data really is: the newest registration it contains. RD publishes monthly,
+// so anything well past that deserves a visible warning.
+function vatinfo_freshness(latest_registration) {
+	const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(latest_registration || "");
+	if (!match) return { color: "gray", note: "" };
+	const date = new Date(Number(match[1]) - 543, Number(match[2]) - 1, Number(match[3]));
+	const months = Math.floor((Date.now() - date.getTime()) / (30.44 * 24 * 60 * 60 * 1000));
 	if (months >= 3) return { color: "orange", note: `เก่า ${months} เดือน` };
 	return { color: "green", note: "" };
 }
@@ -827,7 +835,7 @@ class VatInfoPage {
 	render_datasets(datasets) {
 		const tiles = datasets
 			.map((item, index) => {
-				const fresh = vatinfo_freshness(item.file_date);
+				const fresh = vatinfo_freshness(item.latest_registration_date);
 				const finished = item.finished_at
 					? `นำเข้าเมื่อ ${vatinfo_esc(vatinfo_be_date(item.finished_at))} ${vatinfo_esc(
 							String(item.finished_at).slice(11, 16)
@@ -841,12 +849,18 @@ class VatInfoPage {
 						<div class="vatinfo-stat-value">${item.file_date ? vatinfo_num(item.valid_rows) : "-"}</div>
 						<div class="vatinfo-stat-meta">
 							<span class="vatinfo-source vatinfo-source-${fresh.color}"><span class="vatinfo-dot"></span>${
-					item.file_date
-						? `ไฟล์ ${vatinfo_esc(vatinfo_be_date(item.file_date))}`
-						: "ไม่มีข้อมูล"
+					item.latest_registration_date
+						? `จดทะเบียนล่าสุด ${vatinfo_esc(
+								vatinfo_be_text(item.latest_registration_date)
+						  )}`
+						: "ยังไม่ทราบวันที่จดทะเบียนล่าสุด"
 				}${fresh.note ? ` (${vatinfo_esc(fresh.note)})` : ""}</span>
 						</div>
-						<div class="vatinfo-stat-meta vatinfo-muted">${finished}</div>
+						<div class="vatinfo-stat-meta vatinfo-muted">${
+							item.file_date
+								? `ไฟล์วันที่ ${vatinfo_esc(vatinfo_be_date(item.file_date))} · `
+								: ""
+						}${finished}</div>
 					</div>`;
 			})
 			.join("");

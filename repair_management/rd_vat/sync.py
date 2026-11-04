@@ -21,7 +21,8 @@ from repair_management.rd_vat.importer import (
 
 SETTINGS = "RD VAT Import Settings"
 DEFAULT_URLS = {
-	"Bangkok": "https://data.rd.go.th/dataset/558c27ab-874c-4bd2-9758-ecf2c026dfd6/resource/5168fafa-518f-41d9-90f1-82658d2773e0/download/vat_taxpayeraddress_01.csv",
+	# Not the link in RD's catalog, which still points to a July 2025 file.
+	"Bangkok": "https://data.rd.go.th/datafiles/vat/VAT_TaxpayerAddress_01.csv",
 	"Other Provinces": "https://data.rd.go.th/datafiles/vat/VAT_TaxpayerAddress_02.csv",
 }
 URL_FIELDS = {"Bangkok": "bangkok_url", "Other Provinces": "provinces_url"}

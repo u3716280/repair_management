@@ -15,7 +15,7 @@ from frappe.utils import getdate, now_datetime
 from frappe.utils.file_manager import save_file
 
 from repair_management.rd_vat.csv_reader import CsvValidationError, ParsedRow, RDVatCsv
-from repair_management.rd_vat.normalize import CSV_FIELDS, make_key
+from repair_management.rd_vat.normalize import CSV_FIELDS, latest_valid_be_date, make_key
 from repair_management.rd_vat.search import clear_location_cache
 
 TAXPAYER = "RD VAT Taxpayer"
@@ -170,10 +170,14 @@ def _validate_and_import(
 	}
 	rejected = []
 	processed = 0
+	latest_registration = ""
 
 	for batch in _batches(reader, request.batch_size or DEFAULT_BATCH_SIZE, rejected):
 		_import_batch(batch, request.dataset, file_date, log_name, is_baseline, counts)
 		processed += len(batch)
+		latest_registration = latest_valid_be_date(
+			[latest_registration, *(row["vat_approval_date"] for row in batch)]
+		)
 		frappe.db.set_value(LOG, log_name, {"processed_rows": processed, **counts}, update_modified=False)
 		commit()
 
@@ -189,7 +193,16 @@ def _validate_and_import(
 	else:
 		missing = _flag_missing(request.dataset, file_date, log_name, commit)
 
-	_finish(log_name, status, commit, message=message, rows_missing=missing, error_file=error_file, **counts)
+	_finish(
+		log_name,
+		status,
+		commit,
+		message=message,
+		rows_missing=missing,
+		error_file=error_file,
+		latest_registration_date=latest_registration,
+		**counts,
+	)
 	clear_location_cache()
 
 

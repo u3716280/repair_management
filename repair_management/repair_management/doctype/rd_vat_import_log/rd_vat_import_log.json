@@ -13,6 +13,7 @@
   "file_hash",
   "file_size",
   "file_date",
+  "latest_registration_date",
   "etag",
   "last_modified_header",
   "encoding",
@@ -92,6 +93,13 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "วันที่ของไฟล์"
+  },
+  {
+   "fieldname": "latest_registration_date",
+   "fieldtype": "Data",
+   "in_list_view": 0,
+   "label": "วันที่จดทะเบียนล่าสุดในไฟล์ (พ.ศ.)",
+   "length": 20
   },
   {
    "fieldname": "etag",
@@ -227,7 +235,7 @@
  "in_create": 1,
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-04 22:45:00.000000",
+ "modified": "2026-11-04 23:50:00.000000",
  "modified_by": "Administrator",
  "module": "Repair Management",
  "name": "RD VAT Import Log",
