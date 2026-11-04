@@ -40,6 +40,30 @@ function vatinfo_be_date(value) {
 	return match ? `${match[3]}/${match[2]}/${Number(match[1]) + 543}` : "";
 }
 
+// RD lists these files as monthly, so anything well past that deserves a visible warning.
+function vatinfo_freshness(file_date) {
+	if (!file_date) return { color: "gray", note: "" };
+	const age = Date.now() - new Date(`${String(file_date).slice(0, 10)}T00:00:00`).getTime();
+	const months = Math.floor(age / (30.44 * 24 * 60 * 60 * 1000));
+	if (months >= 3) return { color: "orange", note: `เก่า ${months} เดือน` };
+	return { color: "green", note: "" };
+}
+
+const VATINFO_ICONS = {
+	search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+	database:
+		'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+	refresh:
+		'<path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/>',
+	upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+	history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+	info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+};
+
+function vatinfo_icon(name) {
+	return `<svg class="vatinfo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${VATINFO_ICONS[name]}</svg>`;
+}
+
 class VatInfoPage {
 	constructor(page) {
 		this.page = page;
@@ -57,17 +81,27 @@ class VatInfoPage {
 	render() {
 		this.wrapper.html(`
 			<div class="vatinfo-tabs" role="tablist" aria-label="VATinfo" hidden>
-				<button type="button" class="vatinfo-tab" role="tab" id="vatinfo-tab-search" aria-controls="vatinfo-panel-search" aria-selected="true" data-tab="search">ค้นหาข้อมูล</button>
-				<button type="button" class="vatinfo-tab" role="tab" id="vatinfo-tab-import" aria-controls="vatinfo-panel-import" aria-selected="false" tabindex="-1" data-tab="import">นำเข้าและอัปเดตข้อมูล</button>
+				<button type="button" class="vatinfo-tab" role="tab" id="vatinfo-tab-search" aria-controls="vatinfo-panel-search" aria-selected="true" data-tab="search">${vatinfo_icon(
+					"search"
+				)}ค้นหาข้อมูล</button>
+				<button type="button" class="vatinfo-tab" role="tab" id="vatinfo-tab-import" aria-controls="vatinfo-panel-import" aria-selected="false" tabindex="-1" data-tab="import">${vatinfo_icon(
+					"database"
+				)}นำเข้าและอัปเดตข้อมูล</button>
 			</div>
 
 			<div class="vatinfo-panel" role="tabpanel" id="vatinfo-panel-search" aria-labelledby="vatinfo-tab-search">
 				<form class="vatinfo-card vatinfo-form" novalidate>
-					<h5 class="vatinfo-heading">ระบบค้นหาข้อมูลผู้ประกอบการจดทะเบียนภาษีมูลค่าเพิ่ม</h5>
+					<header class="vatinfo-card-head">
+						<span class="vatinfo-tile vatinfo-tile-blue">${vatinfo_icon("search")}</span>
+						<div>
+							<h5 class="vatinfo-heading">ค้นหาผู้ประกอบการจดทะเบียนภาษีมูลค่าเพิ่ม</h5>
+							<p class="vatinfo-help">ค้นหาด้วยเลขประจำตัวผู้เสียภาษี หรือชื่อบางส่วน เช่น เอกไทย</p>
+						</div>
+					</header>
 
 					<div class="vatinfo-mode" role="radiogroup" aria-label="ค้นหาจาก">
-						<label><input type="radio" name="vatinfo-mode" value="tin" checked> เลขประจำตัวผู้เสียภาษีอากร</label>
-						<label><input type="radio" name="vatinfo-mode" value="name"> ชื่อผู้ประกอบการ</label>
+						<label class="vatinfo-mode-option"><input type="radio" name="vatinfo-mode" value="tin" checked> เลขประจำตัวผู้เสียภาษีอากร</label>
+						<label class="vatinfo-mode-option"><input type="radio" name="vatinfo-mode" value="name"> ชื่อผู้ประกอบการ</label>
 					</div>
 
 					<div class="vatinfo-fields" data-mode="tin">
@@ -120,10 +154,11 @@ class VatInfoPage {
 					</div>
 
 					<div class="vatinfo-actions">
-						<button type="submit" class="btn btn-primary btn-sm vatinfo-search">ค้นหาข้อมูล</button>
+						<button type="submit" class="btn btn-sm vatinfo-primary vatinfo-search">${vatinfo_icon(
+							"search"
+						)}ค้นหาข้อมูล</button>
 						<button type="button" class="btn btn-default btn-sm vatinfo-clear">ล้างข้อความ</button>
 					</div>
-					<div class="vatinfo-banner"></div>
 				</form>
 				<div class="vatinfo-card vatinfo-results" aria-live="polite" hidden></div>
 			</div>
@@ -134,7 +169,6 @@ class VatInfoPage {
 		`);
 
 		this.$tabs = this.wrapper.find(".vatinfo-tabs");
-		this.$banner = this.wrapper.find(".vatinfo-banner");
 		this.$form = this.wrapper.find(".vatinfo-form");
 		this.$results = this.wrapper.find(".vatinfo-results");
 		this.$admin = this.wrapper.find(".vatinfo-admin");
@@ -401,22 +435,41 @@ class VatInfoPage {
 		const first = (data.page - 1) * data.page_length + 1;
 		const body = this.rows
 			.map((row, index) => {
-				const missing =
-					row.source === "offline" && !row.in_latest_dataset
-						? '<div class="vatinfo-sub"><span class="indicator-pill orange">ไม่พบในชุดข้อมูลล่าสุด</span></div>'
-						: "";
+				const flags = [];
+				if (row.source === "offline" && !row.in_latest_dataset) {
+					flags.push(
+						'<span class="vatinfo-badge vatinfo-badge-orange">ไม่พบในชุดข้อมูลล่าสุด</span>'
+					);
+				}
+				if (row.data_incomplete) {
+					flags.push(
+						'<span class="vatinfo-badge vatinfo-badge-yellow">ข้อมูลไม่ครบ</span>'
+					);
+				}
+				if (row.source === "online") {
+					flags.push(
+						'<span class="vatinfo-badge vatinfo-badge-blue">ข้อมูลออนไลน์</span>'
+					);
+				}
 				const establishment =
 					row.establishment_name && row.establishment_name !== row.taxpayer_name
 						? `<div class="vatinfo-sub">${vatinfo_esc(row.establishment_name)}</div>`
 						: "";
+				const is_head_office = row.branch_label === "สำนักงานใหญ่";
 				return `
 					<tr class="vatinfo-row" data-index="${index}" tabindex="0">
-						<td class="vatinfo-nowrap">${vatinfo_num(first + index)}</td>
-						<td class="vatinfo-nowrap">${vatinfo_esc(vatinfo_tin(row.tax_id))}</td>
-						<td class="vatinfo-nowrap">${vatinfo_esc(row.branch_label)}</td>
-						<td>${vatinfo_esc(row.taxpayer_name)}${establishment}${missing}</td>
-						<td>${vatinfo_esc(row.address)}</td>
-						<td class="vatinfo-nowrap">${vatinfo_esc(row.registered_date)}</td>
+						<td class="vatinfo-nowrap vatinfo-muted">${vatinfo_num(first + index)}</td>
+						<td class="vatinfo-nowrap vatinfo-tin">${vatinfo_esc(vatinfo_tin(row.tax_id))}</td>
+						<td class="vatinfo-nowrap"><span class="vatinfo-badge ${
+							is_head_office ? "vatinfo-badge-green" : "vatinfo-badge-blue"
+						}">${vatinfo_esc(row.branch_label)}</span></td>
+						<td>
+							<div class="vatinfo-name-cell">${vatinfo_esc(row.taxpayer_name)}</div>
+							${establishment}
+							${flags.length ? `<div class="vatinfo-flags">${flags.join("")}</div>` : ""}
+						</td>
+						<td class="vatinfo-address">${vatinfo_esc(row.address)}</td>
+						<td class="vatinfo-nowrap vatinfo-muted">${vatinfo_esc(row.registered_date)}</td>
 					</tr>`;
 			})
 			.join("");
@@ -432,7 +485,7 @@ class VatInfoPage {
 				<button type="button" class="btn btn-default btn-xs vatinfo-prev" ${
 					data.page > 1 ? "" : "disabled"
 				}>ก่อนหน้า</button>
-				<span>หน้า ${vatinfo_num(data.page)}</span>
+				<span class="vatinfo-muted">หน้า ${vatinfo_num(data.page)}</span>
 				<button type="button" class="btn btn-default btn-xs vatinfo-next" ${
 					has_next ? "" : "disabled"
 				}>ถัดไป</button>
@@ -468,15 +521,21 @@ class VatInfoPage {
 		this.$results
 			.html(
 				`
-				${note ? `<div class="vatinfo-note">${vatinfo_esc(note)}</div>` : ""}
+				${
+					note
+						? `<div class="vatinfo-note vatinfo-note-blue">${vatinfo_icon(
+								"info"
+						  )}<span>${vatinfo_esc(note)}</span></div>`
+						: ""
+				}
 				<div class="vatinfo-count">
-					<span>พบ ${total} รายการ แสดงรายการที่ ${vatinfo_num(first)}-${vatinfo_num(
+					<span><b>พบ ${total} รายการ</b> แสดงรายการที่ ${vatinfo_num(first)}-${vatinfo_num(
 					last
 				)} · คลิกรายการเพื่อดูรายละเอียด</span>
 					${controls}
 				</div>
 				<div class="vatinfo-table-wrap">
-					<table class="table table-bordered vatinfo-table">
+					<table class="table vatinfo-table">
 						<thead>
 							<tr>
 								<th>ลำดับ</th>
@@ -497,7 +556,9 @@ class VatInfoPage {
 	}
 
 	show_message(html) {
-		this.$results.html(`<div>${html}</div>`).prop("hidden", false);
+		this.$results
+			.html(`<div class="vatinfo-empty">${vatinfo_icon("info")}<div>${html}</div></div>`)
+			.prop("hidden", false);
 	}
 
 	// -----------------------------------------------------------------------
@@ -548,12 +609,13 @@ class VatInfoPage {
 
 		let notes = "";
 		if (row.source === "offline" && !row.in_latest_dataset) {
-			notes += `<div class="vatinfo-note">ไม่พบรายการนี้ในชุดข้อมูลล่าสุดตั้งแต่ ${vatinfo_esc(
+			notes += `<div class="vatinfo-note vatinfo-note-orange">ไม่พบรายการนี้ในชุดข้อมูลล่าสุดตั้งแต่ ${vatinfo_esc(
 				vatinfo_be_date(row.missing_since)
 			)} ซึ่งไม่ได้หมายความว่าถูกยกเลิกทะเบียน VAT</div>`;
 		}
 		if (row.data_incomplete) {
-			notes += '<div class="vatinfo-note">ข้อมูลรายการนี้ในไฟล์ต้นทางไม่ครบถ้วน</div>';
+			notes +=
+				'<div class="vatinfo-note vatinfo-note-yellow">ข้อมูลรายการนี้ในไฟล์ต้นทางไม่ครบถ้วน</div>';
 		}
 
 		const dialog = new frappe.ui.Dialog({
@@ -646,7 +708,6 @@ class VatInfoPage {
 			method: `${VATINFO_SEARCH}.get_status`,
 			callback: (r) => {
 				const status = r.message || {};
-				this.render_banner(status);
 				if (status.is_admin) this.render_admin(status);
 				this.schedule_status(status);
 			},
@@ -665,42 +726,40 @@ class VatInfoPage {
 		}, 5000);
 	}
 
-	render_banner(status) {
-		const datasets = (status.datasets || [])
-			.map((item) => {
-				const label = vatinfo_esc(VATINFO_DATASETS[item.dataset] || item.dataset);
-				return item.file_date
-					? `${label} ณ ${vatinfo_esc(vatinfo_be_date(item.file_date))}`
-					: `${label} ยังไม่มีข้อมูล`;
-			})
-			.join(" · ");
-		this.$banner.html(
-			`ข้อมูล: ${datasets}. เฉพาะผู้ประกอบการที่ยังประกอบกิจการอยู่ ณ วันที่ของไฟล์ ถ้าไม่พบเลขประจำตัวผู้เสียภาษี ระบบจะตรวจสอบกับกรมสรรพากรออนไลน์ให้`
-		);
-	}
-
 	render_admin(status) {
 		if (!this.admin_ready) {
 			this.admin_ready = true;
 			this.$tabs.prop("hidden", false);
 			this.$admin.html(`
-				<section class="vatinfo-card">
-					<h5 class="vatinfo-heading">ข้อมูลในระบบ</h5>
-					<div class="vatinfo-datasets"></div>
-				</section>
+				<div class="vatinfo-stats"></div>
+				<p class="vatinfo-help vatinfo-stats-note">เฉพาะผู้ประกอบการที่ยังประกอบกิจการอยู่ ณ วันที่ของไฟล์ ถ้าไม่พบเลขประจำตัวผู้เสียภาษี ระบบจะตรวจสอบกับกรมสรรพากรออนไลน์ให้</p>
 
 				<section class="vatinfo-card">
-					<h5 class="vatinfo-heading">อัปเดตจากกรมสรรพากร</h5>
-					<p class="vatinfo-help">ตรวจสอบและดาวน์โหลดไฟล์ทั้งสองชุด แล้วนำเข้าในเบื้องหลัง ไฟล์ที่ไม่เปลี่ยนแปลงจะไม่ถูกนำเข้าซ้ำ</p>
+					<header class="vatinfo-card-head">
+						<span class="vatinfo-tile vatinfo-tile-blue">${vatinfo_icon("refresh")}</span>
+						<div>
+							<h5 class="vatinfo-heading">อัปเดตจากกรมสรรพากร</h5>
+							<p class="vatinfo-help">ตรวจสอบและดาวน์โหลดไฟล์ทั้งสองชุด แล้วนำเข้าในเบื้องหลัง ไฟล์ที่ไม่เปลี่ยนแปลงจะไม่ถูกนำเข้าซ้ำ</p>
+						</div>
+					</header>
 					<div class="vatinfo-actions">
-						<button type="button" class="btn btn-primary btn-sm vatinfo-update">ดาวน์โหลดและนำเข้าอัตโนมัติ</button>
+						<button type="button" class="btn btn-sm vatinfo-primary vatinfo-update">${vatinfo_icon(
+							"refresh"
+						)}ดาวน์โหลดและนำเข้าอัตโนมัติ</button>
 						<label class="vatinfo-check"><input type="checkbox" class="vatinfo-force"> นำเข้าซ้ำแม้ไฟล์ไม่เปลี่ยนแปลง</label>
+						<span class="vatinfo-auto"></span>
 					</div>
-					<p class="vatinfo-help vatinfo-auto"></p>
+					<div class="vatinfo-progress-area"></div>
 				</section>
 
 				<section class="vatinfo-card">
-					<h5 class="vatinfo-heading">อัปโหลด CSV ด้วยตนเอง</h5>
+					<header class="vatinfo-card-head">
+						<span class="vatinfo-tile vatinfo-tile-purple">${vatinfo_icon("upload")}</span>
+						<div>
+							<h5 class="vatinfo-heading">อัปโหลด CSV ด้วยตนเอง</h5>
+							<p class="vatinfo-help">ใช้เมื่อดาวน์โหลดอัตโนมัติไม่ได้ หรือมีไฟล์จากกรมสรรพากรอยู่แล้ว</p>
+						</div>
+					</header>
 					<div class="vatinfo-fields">
 						<div>
 							<label for="vatinfo-upload-dataset">ชุดข้อมูล</label>
@@ -715,7 +774,7 @@ class VatInfoPage {
 						</div>
 						<div class="vatinfo-wide">
 							<label for="vatinfo-upload-file">ไฟล์ CSV</label>
-							<input id="vatinfo-upload-file" type="file" accept=".csv,text/csv" class="form-control">
+							<input id="vatinfo-upload-file" type="file" accept=".csv,text/csv" class="form-control vatinfo-file">
 						</div>
 					</div>
 					<div class="vatinfo-actions">
@@ -725,13 +784,14 @@ class VatInfoPage {
 				</section>
 
 				<section class="vatinfo-card">
-					<div class="vatinfo-section-head">
-						<h5 class="vatinfo-heading">ประวัติการนำเข้าล่าสุด</h5>
+					<header class="vatinfo-card-head">
+						<span class="vatinfo-tile vatinfo-tile-gray">${vatinfo_icon("history")}</span>
+						<div class="vatinfo-grow"><h5 class="vatinfo-heading">ประวัติการนำเข้าล่าสุด</h5></div>
 						<span class="vatinfo-actions">
 							<a class="btn btn-default btn-xs" href="/app/rd-vat-import-log">ประวัติทั้งหมด</a>
 							<a class="btn btn-default btn-xs" href="/app/rd-vat-import-settings">ตั้งค่า</a>
 						</span>
-					</div>
+					</header>
 					<div class="vatinfo-table-wrap vatinfo-logs"></div>
 				</section>
 			`);
@@ -742,57 +802,91 @@ class VatInfoPage {
 		this.$admin.find(".vatinfo-update, .vatinfo-upload").prop("disabled", !!status.running);
 		this.$admin
 			.find(".vatinfo-auto")
+			.attr(
+				"class",
+				`vatinfo-auto vatinfo-badge ${
+					status.running
+						? "vatinfo-badge-blue"
+						: status.auto_update
+						? "vatinfo-badge-green"
+						: "vatinfo-badge-gray"
+				}`
+			)
 			.text(
 				status.running
-					? "กำลังนำเข้าข้อมูล ทำงานอื่นหรือปิดหน้านี้ได้"
+					? "กำลังนำเข้า ทำงานอื่นหรือปิดหน้านี้ได้"
 					: status.auto_update
-					? "อัปเดตอัตโนมัติ: เปิด ทุกวันที่ 1 ของเดือน เวลา 02:00 น."
-					: "อัปเดตอัตโนมัติ: ปิด"
+					? "อัปเดตอัตโนมัติทุกวันที่ 1 เวลา 02:00 น."
+					: "ปิดการอัปเดตอัตโนมัติ"
 			);
 		this.render_datasets(status.datasets || []);
+		this.render_progress(status.logs || []);
 		this.render_logs(status.logs || []);
 	}
 
 	render_datasets(datasets) {
-		const rows = datasets
-			.map(
-				(item) => `
-				<tr>
-					<td>${vatinfo_esc(VATINFO_DATASETS[item.dataset] || item.dataset)}</td>
-					<td class="vatinfo-nowrap">${
-						item.file_date
-							? vatinfo_esc(vatinfo_be_date(item.file_date))
-							: "ยังไม่ได้นำเข้า"
-					}</td>
-					<td class="vatinfo-nowrap">${item.file_date ? vatinfo_num(item.valid_rows) : ""}</td>
-					<td class="vatinfo-nowrap">${
-						item.finished_at
-							? `${vatinfo_esc(vatinfo_be_date(item.finished_at))} ${vatinfo_esc(
-									String(item.finished_at).slice(11, 16)
-							  )}`
-							: ""
-					}</td>
-				</tr>`
-			)
+		const tiles = datasets
+			.map((item, index) => {
+				const fresh = vatinfo_freshness(item.file_date);
+				const finished = item.finished_at
+					? `นำเข้าเมื่อ ${vatinfo_esc(vatinfo_be_date(item.finished_at))} ${vatinfo_esc(
+							String(item.finished_at).slice(11, 16)
+					  )}`
+					: "ยังไม่ได้นำเข้า";
+				return `
+					<div class="vatinfo-stat vatinfo-stat-${index === 0 ? "blue" : "purple"}">
+						<div class="vatinfo-stat-label">${vatinfo_esc(
+							VATINFO_DATASETS[item.dataset] || item.dataset
+						)}</div>
+						<div class="vatinfo-stat-value">${item.file_date ? vatinfo_num(item.valid_rows) : "-"}</div>
+						<div class="vatinfo-stat-meta">
+							<span class="vatinfo-source vatinfo-source-${fresh.color}"><span class="vatinfo-dot"></span>${
+					item.file_date
+						? `ไฟล์ ${vatinfo_esc(vatinfo_be_date(item.file_date))}`
+						: "ไม่มีข้อมูล"
+				}${fresh.note ? ` (${vatinfo_esc(fresh.note)})` : ""}</span>
+						</div>
+						<div class="vatinfo-stat-meta vatinfo-muted">${finished}</div>
+					</div>`;
+			})
 			.join("");
-		this.$admin.find(".vatinfo-datasets").html(`
-			<div class="vatinfo-table-wrap">
-				<table class="table table-bordered vatinfo-table">
-					<thead><tr><th>ชุดข้อมูล</th><th>วันที่ของไฟล์</th><th>รายการ</th><th>นำเข้าเมื่อ</th></tr></thead>
-					<tbody>${rows}</tbody>
-				</table>
+		this.$admin.find(".vatinfo-stats").html(tiles);
+	}
+
+	render_progress(logs) {
+		const running = logs.find((log) => log.status === "Running");
+		const $area = this.$admin.find(".vatinfo-progress-area");
+		if (!running) return $area.empty();
+
+		const done = running.processed_rows || 0;
+		const total = running.total_rows || 0;
+		const percent = total ? Math.min(Math.round((done / total) * 100), 100) : 0;
+		const label = VATINFO_DATASETS[running.dataset] || running.dataset;
+		$area.html(`
+			<div class="vatinfo-progress-label">
+				<span>กำลังนำเข้า ${vatinfo_esc(label)}</span>
+				<span class="vatinfo-muted">${
+					total
+						? `${vatinfo_num(done)} / ${vatinfo_num(total)} รายการ (${percent}%)`
+						: "กำลังตรวจสอบไฟล์..."
+				}</span>
+			</div>
+			<div class="vatinfo-progress" role="progressbar" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100" aria-label="ความคืบหน้าการนำเข้า">
+				<div class="vatinfo-progress-bar" style="width: ${percent}%"></div>
 			</div>
 		`);
 	}
 
 	render_logs(logs) {
+		const count = (value, color) => {
+			const number = Number(value || 0);
+			return number
+				? `<td class="vatinfo-nowrap vatinfo-count-${color}">${vatinfo_num(number)}</td>`
+				: '<td class="vatinfo-nowrap vatinfo-muted">0</td>';
+		};
 		const body = logs
 			.map((log) => {
 				const [label, color] = VATINFO_LOG_STATUS[log.status] || [log.status, "gray"];
-				const progress =
-					log.status === "Running" && log.total_rows
-						? ` ${vatinfo_num(log.processed_rows)}/${vatinfo_num(log.total_rows)}`
-						: "";
 				const message = log.message
 					? `<div class="vatinfo-sub">${vatinfo_esc(log.message)}</div>`
 					: "";
@@ -804,29 +898,29 @@ class VatInfoPage {
 					(log.started_at || "").slice(11, 16)
 				)}</a></td>
 						<td>${vatinfo_esc(VATINFO_DATASETS[log.dataset] || log.dataset)}${message}</td>
-						<td class="vatinfo-nowrap"><span class="indicator-pill ${color}">${vatinfo_esc(
+						<td class="vatinfo-nowrap"><span class="vatinfo-badge vatinfo-badge-${color}">${vatinfo_esc(
 					label
-				)}${vatinfo_esc(progress)}</span></td>
+				)}</span></td>
 						<td class="vatinfo-nowrap">${vatinfo_num(log.total_rows)}</td>
-						<td class="vatinfo-nowrap">${vatinfo_num(log.rows_new)}</td>
-						<td class="vatinfo-nowrap">${vatinfo_num(log.rows_updated)}</td>
-						<td class="vatinfo-nowrap">${vatinfo_num(log.rows_unchanged)}</td>
-						<td class="vatinfo-nowrap">${vatinfo_num(log.rows_superseded)}</td>
-						<td class="vatinfo-nowrap">${vatinfo_num(log.rows_missing)}</td>
-						<td class="vatinfo-nowrap">${vatinfo_num(log.rows_error)}</td>
+						${count(log.rows_new, "green")}
+						${count(log.rows_updated, "blue")}
+						<td class="vatinfo-nowrap vatinfo-muted">${vatinfo_num(log.rows_unchanged)}</td>
+						<td class="vatinfo-nowrap vatinfo-muted">${vatinfo_num(log.rows_superseded)}</td>
+						${count(log.rows_missing, "orange")}
+						${count(log.rows_error, "red")}
 					</tr>`;
 			})
 			.join("");
 		this.$admin.find(".vatinfo-logs").html(
 			logs.length
-				? `<table class="table table-bordered vatinfo-table">
+				? `<table class="table vatinfo-table">
 					<thead><tr>
 						<th>เวลา</th><th>ชุดข้อมูล</th><th>สถานะ</th><th>ทั้งหมด</th><th>ใหม่</th>
 						<th>ปรับปรุง</th><th>ไม่เปลี่ยน</th><th>มีข้อมูลใหม่กว่า</th><th>ไม่พบ</th><th>ผิดพลาด</th>
 					</tr></thead>
 					<tbody>${body}</tbody>
 				</table>`
-				: "<div>ยังไม่มีประวัติการนำเข้า</div>"
+				: '<div class="vatinfo-empty">ยังไม่มีประวัติการนำเข้า</div>'
 		);
 	}
 
@@ -961,7 +1055,12 @@ class VatInfoPartyDialog {
 			.join("");
 
 		this.$body.html(`
-			${warnings.map((text) => `<div class="vatinfo-note">${vatinfo_esc(text)}</div>`).join("")}
+			${warnings
+				.map(
+					(text) =>
+						`<div class="vatinfo-note vatinfo-note-orange">${vatinfo_esc(text)}</div>`
+				)
+				.join("")}
 			<dl class="vatinfo-detail vatinfo-compare">
 				<dt>ข้อมูลจากกรมสรรพากร</dt><dd>${vatinfo_esc(source.taxpayer_name)}</dd>
 				<dt>เลขประจำตัวผู้เสียภาษี</dt><dd>${vatinfo_esc(vatinfo_tin(source.tax_id))} (${vatinfo_esc(
@@ -1006,7 +1105,7 @@ class VatInfoPartyDialog {
 			)
 			.join("");
 		return `<div class="vatinfo-table-wrap vatinfo-compare">
-			<table class="table table-bordered vatinfo-table">
+			<table class="table vatinfo-table">
 				<thead><tr><th>ใช้</th><th>ฟิลด์</th><th>ค่าปัจจุบัน</th><th>ข้อมูลกรมสรรพากร</th></tr></thead>
 				<tbody>${body}</tbody>
 			</table>
@@ -1067,7 +1166,7 @@ class VatInfoPartyDialog {
 			<h6>ที่อยู่</h6>
 			${
 				duplicate
-					? `<div class="vatinfo-note">พบที่อยู่ที่น่าจะซ้ำ: ${vatinfo_esc(
+					? `<div class="vatinfo-note vatinfo-note-orange">พบที่อยู่ที่น่าจะซ้ำ: ${vatinfo_esc(
 							duplicate.name
 					  )}</div>`
 					: ""

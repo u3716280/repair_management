@@ -1,95 +1,325 @@
-.vatinfo-card {
+/* Follows the frappe-ui design language, using Desk's own variables so light and dark themes both work.
+   Color carries meaning: blue = action/online, green = head office/success, orange = old data/warning,
+   red = error, purple = second dataset. */
+
+.vatinfo-tabs,
+.vatinfo-card,
+.vatinfo-stats {
 	max-width: 1200px;
-	margin: 0 auto var(--margin-md, 16px);
-	padding: var(--padding-md, 16px);
-	background: var(--card-bg);
-	border: 1px solid var(--border-color);
-	border-radius: var(--border-radius-md, 8px);
+	margin-left: auto;
+	margin-right: auto;
 }
 
+.vatinfo-card {
+	margin-bottom: 16px;
+	padding: 20px;
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-radius: 10px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.vatinfo-icon {
+	flex: none;
+	width: 16px;
+	height: 16px;
+}
+
+/* Tabs */
 .vatinfo-tabs {
 	display: flex;
-	gap: var(--margin-lg, 20px);
-	max-width: 1200px;
-	margin: 0 auto var(--margin-md, 16px);
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-bottom: 16px;
 	border-bottom: 1px solid var(--border-color);
 }
 
 .vatinfo-tab {
-	padding: 8px 2px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
 	margin-bottom: -1px;
 	color: var(--text-muted);
+	font-size: 14px;
 	background: none;
 	border: 0;
 	border-bottom: 2px solid transparent;
+	border-radius: 8px 8px 0 0;
+}
+
+.vatinfo-tab:hover {
+	color: var(--text-color);
+	background: var(--subtle-fg);
 }
 
 .vatinfo-tab[aria-selected="true"] {
-	color: var(--text-color);
-	font-weight: 500;
-	border-bottom-color: var(--primary);
+	color: var(--blue-600);
+	font-weight: 600;
+	background: color-mix(in srgb, var(--blue-500) 12%, transparent);
+	border-bottom-color: var(--blue-600);
+}
+
+/* Card headers */
+.vatinfo-card-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.vatinfo-grow {
+	flex: 1;
+}
+
+.vatinfo-tile {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 10px;
+}
+
+.vatinfo-tile .vatinfo-icon {
+	width: 18px;
+	height: 18px;
+}
+
+.vatinfo-tile-blue {
+	color: var(--text-on-blue);
+	background: var(--bg-blue);
+}
+
+.vatinfo-tile-purple {
+	color: var(--text-on-purple);
+	background: var(--bg-purple);
+}
+
+.vatinfo-tile-gray {
+	color: var(--text-on-gray);
+	background: var(--bg-gray);
 }
 
 .vatinfo-heading {
-	margin: 0 0 var(--margin-md, 16px);
+	margin: 0;
+	color: var(--heading-color);
+	font-size: 16px;
+	font-weight: 600;
 }
 
-.vatinfo-section-head {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: space-between;
-	gap: var(--margin-sm, 8px);
+.vatinfo-help {
+	margin: 2px 0 0;
+	color: var(--text-muted);
+	font-size: 13px;
+	line-height: 1.6;
 }
 
+/* Search form */
 .vatinfo-mode {
-	display: flex;
+	display: inline-flex;
 	flex-wrap: wrap;
-	gap: var(--margin-lg, 20px);
-	margin-bottom: var(--margin-md, 16px);
+	gap: 4px;
+	padding: 4px;
+	margin-bottom: 16px;
+	background: var(--subtle-fg);
+	border-radius: 10px;
 }
 
-.vatinfo-card .vatinfo-mode label {
+.vatinfo-card label.vatinfo-mode-option {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 14px;
+	margin: 0;
+	color: var(--text-muted);
+	font-size: 14px;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.vatinfo-card label.vatinfo-mode-option:has(input:checked) {
+	color: var(--blue-600);
+	font-weight: 600;
+	background: var(--card-bg);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.vatinfo-mode-option input {
+	margin: 0;
+	accent-color: var(--blue-600);
+}
+
+.vatinfo-fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.vatinfo-fields .vatinfo-wide {
+	grid-column: span 2;
+}
+
+@media (max-width: 560px) {
+	.vatinfo-fields .vatinfo-wide {
+		grid-column: auto;
+	}
+}
+
+.vatinfo-card label {
+	display: block;
+	margin-bottom: 4px;
+	color: var(--text-muted);
+	font-size: 13px;
+}
+
+.vatinfo-more {
+	margin-bottom: 16px;
+}
+
+.vatinfo-more summary {
+	margin-bottom: 8px;
+	color: var(--blue-600);
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.vatinfo-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.btn.vatinfo-primary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: #fff;
+	background: var(--blue-600);
+	border-color: var(--blue-600);
+}
+
+.btn.vatinfo-primary:hover,
+.btn.vatinfo-primary:focus {
+	color: #fff;
+	background: var(--blue-700);
+	border-color: var(--blue-700);
+}
+
+.btn.vatinfo-primary[disabled] {
+	color: #fff;
+	opacity: 0.55;
+}
+
+.vatinfo-primary .vatinfo-icon {
+	width: 14px;
+	height: 14px;
+}
+
+.vatinfo-file {
+	height: auto;
+	padding: 6px 8px;
+	border: 1px dashed var(--border-color);
+}
+
+.vatinfo-card label.vatinfo-check {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
 	margin: 0;
-	color: var(--text-color);
-	font-size: inherit;
-	cursor: pointer;
 }
 
-.vatinfo-mode input[type="radio"] {
-	margin: 0;
+/* Data dates */
+.vatinfo-source {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 10px;
+	font-size: 12px;
+	border-radius: 999px;
 }
 
-.vatinfo-more {
-	margin-bottom: var(--margin-md, 16px);
+.vatinfo-dot {
+	flex: none;
+	width: 6px;
+	height: 6px;
+	background: currentColor;
+	border-radius: 50%;
 }
 
-.vatinfo-more summary {
-	margin-bottom: var(--margin-sm, 8px);
+.vatinfo-source-green {
+	color: var(--text-on-green);
+	background: var(--bg-green);
+}
+
+.vatinfo-source-orange {
+	color: var(--text-on-orange);
+	background: var(--bg-orange);
+}
+
+.vatinfo-source-gray {
+	color: var(--text-on-gray);
+	background: var(--bg-gray);
+}
+
+/* Badges */
+.vatinfo-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	font-size: 12px;
+	white-space: nowrap;
+	border-radius: 999px;
+}
+
+.vatinfo-badge-green {
+	color: var(--text-on-green);
+	background: var(--bg-green);
+}
+
+.vatinfo-badge-blue {
+	color: var(--text-on-blue);
+	background: var(--bg-blue);
+}
+
+.vatinfo-badge-orange {
+	color: var(--text-on-orange);
+	background: var(--bg-orange);
+}
+
+.vatinfo-badge-yellow {
+	color: var(--text-on-yellow);
+	background: var(--bg-yellow);
+}
+
+.vatinfo-badge-red {
+	color: var(--text-on-red);
+	background: var(--bg-red);
+}
+
+.vatinfo-badge-gray {
+	color: var(--text-on-gray);
+	background: var(--bg-gray);
+}
+
+/* Results */
+.vatinfo-count {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 12px;
 	color: var(--text-muted);
-	font-size: var(--text-sm, 13px);
-	cursor: pointer;
+	font-size: 13px;
 }
 
-.vatinfo-banner,
-.vatinfo-help {
-	color: var(--text-muted);
-	font-size: var(--text-sm, 13px);
-	line-height: 1.6;
-}
-
-.vatinfo-banner {
-	margin-top: var(--margin-md, 16px);
-}
-
-.vatinfo-help {
-	margin: 0 0 var(--margin-sm, 8px);
-}
-
-.vatinfo-auto {
-	margin: var(--margin-sm, 8px) 0 0;
+.vatinfo-count b {
+	color: var(--heading-color);
+	font-size: 14px;
+	font-weight: 600;
 }
 
 .vatinfo-result-controls {
@@ -107,43 +337,10 @@
 	width: auto;
 }
 
-.vatinfo-fields {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-	gap: var(--margin-sm, 12px);
-	margin-bottom: var(--margin-md, 16px);
-}
-
-.vatinfo-fields .vatinfo-wide {
-	grid-column: span 2;
-}
-
-.vatinfo-card label {
-	display: block;
-	margin-bottom: 4px;
-	color: var(--text-muted);
-	font-size: var(--text-sm, 13px);
-}
-
-.vatinfo-actions {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--margin-sm, 8px);
-}
-
-.vatinfo-count {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: space-between;
-	gap: var(--margin-sm, 8px);
-	margin-bottom: var(--margin-sm, 8px);
-	color: var(--text-muted);
-	font-size: var(--text-sm, 13px);
-}
-
 .vatinfo-table-wrap {
 	overflow-x: auto;
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
 }
 
 .vatinfo-table {
@@ -151,19 +348,39 @@
 }
 
 .vatinfo-table th {
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
 	white-space: nowrap;
+	background: var(--blue-600);
+	border-top: 0;
+	border-bottom: 0;
+}
+
+.vatinfo-table td {
+	vertical-align: top;
+	border-top: 1px solid var(--border-color);
+}
+
+.vatinfo-table tbody tr:nth-child(even) {
+	background: var(--subtle-fg);
+}
+
+.vatinfo-table tbody tr:first-child td {
+	border-top: 0;
 }
 
 .vatinfo-table tbody tr.vatinfo-row {
 	cursor: pointer;
+	transition: background 0.1s;
 }
 
 .vatinfo-table tbody tr.vatinfo-row:hover {
-	background: var(--highlight-color, var(--subtle-fg));
+	background: color-mix(in srgb, var(--blue-500) 12%, transparent);
 }
 
 .vatinfo-table tbody tr.vatinfo-row:focus-visible {
-	outline: 2px solid var(--primary);
+	outline: 2px solid var(--blue-600);
 	outline-offset: -2px;
 }
 
@@ -172,27 +389,156 @@
 	font-variant-numeric: tabular-nums;
 }
 
+.vatinfo-tin {
+	color: var(--blue-600);
+	font-weight: 500;
+}
+
+.vatinfo-name-cell {
+	color: var(--heading-color);
+	font-weight: 500;
+}
+
+.vatinfo-sub,
+.vatinfo-muted {
+	color: var(--text-muted);
+}
+
 .vatinfo-sub {
 	margin-top: 2px;
-	color: var(--text-muted);
-	font-size: var(--text-sm, 13px);
+	font-size: 13px;
+}
+
+.vatinfo-address {
+	min-width: 240px;
+	font-size: 13px;
+}
+
+.vatinfo-flags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 4px;
+}
+
+.vatinfo-count-green {
+	color: var(--text-on-green);
+	font-weight: 600;
+}
+
+.vatinfo-count-blue {
+	color: var(--text-on-blue);
+	font-weight: 600;
+}
+
+.vatinfo-count-orange {
+	color: var(--text-on-orange);
+	font-weight: 600;
+}
+
+.vatinfo-count-red {
+	color: var(--text-on-red);
+	font-weight: 600;
 }
 
 .vatinfo-pager {
 	display: flex;
 	align-items: center;
 	justify-content: flex-end;
-	gap: var(--margin-sm, 8px);
-	margin-top: var(--margin-sm, 8px);
+	gap: 8px;
+	margin-top: 12px;
 }
 
-.vatinfo-check {
-	display: inline-flex !important;
+.vatinfo-empty {
+	display: flex;
+	flex-direction: column;
 	align-items: center;
-	gap: 6px;
-	margin: 0 !important;
+	gap: 8px;
+	padding: 24px;
+	color: var(--text-muted);
+	text-align: center;
 }
 
+.vatinfo-empty .vatinfo-icon {
+	width: 24px;
+	height: 24px;
+}
+
+/* Import tab */
+.vatinfo-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.vatinfo-stats-note {
+	max-width: 1200px;
+	margin: -4px auto 16px;
+}
+
+.vatinfo-stat {
+	padding: 16px 20px;
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-top: 3px solid var(--border-color);
+	border-radius: 10px;
+}
+
+.vatinfo-stat-blue {
+	border-top-color: var(--blue-500);
+}
+
+.vatinfo-stat-purple {
+	border-top-color: var(--purple-500);
+}
+
+.vatinfo-stat-label {
+	color: var(--text-muted);
+	font-size: 13px;
+}
+
+.vatinfo-stat-value {
+	margin: 4px 0 8px;
+	color: var(--heading-color);
+	font-size: 26px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.vatinfo-stat-meta {
+	margin-top: 4px;
+	font-size: 12px;
+}
+
+.vatinfo-progress-area:not(:empty) {
+	margin-top: 16px;
+}
+
+.vatinfo-progress-label {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 6px;
+	font-size: 13px;
+}
+
+.vatinfo-progress {
+	height: 8px;
+	overflow: hidden;
+	background: var(--subtle-fg);
+	border-radius: 999px;
+}
+
+.vatinfo-progress-bar {
+	height: 100%;
+	background: var(--blue-500);
+	border-radius: 999px;
+	transition: width 0.3s;
+}
+
+/* Dialogs */
 .vatinfo-detail {
 	display: grid;
 	grid-template-columns: minmax(150px, max-content) 1fr;
@@ -211,11 +557,30 @@
 }
 
 .vatinfo-note {
-	margin: var(--margin-sm, 8px) 0;
+	display: flex;
+	gap: 8px;
+	align-items: flex-start;
 	padding: 8px 12px;
+	margin: 8px 0 12px;
+	color: var(--text-color);
+	font-size: 13px;
 	background: var(--subtle-fg);
-	border-radius: var(--border-radius, 6px);
-	font-size: var(--text-sm, 13px);
+	border-radius: 8px;
+}
+
+.vatinfo-note-blue {
+	color: var(--text-on-blue);
+	background: var(--bg-blue);
+}
+
+.vatinfo-note-orange {
+	color: var(--text-on-orange);
+	background: var(--bg-orange);
+}
+
+.vatinfo-note-yellow {
+	color: var(--text-on-yellow);
+	background: var(--bg-yellow);
 }
 
 .vatinfo-party-option {
@@ -224,9 +589,11 @@
 }
 
 .vatinfo-compare {
-	margin: var(--margin-sm, 8px) 0 var(--margin-md, 16px);
+	margin: 8px 0 16px;
 }
 
 .vatinfo-differs {
-	font-weight: 500;
+	color: var(--text-on-blue);
+	font-weight: 600;
+	background: var(--bg-blue);
 }

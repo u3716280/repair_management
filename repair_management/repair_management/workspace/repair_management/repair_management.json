@@ -1,7 +1,7 @@
 {
  "charts": [],
- "content": "[{\"id\": \"rm-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Repair Management</b></span>\", \"col\": 12}}, {\"id\": \"rm-shortcut-0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Sales Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-purchase-tax\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Purchase Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Selling Item Each Month\", \"col\": 3}}, {\"id\": \"rm-shortcut-multi-year-sales\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Multi-Year Sales Invoice Trends\", \"col\": 3}}, {\"id\": \"rm-spacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"rm-reports-card\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
- "creation": "2026-10-23 14:49:05.283049",
+ "content": "[{\"id\": \"rm-header\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Repair Management</b></span>\", \"col\": 12}}, {\"id\": \"rm-shortcut-0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Sales Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-purchase-tax\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Purchase Tax Each Month Chart Report\", \"col\": 3}}, {\"id\": \"rm-shortcut-1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Total Selling Item Each Month\", \"col\": 3}}, {\"id\": \"rm-shortcut-multi-year-sales\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Multi-Year Sales Invoice Trends\", \"col\": 3}}, {\"id\": \"rm-shortcut-vatinfo\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"VATinfo\", \"col\": 3}}, {\"id\": \"rm-spacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"rm-reports-card\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "creation": "2026-10-31 14:36:15.125569",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -66,7 +66,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-31 15:30:00.000000",
+ "modified": "2026-11-04 23:36:41.332855",
  "modified_by": "Administrator",
  "module": "Repair Management",
  "name": "Repair Management",
@@ -108,6 +108,13 @@
    "link_to": "Multi-Year Sales Invoice Trends",
    "report_ref_doctype": "Sales Invoice",
    "type": "Report"
+  },
+  {
+   "color": "Blue",
+   "doc_view": "",
+   "label": "VATinfo",
+   "link_to": "vatinfo",
+   "type": "Page"
   }
  ],
  "title": "Repair Management"
