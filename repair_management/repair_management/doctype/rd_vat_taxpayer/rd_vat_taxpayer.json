@@ -1,0 +1,298 @@
+{
+ "actions": [],
+ "autoname": "Prompt",
+ "creation": "2026-11-04 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "tax_id",
+  "branch_number",
+  "taxpayer_name",
+  "establishment_name",
+  "address_section",
+  "building_name",
+  "floor_no",
+  "room_no",
+  "village",
+  "house_no",
+  "moo",
+  "address_column",
+  "soi",
+  "yaek",
+  "road",
+  "subdistrict",
+  "district",
+  "province",
+  "postcode",
+  "registration_section",
+  "vat_approval_date",
+  "source_dataset",
+  "source_file_date",
+  "imported_on",
+  "source_column",
+  "first_seen_import",
+  "last_seen_import",
+  "in_latest_dataset",
+  "missing_since",
+  "data_incomplete",
+  "search_text",
+  "record_hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "tax_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "เลขประจำตัวผู้เสียภาษี (Tax ID)",
+   "length": 13,
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "branch_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "เลขที่สาขา",
+   "length": 5,
+   "reqd": 1
+  },
+  {
+   "fieldname": "taxpayer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "ชื่อผู้ประกอบการ",
+   "length": 200
+  },
+  {
+   "fieldname": "establishment_name",
+   "fieldtype": "Data",
+   "label": "ชื่อสถานประกอบการ",
+   "length": 200
+  },
+  {
+   "fieldname": "address_section",
+   "fieldtype": "Section Break",
+   "label": "ที่อยู่"
+  },
+  {
+   "fieldname": "building_name",
+   "fieldtype": "Data",
+   "label": "ชื่ออาคาร",
+   "length": 100
+  },
+  {
+   "fieldname": "floor_no",
+   "fieldtype": "Data",
+   "label": "ชั้น",
+   "length": 40
+  },
+  {
+   "fieldname": "room_no",
+   "fieldtype": "Data",
+   "label": "ห้อง",
+   "length": 60
+  },
+  {
+   "fieldname": "village",
+   "fieldtype": "Data",
+   "label": "หมู่บ้าน",
+   "length": 60
+  },
+  {
+   "fieldname": "house_no",
+   "fieldtype": "Data",
+   "label": "บ้านเลขที่",
+   "length": 80
+  },
+  {
+   "fieldname": "moo",
+   "fieldtype": "Data",
+   "label": "หมู่",
+   "length": 20
+  },
+  {
+   "fieldname": "address_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "soi",
+   "fieldtype": "Data",
+   "label": "ซอย",
+   "length": 80
+  },
+  {
+   "fieldname": "yaek",
+   "fieldtype": "Data",
+   "label": "แยก",
+   "length": 40
+  },
+  {
+   "fieldname": "road",
+   "fieldtype": "Data",
+   "label": "ถนน",
+   "length": 60
+  },
+  {
+   "fieldname": "subdistrict",
+   "fieldtype": "Data",
+   "label": "ตำบล/แขวง",
+   "length": 40
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Data",
+   "label": "อำเภอ/เขต",
+   "length": 40
+  },
+  {
+   "fieldname": "province",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "จังหวัด",
+   "length": 40
+  },
+  {
+   "fieldname": "postcode",
+   "fieldtype": "Data",
+   "label": "รหัสไปรษณีย์",
+   "length": 10
+  },
+  {
+   "fieldname": "registration_section",
+   "fieldtype": "Section Break",
+   "label": "การจดทะเบียนและแหล่งข้อมูล"
+  },
+  {
+   "fieldname": "vat_approval_date",
+   "fieldtype": "Data",
+   "label": "วันที่ได้รับอนุมัติจดทะเบียน VAT (พ.ศ.)",
+   "length": 20
+  },
+  {
+   "fieldname": "source_dataset",
+   "fieldtype": "Select",
+   "label": "แหล่งข้อมูล",
+   "options": "Bangkok\nOther Provinces"
+  },
+  {
+   "fieldname": "source_file_date",
+   "fieldtype": "Date",
+   "label": "วันที่ของไฟล์ต้นทาง"
+  },
+  {
+   "fieldname": "imported_on",
+   "fieldtype": "Datetime",
+   "label": "วันที่นำเข้า"
+  },
+  {
+   "fieldname": "source_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "first_seen_import",
+   "fieldtype": "Link",
+   "label": "พบครั้งแรกในการนำเข้า",
+   "options": "RD VAT Import Log"
+  },
+  {
+   "fieldname": "last_seen_import",
+   "fieldtype": "Link",
+   "label": "ชุดข้อมูลล่าสุดที่พบ",
+   "options": "RD VAT Import Log"
+  },
+  {
+   "default": "1",
+   "description": "ถ้าไม่พบ ไม่ได้หมายความว่าถูกยกเลิกทะเบียน VAT",
+   "fieldname": "in_latest_dataset",
+   "fieldtype": "Check",
+   "label": "พบในชุดข้อมูลล่าสุด"
+  },
+  {
+   "fieldname": "missing_since",
+   "fieldtype": "Date",
+   "label": "ไม่พบตั้งแต่"
+  },
+  {
+   "fieldname": "data_incomplete",
+   "fieldtype": "Check",
+   "label": "ข้อมูลต้นทางไม่ครบ"
+  },
+  {
+   "fieldname": "search_text",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Search Text",
+   "length": 340
+  },
+  {
+   "fieldname": "record_hash",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Record Hash",
+   "length": 64
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-04 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "RD VAT Taxpayer",
+ "naming_rule": "Set by user",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase User"
+  }
+ ],
+ "read_only": 1,
+ "sort_field": "name",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "taxpayer_name",
+ "track_changes": 0,
+ "track_seen": 0,
+ "track_views": 0
+}

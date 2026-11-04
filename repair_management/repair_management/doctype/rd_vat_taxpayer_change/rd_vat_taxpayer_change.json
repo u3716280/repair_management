@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-11-04 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "taxpayer",
+  "change_type",
+  "import_log",
+  "changed_fields",
+  "old_values",
+  "new_values"
+ ],
+ "fields": [
+  {
+   "fieldname": "taxpayer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "ผู้ประกอบการ",
+   "options": "RD VAT Taxpayer",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "change_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "ประเภท",
+   "options": "New\nChanged\nMoved\nMissing\nReappeared"
+  },
+  {
+   "fieldname": "import_log",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "การนำเข้า",
+   "options": "RD VAT Import Log",
+   "search_index": 1
+  },
+  {
+   "fieldname": "changed_fields",
+   "fieldtype": "Small Text",
+   "label": "ฟิลด์ที่เปลี่ยน"
+  },
+  {
+   "fieldname": "old_values",
+   "fieldtype": "Long Text",
+   "label": "ค่าเดิม (JSON)"
+  },
+  {
+   "fieldname": "new_values",
+   "fieldtype": "Long Text",
+   "label": "ค่าใหม่ (JSON)"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-04 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "RD VAT Taxpayer Change",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase Manager"
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase User"
+  }
+ ],
+ "read_only": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

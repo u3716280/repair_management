@@ -436,3 +436,11 @@ elif isinstance(_current_after_migrate, (list, tuple)):
 elif _current_after_migrate != _core_patch_reapply_handler:
     after_migrate = [_current_after_migrate, _core_patch_reapply_handler]
 # END CORE PATCH REAPPLY
+
+# BEGIN RD VAT OPEN DATA
+# 02:00 on the 1st of each month, between the 6-hourly backups. Does nothing unless auto_update is on.
+scheduler_events = globals().get("scheduler_events") or {}
+scheduler_events.setdefault("cron", {}).setdefault("0 2 1 * *", []).append(
+    "repair_management.rd_vat.sync.monthly_auto_update"
+)
+# END RD VAT OPEN DATA

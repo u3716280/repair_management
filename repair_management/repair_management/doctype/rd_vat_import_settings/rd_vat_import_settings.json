@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "creation": "2026-11-04 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "bangkok_url",
+  "provinces_url",
+  "batch_size",
+  "auto_update"
+ ],
+ "fields": [
+  {
+   "default": "https://data.rd.go.th/dataset/558c27ab-874c-4bd2-9758-ecf2c026dfd6/resource/5168fafa-518f-41d9-90f1-82658d2773e0/download/vat_taxpayeraddress_01.csv",
+   "fieldname": "bangkok_url",
+   "fieldtype": "Data",
+   "label": "CSV URL: กรุงเทพมหานคร",
+   "length": 500,
+   "reqd": 1
+  },
+  {
+   "default": "https://data.rd.go.th/datafiles/vat/VAT_TaxpayerAddress_02.csv",
+   "fieldname": "provinces_url",
+   "fieldtype": "Data",
+   "label": "CSV URL: ทุกจังหวัดยกเว้นกรุงเทพมหานคร",
+   "length": 500,
+   "reqd": 1
+  },
+  {
+   "default": "2000",
+   "fieldname": "batch_size",
+   "fieldtype": "Int",
+   "label": "จำนวนรายการต่อ Batch",
+   "non_negative": 1
+  },
+  {
+   "default": "1",
+   "description": "ตรวจสอบไฟล์ทุกวันที่ 1 เวลา 02:00 น. ไฟล์ที่ไม่เปลี่ยนแปลงจะไม่ถูกนำเข้าซ้ำ",
+   "fieldname": "auto_update",
+   "fieldtype": "Check",
+   "label": "อัปเดตอัตโนมัติทุกเดือน"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-04 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "RD VAT Import Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

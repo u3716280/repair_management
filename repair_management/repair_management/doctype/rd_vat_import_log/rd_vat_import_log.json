@@ -1,0 +1,250 @@
+{
+ "actions": [],
+ "autoname": "RDVAT-.YY..MM..DD.-.####",
+ "creation": "2026-11-04 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "dataset",
+  "source_type",
+  "file_name",
+  "source_url",
+  "file_hash",
+  "file_size",
+  "file_date",
+  "etag",
+  "last_modified_header",
+  "encoding",
+  "timing_column",
+  "started_at",
+  "finished_at",
+  "triggered_by",
+  "is_baseline",
+  "processed_rows",
+  "counts_section",
+  "total_rows",
+  "valid_rows",
+  "rows_new",
+  "rows_updated",
+  "rows_unchanged",
+  "counts_column",
+  "rows_error",
+  "rows_warning",
+  "rows_superseded",
+  "rows_missing",
+  "rows_reappeared",
+  "nul_bytes",
+  "message_section",
+  "message",
+  "error_file"
+ ],
+ "fields": [
+  {
+   "default": "Running",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "สถานะ",
+   "options": "Running\nSuccess\nNeeds Review\nFailed\nSkipped"
+  },
+  {
+   "fieldname": "dataset",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "ชุดข้อมูล",
+   "options": "Bangkok\nOther Provinces"
+  },
+  {
+   "fieldname": "source_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "แหล่งข้อมูล",
+   "options": "Download\nUpload"
+  },
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "label": "ชื่อไฟล์",
+   "length": 255
+  },
+  {
+   "fieldname": "source_url",
+   "fieldtype": "Data",
+   "label": "URL",
+   "length": 500
+  },
+  {
+   "fieldname": "file_hash",
+   "fieldtype": "Data",
+   "label": "File Hash (SHA-256)",
+   "length": 64
+  },
+  {
+   "fieldname": "file_size",
+   "fieldtype": "Int",
+   "label": "ขนาดไฟล์ (bytes)"
+  },
+  {
+   "fieldname": "file_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "วันที่ของไฟล์"
+  },
+  {
+   "fieldname": "etag",
+   "fieldtype": "Data",
+   "label": "ETag",
+   "length": 200
+  },
+  {
+   "fieldname": "last_modified_header",
+   "fieldtype": "Data",
+   "label": "Last-Modified",
+   "length": 100
+  },
+  {
+   "fieldname": "encoding",
+   "fieldtype": "Data",
+   "label": "Encoding",
+   "length": 20
+  },
+  {
+   "fieldname": "timing_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "เริ่ม"
+  },
+  {
+   "fieldname": "finished_at",
+   "fieldtype": "Datetime",
+   "label": "สิ้นสุด"
+  },
+  {
+   "fieldname": "triggered_by",
+   "fieldtype": "Data",
+   "label": "สั่งโดย",
+   "length": 140
+  },
+  {
+   "fieldname": "is_baseline",
+   "fieldtype": "Check",
+   "label": "นำเข้าครั้งแรก"
+  },
+  {
+   "fieldname": "processed_rows",
+   "fieldtype": "Int",
+   "label": "ประมวลผลแล้ว"
+  },
+  {
+   "fieldname": "counts_section",
+   "fieldtype": "Section Break",
+   "label": "ผลการนำเข้า"
+  },
+  {
+   "fieldname": "total_rows",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "รายการทั้งหมด"
+  },
+  {
+   "fieldname": "valid_rows",
+   "fieldtype": "Int",
+   "label": "รายการที่ถูกต้อง"
+  },
+  {
+   "fieldname": "rows_new",
+   "fieldtype": "Int",
+   "label": "รายการใหม่"
+  },
+  {
+   "fieldname": "rows_updated",
+   "fieldtype": "Int",
+   "label": "รายการที่ปรับปรุง"
+  },
+  {
+   "fieldname": "rows_unchanged",
+   "fieldtype": "Int",
+   "label": "รายการที่ไม่เปลี่ยนแปลง"
+  },
+  {
+   "fieldname": "counts_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rows_error",
+   "fieldtype": "Int",
+   "label": "รายการที่เกิดข้อผิดพลาด"
+  },
+  {
+   "fieldname": "rows_warning",
+   "fieldtype": "Int",
+   "label": "รายการที่มีคำเตือน"
+  },
+  {
+   "description": "มีรายการเดียวกันจากไฟล์ที่ใหม่กว่า",
+   "fieldname": "rows_superseded",
+   "fieldtype": "Int",
+   "label": "ข้ามเพราะมีข้อมูลใหม่กว่า"
+  },
+  {
+   "fieldname": "rows_missing",
+   "fieldtype": "Int",
+   "label": "ไม่พบในชุดข้อมูลนี้"
+  },
+  {
+   "fieldname": "rows_reappeared",
+   "fieldtype": "Int",
+   "label": "กลับมาพบอีกครั้ง"
+  },
+  {
+   "fieldname": "nul_bytes",
+   "fieldtype": "Int",
+   "label": "NUL bytes ที่ตัดออก"
+  },
+  {
+   "fieldname": "message_section",
+   "fieldtype": "Section Break",
+   "label": "รายละเอียด"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Long Text",
+   "label": "ข้อความ"
+  },
+  {
+   "fieldname": "error_file",
+   "fieldtype": "Attach",
+   "label": "ไฟล์รายการที่ปฏิเสธ"
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-04 22:45:00.000000",
+ "modified_by": "Administrator",
+ "module": "Repair Management",
+ "name": "RD VAT Import Log",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  }
+ ],
+ "read_only": 1,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "dataset",
+ "track_changes": 0
+}

@@ -1,0 +1,232 @@
+.vatinfo-card {
+	max-width: 1200px;
+	margin: 0 auto var(--margin-md, 16px);
+	padding: var(--padding-md, 16px);
+	background: var(--card-bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius-md, 8px);
+}
+
+.vatinfo-tabs {
+	display: flex;
+	gap: var(--margin-lg, 20px);
+	max-width: 1200px;
+	margin: 0 auto var(--margin-md, 16px);
+	border-bottom: 1px solid var(--border-color);
+}
+
+.vatinfo-tab {
+	padding: 8px 2px;
+	margin-bottom: -1px;
+	color: var(--text-muted);
+	background: none;
+	border: 0;
+	border-bottom: 2px solid transparent;
+}
+
+.vatinfo-tab[aria-selected="true"] {
+	color: var(--text-color);
+	font-weight: 500;
+	border-bottom-color: var(--primary);
+}
+
+.vatinfo-heading {
+	margin: 0 0 var(--margin-md, 16px);
+}
+
+.vatinfo-section-head {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: var(--margin-sm, 8px);
+}
+
+.vatinfo-mode {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--margin-lg, 20px);
+	margin-bottom: var(--margin-md, 16px);
+}
+
+.vatinfo-card .vatinfo-mode label {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	color: var(--text-color);
+	font-size: inherit;
+	cursor: pointer;
+}
+
+.vatinfo-mode input[type="radio"] {
+	margin: 0;
+}
+
+.vatinfo-more {
+	margin-bottom: var(--margin-md, 16px);
+}
+
+.vatinfo-more summary {
+	margin-bottom: var(--margin-sm, 8px);
+	color: var(--text-muted);
+	font-size: var(--text-sm, 13px);
+	cursor: pointer;
+}
+
+.vatinfo-banner,
+.vatinfo-help {
+	color: var(--text-muted);
+	font-size: var(--text-sm, 13px);
+	line-height: 1.6;
+}
+
+.vatinfo-banner {
+	margin-top: var(--margin-md, 16px);
+}
+
+.vatinfo-help {
+	margin: 0 0 var(--margin-sm, 8px);
+}
+
+.vatinfo-auto {
+	margin: var(--margin-sm, 8px) 0 0;
+}
+
+.vatinfo-result-controls {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.vatinfo-card .vatinfo-result-controls label {
+	margin: 0;
+	white-space: nowrap;
+}
+
+.vatinfo-result-controls select {
+	width: auto;
+}
+
+.vatinfo-fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+	gap: var(--margin-sm, 12px);
+	margin-bottom: var(--margin-md, 16px);
+}
+
+.vatinfo-fields .vatinfo-wide {
+	grid-column: span 2;
+}
+
+.vatinfo-card label {
+	display: block;
+	margin-bottom: 4px;
+	color: var(--text-muted);
+	font-size: var(--text-sm, 13px);
+}
+
+.vatinfo-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--margin-sm, 8px);
+}
+
+.vatinfo-count {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: var(--margin-sm, 8px);
+	margin-bottom: var(--margin-sm, 8px);
+	color: var(--text-muted);
+	font-size: var(--text-sm, 13px);
+}
+
+.vatinfo-table-wrap {
+	overflow-x: auto;
+}
+
+.vatinfo-table {
+	margin-bottom: 0;
+}
+
+.vatinfo-table th {
+	white-space: nowrap;
+}
+
+.vatinfo-table tbody tr.vatinfo-row {
+	cursor: pointer;
+}
+
+.vatinfo-table tbody tr.vatinfo-row:hover {
+	background: var(--highlight-color, var(--subtle-fg));
+}
+
+.vatinfo-table tbody tr.vatinfo-row:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: -2px;
+}
+
+.vatinfo-nowrap {
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.vatinfo-sub {
+	margin-top: 2px;
+	color: var(--text-muted);
+	font-size: var(--text-sm, 13px);
+}
+
+.vatinfo-pager {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--margin-sm, 8px);
+	margin-top: var(--margin-sm, 8px);
+}
+
+.vatinfo-check {
+	display: inline-flex !important;
+	align-items: center;
+	gap: 6px;
+	margin: 0 !important;
+}
+
+.vatinfo-detail {
+	display: grid;
+	grid-template-columns: minmax(150px, max-content) 1fr;
+	gap: 6px 16px;
+	margin: 0;
+}
+
+.vatinfo-detail dt {
+	color: var(--text-muted);
+	font-weight: 400;
+}
+
+.vatinfo-detail dd {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.vatinfo-note {
+	margin: var(--margin-sm, 8px) 0;
+	padding: 8px 12px;
+	background: var(--subtle-fg);
+	border-radius: var(--border-radius, 6px);
+	font-size: var(--text-sm, 13px);
+}
+
+.vatinfo-party-option {
+	display: block;
+	margin-bottom: 6px;
+}
+
+.vatinfo-compare {
+	margin: var(--margin-sm, 8px) 0 var(--margin-md, 16px);
+}
+
+.vatinfo-differs {
+	font-weight: 500;
+}
