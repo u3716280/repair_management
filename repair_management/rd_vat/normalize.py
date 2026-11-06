@@ -96,6 +96,14 @@ def normalize_tin(value) -> str:
 	return re.sub(r"[-\s]", "", str(value or ""))
 
 
+def format_tin(value) -> str:
+	"""RD's display format x-xxxx-xxxxx-xx-x; anything that is not 13 digits is returned as is."""
+	tin = normalize_tin(value)
+	if not re.fullmatch(r"[0-9]{13}", tin):
+		return clean(value)
+	return f"{tin[0]}-{tin[1:5]}-{tin[5:10]}-{tin[10:12]}-{tin[12]}"
+
+
 def make_key(tax_id, branch_number) -> str:
 	return f"{tax_id}-{branch_number}"
 

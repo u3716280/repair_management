@@ -13,6 +13,7 @@ from repair_management.rd_vat.normalize import (
 	BANGKOK_PROVINCE,
 	clean,
 	format_address,
+	format_tin,
 	normalize_search,
 	pad_branch,
 	to_display,
@@ -38,6 +39,8 @@ ADDRESS_UPDATABLE = {
 	"county",
 	"state",
 	"pincode",
+	"tax_id",
+	"custom_tax_id",
 	"branch_code",
 	"custom_branch_no",
 }
@@ -50,6 +53,8 @@ _ADDRESS_LABELS = {
 	"county": "อำเภอ/เขต",
 	"state": "จังหวัด",
 	"pincode": "รหัสไปรษณีย์",
+	"tax_id": "Tax ID",
+	"custom_tax_id": "Tax ID (แบบฟอร์มพิมพ์)",
 	"branch_code": "Branch Code",
 	"custom_branch_no": "Branch No",
 }
@@ -110,6 +115,9 @@ def _proposed_address(source: dict) -> dict:
 		"county": prefixed("เขต" if is_bangkok else "อ.", "district"),
 		"state": clean(source.get("province")) if is_bangkok else prefixed("จ.", "province"),
 		"pincode": clean(source.get("postcode")),
+		# Plain 13 digits for erpnext_thailand tax invoices and reports; RD's dashed format for print formats.
+		"tax_id": source.get("tax_id"),
+		"custom_tax_id": format_tin(source.get("tax_id")),
 		"branch_code": branch,
 		"custom_branch_no": branch,
 	}
