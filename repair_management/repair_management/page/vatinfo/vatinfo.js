@@ -13,6 +13,14 @@ const VATINFO_SYNC = "repair_management.rd_vat.sync";
 const VATINFO_PARTY = "repair_management.rd_vat.party";
 const VATINFO_SOAP = "repair_management.repair_management.page.vatinfo.vatinfo";
 const VATINFO_RD_URL = "https://vsinter.rd.go.th/rd-webcontent-web/#/vatsearch";
+const VATINFO_DBD = "repair_management.rd_vat.dbd.dbd_lookup";
+const VATINFO_DBD_URL = "https://datawarehouse.dbd.go.th";
+const VATINFO_DBD_ACTIVE = "ยังดำเนินกิจการอยู่";
+// DataWarehouse profile URLs are the juristic-type digit (the ID's 4th digit) followed by the 13-digit ID.
+const vatinfo_dbd_profile_url = (tin) =>
+	/^0[0-9]{12}$/.test(tin || "")
+		? `${VATINFO_DBD_URL}/company/profile/${tin[3]}${tin}`
+		: `${VATINFO_DBD_URL}/juristic`;
 const VATINFO_UPLOAD_CHUNK = 8 * 1024 * 1024;
 const VATINFO_BRANCH_LABEL = "เลขที่สาขา (เว้นว่าง = ทุกสาขา, 00000 = สำนักงานใหญ่)";
 const VATINFO_DATASETS = {
@@ -66,7 +74,63 @@ const VATINFO_ICONS = {
 	upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
 	history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
 	info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+	receipt:
+		'<path d="M5 3v18l2.3-1.5L9.7 21l2.3-1.5 2.3 1.5 2.4-1.5L19 21V3l-2.3 1.5L14.3 3 12 4.5 9.7 3 7.3 4.5z"/><path d="M9 9h6"/><path d="M9 13h6"/>',
+	building:
+		'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 21v-4h6v4"/><path d="M8 7h.01M12 7h.01M16 7h.01M8 11h.01M12 11h.01M16 11h.01"/>',
+	external:
+		'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
 };
+
+const vatinfo_is_juristic = (tin) => /^0[0-9]{12}$/.test(tin || "");
+// A branch (not head office) needs care: tax invoices must carry the branch number.
+const vatinfo_is_branch = (row) =>
+	Boolean(row.branch_label) && row.branch_label !== "สำนักงานใหญ่";
+
+// Colored, rounded label. Colors follow the page's meaning: blue RD, purple DBD, green OK, orange warn, red error.
+function vatinfo_pill(text, color = "gray", outline = false) {
+	return `<span class="vatinfo-pill vatinfo-pill-${color}${
+		outline ? " vatinfo-pill-outline" : ""
+	}">${vatinfo_esc(text)}</span>`;
+}
+
+// A small titled group of label/value rows; empty values are dropped, and empty groups render nothing.
+function vatinfo_section(title, items) {
+	const rows = items
+		.filter(([, value]) => value)
+		.map(
+			([label, value, is_html]) =>
+				`<dt>${vatinfo_esc(label)}</dt><dd>${is_html ? value : vatinfo_esc(value)}</dd>`
+		)
+		.join("");
+	return rows
+		? `<div class="vatinfo-dsub">${vatinfo_esc(
+				title
+		  )}</div><dl class="vatinfo-detail">${rows}</dl>`
+		: "";
+}
+
+function vatinfo_stat(label, value, sub = "") {
+	return value
+		? `<div class="vatinfo-stat">
+			<div class="vatinfo-stat-label">${vatinfo_esc(label)}</div>
+			<div class="vatinfo-stat-value">${vatinfo_esc(value)}</div>
+			${sub ? `<div class="vatinfo-stat-sub">${vatinfo_esc(sub)}</div>` : ""}
+		</div>`
+		: "";
+}
+
+function vatinfo_years_since(iso) {
+	const start = new Date(`${iso}T00:00:00`);
+	const now = new Date();
+	let years = now.getFullYear() - start.getFullYear();
+	if (
+		now.getMonth() < start.getMonth() ||
+		(now.getMonth() === start.getMonth() && now.getDate() < start.getDate())
+	)
+		years -= 1;
+	return Math.max(years, 0);
+}
 
 function vatinfo_icon(name) {
 	return `<svg class="vatinfo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${VATINFO_ICONS[name]}</svg>`;
@@ -469,8 +533,10 @@ class VatInfoPage {
 						<td class="vatinfo-nowrap vatinfo-muted">${vatinfo_num(first + index)}</td>
 						<td class="vatinfo-nowrap vatinfo-tin">${vatinfo_esc(vatinfo_tin(row.tax_id))}</td>
 						<td class="vatinfo-nowrap"><span class="vatinfo-badge ${
-							is_head_office ? "vatinfo-badge-green" : "vatinfo-badge-blue"
-						}">${vatinfo_esc(row.branch_label)}</span></td>
+							is_head_office ? "vatinfo-badge-green" : "vatinfo-badge-red"
+						}">${vatinfo_esc(
+					is_head_office ? row.branch_label : `สาขา ${row.branch_label}`
+				)}</span></td>
 						<td>
 							<div class="vatinfo-name-cell">${vatinfo_esc(row.taxpayer_name)}</div>
 							${establishment}
@@ -577,55 +643,6 @@ class VatInfoPage {
 		const row = this.rows[index];
 		if (!row) return;
 
-		const items = [
-			["เลขประจำตัวผู้เสียภาษี", vatinfo_tin(row.tax_id)],
-			["สาขา", row.branch_label],
-			["ชื่อผู้ประกอบการ", row.taxpayer_name],
-			["ชื่อสถานประกอบการ", row.establishment_name],
-			["ชื่ออาคาร", row.building_name],
-			["ห้อง", row.room_no],
-			["ชั้น", row.floor_no],
-			["หมู่บ้าน", row.village],
-			["บ้านเลขที่", row.house_no],
-			["หมู่", row.moo],
-			["ซอย", row.soi],
-			["แยก", row.yaek],
-			["ถนน", row.road],
-			["ตำบล/แขวง", row.subdistrict],
-			["อำเภอ/เขต", row.district],
-			["จังหวัด", row.province],
-			["รหัสไปรษณีย์", row.postcode],
-			["วันที่ได้รับอนุมัติจดทะเบียน VAT", row.registered_date],
-		];
-		if (row.source === "offline") {
-			items.push(
-				["แหล่งข้อมูล", VATINFO_DATASETS[row.source_dataset] || row.source_dataset],
-				["วันที่ของไฟล์ต้นทาง", vatinfo_be_date(row.source_file_date)],
-				["วันที่นำเข้า", vatinfo_be_date(row.imported_on)],
-				["ชุดข้อมูลล่าสุดที่พบ", row.last_seen_import]
-			);
-		} else {
-			items.push(["แหล่งข้อมูล", "ข้อมูลออนไลน์จากกรมสรรพากร (ไม่ได้บันทึก)"]);
-		}
-
-		const list = items
-			.filter(([, value]) => value)
-			.map(
-				([label, value]) => `<dt>${vatinfo_esc(label)}</dt><dd>${vatinfo_esc(value)}</dd>`
-			)
-			.join("");
-
-		let notes = "";
-		if (row.source === "offline" && !row.in_latest_dataset) {
-			notes += `<div class="vatinfo-note vatinfo-note-orange">ไม่พบรายการนี้ในชุดข้อมูลล่าสุดตั้งแต่ ${vatinfo_esc(
-				vatinfo_be_date(row.missing_since)
-			)} ซึ่งไม่ได้หมายความว่าถูกยกเลิกทะเบียน VAT</div>`;
-		}
-		if (row.data_incomplete) {
-			notes +=
-				'<div class="vatinfo-note vatinfo-note-yellow">ข้อมูลรายการนี้ในไฟล์ต้นทางไม่ครบถ้วน</div>';
-		}
-
 		const dialog = new frappe.ui.Dialog({
 			title: row.taxpayer_name || vatinfo_tin(row.tax_id),
 			size: "large",
@@ -641,25 +658,224 @@ class VatInfoPage {
 				this.open_party("Supplier", row);
 			},
 		});
-		const live_button =
-			row.source === "offline"
-				? `<div class="vatinfo-actions vatinfo-compare">
-				<button type="button" class="btn btn-default btn-sm vatinfo-live">ตรวจสอบกับกรมสรรพากร</button>
-				<span class="vatinfo-live-result"></span>
-			</div>`
-				: "";
+		dialog.$wrapper.addClass("vatinfo-dlg");
+
 		const $body = dialog.fields_dict.body.$wrapper;
-		$body.html(`${notes}<dl class="vatinfo-detail">${list}</dl>${live_button}`);
+		$body.html(
+			`${this.detail_summary(row)}${this.detail_rd_card(row)}${
+				vatinfo_is_juristic(row.tax_id) ? this.detail_dbd_card() : ""
+			}`
+		);
 		$body
 			.find(".vatinfo-live")
 			.on("click", (e) => this.live_check(row, $body, e.currentTarget));
+		$body.find(".vatinfo-dbd").on("click", (e) => this.dbd_check(row, $body, e.currentTarget));
 		dialog.show();
+	}
+
+	detail_summary(row) {
+		const pills = [
+			row.branch_label === "สำนักงานใหญ่"
+				? vatinfo_pill("สำนักงานใหญ่", "green")
+				: row.branch_label && vatinfo_pill(`สาขา ${row.branch_label}`, "red"),
+			row.registered_date && vatinfo_pill(`VAT ตั้งแต่ ${row.registered_date}`, "blue"),
+			row.source === "offline"
+				? vatinfo_pill(
+						row.source_dataset === "Bangkok" ? "ข้อมูลกรุงเทพฯ" : "ข้อมูลต่างจังหวัด",
+						row.source_dataset === "Bangkok" ? "blue" : "purple"
+				  )
+				: vatinfo_pill("ข้อมูลออนไลน์ (ไม่ได้บันทึก)", "blue", true),
+			row.source === "offline" &&
+				!row.in_latest_dataset &&
+				vatinfo_pill("ไม่พบในชุดข้อมูลล่าสุด", "orange"),
+			row.data_incomplete && vatinfo_pill("ข้อมูลไม่ครบ", "orange"),
+		];
+
+		let notes = "";
+		if (vatinfo_is_branch(row)) {
+			notes += `<div class="vatinfo-note vatinfo-note-red">รายการนี้เป็น <b>สาขา ${vatinfo_esc(
+				row.branch_label
+			)}</b> ไม่ใช่สำนักงานใหญ่ ตรวจสอบเลขสาขาให้ถูกต้องก่อนออกใบกำกับภาษี</div>`;
+		}
+		if (row.source === "offline" && !row.in_latest_dataset) {
+			notes += `<div class="vatinfo-note vatinfo-note-orange">ไม่พบรายการนี้ในชุดข้อมูลล่าสุดตั้งแต่ ${vatinfo_esc(
+				vatinfo_be_date(row.missing_since)
+			)} ซึ่งไม่ได้หมายความว่าถูกยกเลิกทะเบียน VAT</div>`;
+		}
+		if (row.data_incomplete) {
+			notes +=
+				'<div class="vatinfo-note vatinfo-note-yellow">ข้อมูลรายการนี้ในไฟล์ต้นทางไม่ครบถ้วน</div>';
+		}
+
+		return `<section class="vatinfo-dcard vatinfo-dsummary${
+			vatinfo_is_branch(row) ? " vatinfo-dsummary-branch" : ""
+		}">
+			<div class="vatinfo-dsummary-label">เลขประจำตัวผู้เสียภาษี</div>
+			<div class="vatinfo-dsummary-tin">${vatinfo_esc(vatinfo_tin(row.tax_id))}</div>
+			<div class="vatinfo-dsummary-name">${vatinfo_esc(row.taxpayer_name)}</div>
+			<div class="vatinfo-pills">${pills.filter(Boolean).join("")}</div>
+			${notes}
+		</section>`;
+	}
+
+	detail_rd_card(row) {
+		const names = vatinfo_section("ชื่อ", [
+			["ผู้ประกอบการ", row.taxpayer_name],
+			["สถานประกอบการ", row.establishment_name],
+		]);
+		const address = vatinfo_section("ที่อยู่", [["ที่อยู่ตาม ภ.พ.20", row.address]]);
+		const vat = vatinfo_section("ทะเบียน VAT", [
+			vatinfo_is_branch(row)
+				? ["สาขา", vatinfo_pill(`สาขา ${row.branch_label}`, "red"), true]
+				: ["สาขา", row.branch_label],
+			["วันที่ได้รับอนุมัติ", row.registered_date],
+		]);
+
+		const live_button =
+			row.source === "offline"
+				? `<button type="button" class="btn btn-default btn-xs vatinfo-live">${vatinfo_icon(
+						"refresh"
+				  )}ตรวจสอบกับกรมสรรพากร</button>`
+				: "";
+
+		return `<section class="vatinfo-dcard vatinfo-dcard-rd${
+			vatinfo_is_branch(row) ? " vatinfo-dcard-branch" : ""
+		}">
+			<header class="vatinfo-dhead">
+				<span class="vatinfo-tile vatinfo-tile-blue">${vatinfo_icon("receipt")}</span>
+				<div class="vatinfo-grow">
+					<h5 class="vatinfo-dtitle">กรมสรรพากร</h5>
+					<div class="vatinfo-dkicker">ทะเบียนภาษีมูลค่าเพิ่ม (ภ.พ.20)</div>
+				</div>
+				${live_button}
+			</header>
+			<div class="vatinfo-live-result"></div>
+			${names}${address}${vat}
+		</section>`;
+	}
+
+	detail_dbd_card() {
+		return `<section class="vatinfo-dcard vatinfo-dcard-dbd">
+			<header class="vatinfo-dhead">
+				<span class="vatinfo-tile vatinfo-tile-purple">${vatinfo_icon("building")}</span>
+				<div class="vatinfo-grow">
+					<h5 class="vatinfo-dtitle">กรมพัฒนาธุรกิจการค้า</h5>
+					<div class="vatinfo-dkicker">ข้อมูลนิติบุคคล สถานะ และทุนจดทะเบียน</div>
+				</div>
+				<button type="button" class="btn btn-default btn-xs vatinfo-dbd">${vatinfo_icon(
+					"database"
+				)}ดึงข้อมูล</button>
+			</header>
+			<div class="vatinfo-dbd-message"></div>
+			<div class="vatinfo-dbd-result"></div>
+		</section>`;
+	}
+
+	dbd_check(row, $body, button) {
+		const $message = $body.find(".vatinfo-dbd-message");
+		const $result = $body.find(".vatinfo-dbd-result");
+		button.disabled = true;
+		$message.html(vatinfo_pill("กำลังดึงข้อมูล...", "gray"));
+		$result.empty();
+		frappe.call({
+			method: VATINFO_DBD,
+			args: { tax_id: row.tax_id },
+			callback: (r) => {
+				const data = r.message || {};
+				if (data.status === "ok" && data.data) {
+					$(button).remove();
+					$message.empty();
+					$result.html(this.dbd_html(data.data, row.tax_id));
+				} else {
+					button.disabled = false;
+					const text =
+						{
+							not_found: "ไม่พบข้อมูลนิติบุคคลนี้ที่กรมพัฒนาธุรกิจการค้า",
+							not_juristic: "เลขนี้ไม่ใช่เลขทะเบียนนิติบุคคล",
+						}[data.status] ||
+						"ไม่สามารถเชื่อมต่อกรมพัฒนาธุรกิจการค้าได้ในขณะนี้ ลองใหม่ภายหลัง";
+					$message.html(
+						vatinfo_pill(text, data.status === "not_found" ? "orange" : "red")
+					);
+				}
+			},
+			error: () => {
+				button.disabled = false;
+				$message.empty();
+			},
+		});
+	}
+
+	dbd_html(dbd, tax_id) {
+		const baht = (value) => (value == null ? "" : `${vatinfo_num(value)} บาท`);
+		const status_color =
+			dbd.status === VATINFO_DBD_ACTIVE
+				? "green"
+				: /เลิก|ร้าง|เสร็จการชำระบัญชี|ล้มละลาย/.test(dbd.status || "")
+				? "red"
+				: "orange";
+
+		const stats = [
+			vatinfo_stat("ทุนจดทะเบียน", baht(dbd.register_capital)),
+			dbd.paid_up_capital ? vatinfo_stat("ทุนชำระแล้ว", baht(dbd.paid_up_capital)) : "",
+			dbd.register_date
+				? vatinfo_stat(
+						"อายุกิจการ",
+						`${vatinfo_years_since(dbd.register_date)} ปี`,
+						`จดทะเบียน ${vatinfo_be_date(dbd.register_date)}`
+				  )
+				: "",
+		].join("");
+
+		const objective = dbd.objective
+			? (() => {
+					const [code, ...text] = dbd.objective.split(" ");
+					return /^\d+$/.test(code)
+						? `<span class="vatinfo-code">${vatinfo_esc(code)}</span> ${vatinfo_esc(
+								text.join(" ")
+						  )}`
+						: vatinfo_esc(dbd.objective);
+			  })()
+			: "";
+
+		const items = [
+			["ชื่อนิติบุคคล", vatinfo_esc(dbd.name_th)],
+			["ชื่อภาษาอังกฤษ", vatinfo_esc(dbd.name_en)],
+			["วัตถุประสงค์", objective],
+			["สำนักงาน", vatinfo_esc(dbd.branch_name)],
+			["ที่อยู่ตามทะเบียน", vatinfo_esc(dbd.address)],
+		]
+			.filter(([, value]) => value)
+			.map(([label, value]) => `<dt>${vatinfo_esc(label)}</dt><dd>${value}</dd>`)
+			.join("");
+
+		return `<div class="vatinfo-pills">
+				${dbd.status ? vatinfo_pill(dbd.status, status_color) : ""}
+				${dbd.juristic_type ? vatinfo_pill(dbd.juristic_type, "purple") : ""}
+			</div>
+			${
+				status_color === "green"
+					? ""
+					: `<div class="vatinfo-note vatinfo-note-${
+							status_color === "red" ? "red" : "orange"
+					  }">สถานะนิติบุคคลที่กรมพัฒนาธุรกิจการค้า: ${vatinfo_esc(dbd.status)}</div>`
+			}
+			<div class="vatinfo-stats-row">${stats}</div>
+			<dl class="vatinfo-detail">${items}</dl>
+			<footer class="vatinfo-dfoot vatinfo-dfoot-action">
+				<span>กรรมการ ผู้ถือหุ้น และงบการเงินฉบับเต็ม</span>
+				<a class="btn btn-default btn-xs" href="${vatinfo_esc(
+					vatinfo_dbd_profile_url(dbd.tax_id || tax_id)
+				)}" target="_blank" rel="noopener noreferrer">เปิดใน DBD DataWarehouse ${vatinfo_icon(
+			"external"
+		)}</a>
+			</footer>`;
 	}
 
 	live_check(row, $body, button) {
 		const $result = $body.find(".vatinfo-live-result");
 		button.disabled = true;
-		$result.text("กำลังตรวจสอบ...");
+		$result.html(vatinfo_pill("กำลังตรวจสอบ...", "gray"));
 		frappe.call({
 			method: `${VATINFO_SOAP}.live_lookup`,
 			args: { tax_id: row.tax_id, branch: row.branch_number },
@@ -670,20 +886,23 @@ class VatInfoPage {
 				if (data.status === "ok" && live) {
 					const same =
 						live.address === row.address && live.taxpayer_name === row.taxpayer_name;
-					$result.text(
+					$result.html(
 						same
-							? "กรมสรรพากรพบข้อมูล และตรงกับข้อมูลในระบบ"
-							: `กรมสรรพากรพบข้อมูล แต่แตกต่างจากในระบบ: ${live.taxpayer_name} ${live.address}`
+							? vatinfo_pill("กรมสรรพากรพบข้อมูล และตรงกับข้อมูลในระบบ", "green")
+							: `${vatinfo_pill("กรมสรรพากรพบข้อมูล แต่แตกต่างจากในระบบ", "orange")}
+								<div class="vatinfo-note vatinfo-note-orange">${vatinfo_esc(live.taxpayer_name)}<br>${vatinfo_esc(
+									live.address
+							  )}</div>`
 					);
 				} else if (data.status === "not_found") {
-					$result.text(data.message || "กรมสรรพากรไม่พบข้อมูลนี้");
+					$result.html(vatinfo_pill(data.message || "กรมสรรพากรไม่พบข้อมูลนี้", "red"));
 				} else {
-					$result.text("ไม่สามารถตรวจสอบกับกรมสรรพากรได้ในขณะนี้");
+					$result.html(vatinfo_pill("ไม่สามารถตรวจสอบกับกรมสรรพากรได้ในขณะนี้", "red"));
 				}
 			},
 			error: () => {
 				button.disabled = false;
-				$result.text("");
+				$result.empty();
 			},
 		});
 	}
