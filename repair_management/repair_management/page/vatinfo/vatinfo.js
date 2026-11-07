@@ -1286,6 +1286,12 @@ class VatInfoPartyDialog {
 				</label>`
 			)
 			.join("");
+		const pick_option = `
+			<label class="vatinfo-party-option">
+				<input type="radio" name="vatinfo-target" value="__pick">
+				เลือก ${vatinfo_esc(this.party_type)} ที่มีอยู่
+			</label>
+			<div class="vatinfo-pick-wrap" style="display:none"></div>`;
 
 		this.$body.html(`
 			${warnings
@@ -1301,17 +1307,60 @@ class VatInfoPartyDialog {
 		)})</dd>
 				<dt>ที่อยู่</dt><dd>${vatinfo_esc(preview.address_text)}</dd>
 			</dl>
-			${create_option}${match_options}
+			${create_option}${match_options}${pick_option}
 			<div class="vatinfo-create-options vatinfo-compare"></div>
 			<div class="vatinfo-party-compare"></div>
 			<div class="vatinfo-address-options"></div>
 		`);
 		this.$body.on("change", 'input[name="vatinfo-target"]', () => this.render_target());
-		this.$body.on("change", 'input[name="vatinfo-address"]', () =>
-			this.render_address_compare()
-		);
+		this.$body.on("change", 'input[name="vatinfo-address"]', () => {
+			this.render_address_compare();
+			this.render_title_options();
+		});
+		this.make_pick_control();
 		this.render_target();
-		if (!can_any) this.dialog.get_primary_btn().prop("disabled", true);
+	}
+
+	make_pick_control() {
+		this.picked_match = null;
+		this.pick_control = frappe.ui.form.make_control({
+			parent: this.$body.find(".vatinfo-pick-wrap"),
+			df: {
+				fieldtype: "Link",
+				fieldname: "vatinfo_pick",
+				options: this.party_type,
+				label: this.party_type,
+				change: () => this.load_picked(this.pick_control.get_value()),
+			},
+			render_input: true,
+		});
+	}
+
+	load_picked(name) {
+		if (!name) {
+			this.picked_match = null;
+			return this.render_target();
+		}
+		if (this.picked_match && this.picked_match.name === name) return;
+		const known = this.preview.matches.find((match) => match.name === name);
+		if (known) {
+			this.picked_match = null;
+			this.pick_control.set_value("");
+			this.$body
+				.find('input[name="vatinfo-target"]')
+				.filter((_, input) => input.value === name)
+				.prop("checked", true);
+			return this.render_target();
+		}
+		frappe.call({
+			method: `${VATINFO_PARTY}.get_party_match`,
+			args: { party_type: this.party_type, name, ...this.source_args },
+			callback: (r) => {
+				if (this.pick_control.get_value() !== name) return;
+				this.picked_match = r.message || null;
+				this.render_target();
+			},
+		});
 	}
 
 	selected_target() {
@@ -1320,6 +1369,7 @@ class VatInfoPartyDialog {
 
 	selected_match() {
 		const target = this.selected_target();
+		if (target === "__pick") return this.picked_match;
 		return this.preview.matches.find((match) => match.name === target);
 	}
 
@@ -1349,11 +1399,25 @@ class VatInfoPartyDialog {
 		const match = this.selected_match();
 		const $create = this.$body.find(".vatinfo-create-options");
 		const $compare = this.$body.find(".vatinfo-party-compare");
+		const picking = this.selected_target() === "__pick";
+		this.$body.find(".vatinfo-pick-wrap").toggle(picking);
 
-		if (match) {
+		if (picking && !match) {
 			$create.empty();
+			$compare.empty();
+		} else if (match) {
+			$create.empty();
+			const tin_note =
+				picking && match.tax_id !== this.preview.source.tax_id
+					? `<div class="vatinfo-note vatinfo-note-orange">เลขประจำตัวผู้เสียภาษีไม่ตรงกับข้อมูลกรมสรรพากร</div>`
+					: "";
+			const write_note = match.can_write
+				? ""
+				: `<div class="vatinfo-note vatinfo-note-orange">คุณไม่มีสิทธิ์แก้ไข ${vatinfo_esc(
+						match.name
+				  )}</div>`;
 			$compare.html(
-				`<h6>เลือกฟิลด์ที่ต้องการอัปเดต</h6>${this.compare_table(
+				`${tin_note}${write_note}<h6>เลือกฟิลด์ที่ต้องการอัปเดต</h6>${this.compare_table(
 					match.compare,
 					"vatinfo-party-field"
 				)}`
@@ -1411,9 +1475,44 @@ class VatInfoPartyDialog {
 				default_action === "create" ? "checked" : ""
 			} ${can_create ? "" : "disabled"}> สร้างที่อยู่ใหม่</label>
 			${updates}
+			<div class="vatinfo-title-options"></div>
 			<div class="vatinfo-address-compare"></div>
 		`);
 		this.render_address_compare();
+		this.render_title_options();
+	}
+
+	render_title_options() {
+		const options = this.preview.title_options || [];
+		const creating =
+			this.$body.find('input[name="vatinfo-address"]:checked').val() === "__create";
+		const $wrap = this.$body.find(".vatinfo-title-options");
+		if (!creating || options.length < 2) return $wrap.empty();
+		if ($wrap.children().length) return;
+		$wrap.html(`
+			<h6>ชื่อที่ใช้เป็น Address Title</h6>
+			${options
+				.map(
+					(option, index) => `
+				<label class="vatinfo-party-option">
+					<input type="radio" name="vatinfo-address-title" value="${vatinfo_esc(option.value)}" ${
+						index === 0 ? "checked" : ""
+					}>
+					${vatinfo_esc(option.label)}: ${vatinfo_esc(option.name)}
+				</label>`
+				)
+				.join("")}
+		`);
+	}
+
+	selected_title() {
+		const options = this.preview.title_options || [];
+		const value =
+			this.$body.find('input[name="vatinfo-address-title"]:checked').val() ||
+			(options[0] && options[0].value) ||
+			"";
+		const option = options.find((item) => item.value === value);
+		return { value, name: option ? option.name : "" };
 	}
 
 	render_address_compare() {
@@ -1436,6 +1535,9 @@ class VatInfoPartyDialog {
 		const match = this.selected_match();
 		const has_target = this.$body.find('input[name="vatinfo-target"]:checked').length > 0;
 		if (!has_target) return frappe.msgprint("กรุณาเลือกการดำเนินการ");
+		if (this.selected_target() === "__pick" && !match)
+			return frappe.msgprint(`กรุณาเลือก ${this.party_type}`);
+		if (match && !match.can_write) return frappe.msgprint(`คุณไม่มีสิทธิ์แก้ไข ${match.name}`);
 
 		const address_choice = this.$body.find('input[name="vatinfo-address"]:checked').val();
 		const args = {
@@ -1454,6 +1556,7 @@ class VatInfoPartyDialog {
 			address_target:
 				address_choice && !address_choice.startsWith("__") ? address_choice : "",
 			address_fields: JSON.stringify(this.checked_values("vatinfo-address-field")),
+			address_title: this.selected_title().value,
 			confirmed: 1,
 		};
 
@@ -1470,7 +1573,7 @@ class VatInfoPartyDialog {
 			: `สร้าง ${this.party_type} ใหม่: ${this.preview.proposed.party_name}`;
 		const address = {
 			none: "ไม่แก้ไขที่อยู่",
-			create: "สร้างที่อยู่ใหม่",
+			create: `สร้างที่อยู่ใหม่: ${this.selected_title().name}`,
 			update: `อัปเดตที่อยู่ ${args.address_target}`,
 		}[args.address_action];
 

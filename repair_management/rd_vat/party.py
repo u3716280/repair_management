@@ -43,7 +43,9 @@ ADDRESS_UPDATABLE = {
 	"custom_tax_id",
 	"branch_code",
 	"custom_branch_no",
+	"tax_category",
 }
+TAX_CATEGORY = {"Customer": "ภาษีขาย", "Supplier": "ภาษีซื้อ"}
 DEFAULT_VAT_CUSTOMER_GROUP = "ลูกค้ามี VAT"
 _INDIVIDUAL_TITLES = re.compile(r"^(นาย|นาง|นางสาว|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*")
 _ADDRESS_LABELS = {
@@ -57,6 +59,7 @@ _ADDRESS_LABELS = {
 	"custom_tax_id": "Tax ID (แบบฟอร์มพิมพ์)",
 	"branch_code": "Branch Code",
 	"custom_branch_no": "Branch No",
+	"tax_category": "Tax Category",
 }
 
 
@@ -88,7 +91,7 @@ def _proposed_party(source: dict) -> dict:
 	}
 
 
-def _proposed_address(source: dict) -> dict:
+def _proposed_address(source: dict, party_type: str) -> dict:
 	is_bangkok = clean(source.get("province")) == BANGKOK_PROVINCE
 	line1_parts = [
 		("อาคาร", "building_name"),
@@ -120,6 +123,7 @@ def _proposed_address(source: dict) -> dict:
 		"custom_tax_id": format_tin(source.get("tax_id")),
 		"branch_code": branch,
 		"custom_branch_no": branch,
+		"tax_category": TAX_CATEGORY[party_type],
 	}
 
 
@@ -169,6 +173,48 @@ def _linked_addresses(party_type: str, party: str, proposed: dict, source: dict)
 	return result
 
 
+def _party_fields(config: dict) -> list:
+	return ["name", config["name_field"], "tax_id", "branch_code", "disabled"]
+
+
+def _build_match(party_type: str, config: dict, row, proposed: dict, address: dict, source: dict) -> dict:
+	name_field = config["name_field"]
+	current = {"party_name": row.get(name_field), "tax_id": row.tax_id, "branch_code": row.branch_code}
+	return {
+		"name": row.name,
+		"party_name": row.get(name_field),
+		"tax_id": row.tax_id,
+		"branch_code": row.branch_code,
+		"disabled": row.disabled,
+		"can_write": frappe.has_permission(party_type, "write", doc=row.name),
+		"compare": _compare(
+			current,
+			proposed,
+			{"party_name": "ชื่อ", "tax_id": "เลขประจำตัวผู้เสียภาษี", "branch_code": "Branch Code"},
+		),
+		"addresses": _linked_addresses(party_type, row.name, address, source),
+	}
+
+
+def _title_options(source: dict) -> list:
+	taxpayer = clean(source.get("taxpayer_name"))
+	establishment = clean(source.get("establishment_name"))
+	options = []
+	if establishment:
+		options.append({"value": "establishment", "label": "ชื่อสถานประกอบการ", "name": establishment})
+	if taxpayer and taxpayer != establishment:
+		options.append({"value": "taxpayer", "label": "ชื่อผู้ประกอบการ", "name": taxpayer})
+	return options
+
+
+def _address_title(source: dict, choice: str = "") -> str:
+	taxpayer = clean(source.get("taxpayer_name"))
+	establishment = clean(source.get("establishment_name"))
+	if choice == "taxpayer" and taxpayer:
+		return taxpayer
+	return establishment or taxpayer
+
+
 def _check_party_type(party_type: str) -> dict:
 	if party_type not in PARTIES:
 		frappe.throw("ประเภทไม่ถูกต้อง")
@@ -185,31 +231,16 @@ def get_preview(
 
 	source = _load_source(key, tax_id, branch, online)
 	proposed = _proposed_party(source)
-	address = _proposed_address(source)
+	address = _proposed_address(source, party_type)
 	name_field = config["name_field"]
-	fields = ["name", name_field, "tax_id", "branch_code", "disabled"]
+	fields = _party_fields(config)
 
-	matches = []
-	for row in frappe.get_list(
-		party_type, filters={"tax_id": source["tax_id"]}, fields=fields, order_by="name asc"
-	):
-		current = {"party_name": row.get(name_field), "tax_id": row.tax_id, "branch_code": row.branch_code}
-		matches.append(
-			{
-				"name": row.name,
-				"party_name": row.get(name_field),
-				"tax_id": row.tax_id,
-				"branch_code": row.branch_code,
-				"disabled": row.disabled,
-				"can_write": frappe.has_permission(party_type, "write", doc=row.name),
-				"compare": _compare(
-					current,
-					proposed,
-					{"party_name": "ชื่อ", "tax_id": "เลขประจำตัวผู้เสียภาษี", "branch_code": "Branch Code"},
-				),
-				"addresses": _linked_addresses(party_type, row.name, address, source),
-			}
+	matches = [
+		_build_match(party_type, config, row, proposed, address, source)
+		for row in frappe.get_list(
+			party_type, filters={"tax_id": source["tax_id"]}, fields=fields, order_by="name asc"
 		)
+	]
 
 	matched = [row["name"] for row in matches]
 	same_name = frappe.get_list(
@@ -244,7 +275,24 @@ def get_preview(
 		"can_create_address": frappe.has_permission("Address", "create"),
 		"groups": groups,
 		"default_group": default_group,
+		"title_options": _title_options(source),
 	}
+
+
+@frappe.whitelist()
+def get_party_match(
+	party_type: str, name: str, key: str = "", tax_id: str = "", branch: str = "", online: int | str = 0
+) -> dict:
+	"""Read-only. The same comparison as get_preview, for any existing party the user picks."""
+	config = _check_party_type(party_type)
+	frappe.has_permission(party_type, "read", doc=name, throw=True)
+	rows = frappe.get_list(party_type, filters={"name": name}, fields=_party_fields(config), limit=1)
+	if not rows:
+		frappe.throw(f"ไม่พบ {party_type} {name}")
+	source = _load_source(key, tax_id, branch, online)
+	return _build_match(
+		party_type, config, rows[0], _proposed_party(source), _proposed_address(source, party_type), source
+	)
 
 
 def _create_party(party_type: str, config: dict, proposed: dict, group: str):
@@ -275,8 +323,8 @@ def _update_party(party_type: str, config: dict, target: str, proposed: dict, fi
 	return doc
 
 
-def _create_address(party_type: str, party, values: dict, source: dict):
-	name = clean(source.get("establishment_name")) or clean(source.get("taxpayer_name"))
+def _create_address(party_type: str, party, values: dict, source: dict, title_choice: str = ""):
+	name = _address_title(source, title_choice)
 	doc = frappe.get_doc(
 		{
 			"doctype": "Address",
@@ -316,6 +364,7 @@ def apply(
 	address_action: str = "none",
 	address_target: str = "",
 	address_fields: str | list | None = None,
+	address_title: str = "",
 	confirmed: int | str = 0,
 ) -> dict:
 	"""Create or update after the user has confirmed. Everything rolls back together on an error."""
@@ -332,7 +381,7 @@ def apply(
 
 	source = _load_source(key, tax_id, branch, online)
 	proposed = _proposed_party(source)
-	address_values = _proposed_address(source)
+	address_values = _proposed_address(source, party_type)
 
 	if action == "create":
 		if not group:
@@ -345,7 +394,7 @@ def apply(
 
 	address_name = None
 	if address_action == "create":
-		address_name = _create_address(party_type, party.name, address_values, source).name
+		address_name = _create_address(party_type, party.name, address_values, source, address_title).name
 	elif address_action == "update":
 		if not address_target:
 			frappe.throw("กรุณาเลือกที่อยู่ที่ต้องการอัปเดต")
