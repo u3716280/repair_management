@@ -31,7 +31,7 @@ PARTIES = {
 		"group_field": "supplier_group",
 	},
 }
-PARTY_UPDATABLE = {"party_name", "tax_id", "branch_code"}
+PARTY_UPDATABLE = {"party_name", "tax_id", "branch_code", "tax_category"}
 ADDRESS_UPDATABLE = {
 	"address_line1",
 	"address_line2",
@@ -81,13 +81,14 @@ def _load_source(key: str = "", tax_id: str = "", branch: str = "", online: int 
 	return get_taxpayer(key)
 
 
-def _proposed_party(source: dict) -> dict:
+def _proposed_party(source: dict, party_type: str) -> dict:
 	name = clean(source.get("taxpayer_name"))
 	return {
 		"party_name": name,
 		"tax_id": source.get("tax_id"),
 		"branch_code": pad_branch(source.get("branch_number")),
 		"party_type_value": "Individual" if _INDIVIDUAL_TITLES.match(name) else "Company",
+		"tax_category": TAX_CATEGORY[party_type],
 	}
 
 
@@ -174,12 +175,17 @@ def _linked_addresses(party_type: str, party: str, proposed: dict, source: dict)
 
 
 def _party_fields(config: dict) -> list:
-	return ["name", config["name_field"], "tax_id", "branch_code", "disabled"]
+	return ["name", config["name_field"], "tax_id", "branch_code", "tax_category", "disabled"]
 
 
 def _build_match(party_type: str, config: dict, row, proposed: dict, address: dict, source: dict) -> dict:
 	name_field = config["name_field"]
-	current = {"party_name": row.get(name_field), "tax_id": row.tax_id, "branch_code": row.branch_code}
+	current = {
+		"party_name": row.get(name_field),
+		"tax_id": row.tax_id,
+		"branch_code": row.branch_code,
+		"tax_category": row.tax_category,
+	}
 	return {
 		"name": row.name,
 		"party_name": row.get(name_field),
@@ -190,7 +196,12 @@ def _build_match(party_type: str, config: dict, row, proposed: dict, address: di
 		"compare": _compare(
 			current,
 			proposed,
-			{"party_name": "ชื่อ", "tax_id": "เลขประจำตัวผู้เสียภาษี", "branch_code": "Branch Code"},
+			{
+				"party_name": "ชื่อ",
+				"tax_id": "เลขประจำตัวผู้เสียภาษี",
+				"branch_code": "Branch Code",
+				"tax_category": "Tax Category",
+			},
 		),
 		"addresses": _linked_addresses(party_type, row.name, address, source),
 	}
@@ -230,7 +241,7 @@ def get_preview(
 	frappe.has_permission(party_type, "read", throw=True)
 
 	source = _load_source(key, tax_id, branch, online)
-	proposed = _proposed_party(source)
+	proposed = _proposed_party(source, party_type)
 	address = _proposed_address(source, party_type)
 	name_field = config["name_field"]
 	fields = _party_fields(config)
@@ -291,7 +302,12 @@ def get_party_match(
 		frappe.throw(f"ไม่พบ {party_type} {name}")
 	source = _load_source(key, tax_id, branch, online)
 	return _build_match(
-		party_type, config, rows[0], _proposed_party(source), _proposed_address(source, party_type), source
+		party_type,
+		config,
+		rows[0],
+		_proposed_party(source, party_type),
+		_proposed_address(source, party_type),
+		source,
 	)
 
 
@@ -303,6 +319,7 @@ def _create_party(party_type: str, config: dict, proposed: dict, group: str):
 		config["group_field"]: group,
 		"tax_id": proposed["tax_id"],
 		"branch_code": proposed["branch_code"],
+		"tax_category": proposed["tax_category"],
 	}
 	if party_type == "Customer":
 		values["territory"] = frappe.db.get_single_value("Selling Settings", "territory")
@@ -380,7 +397,7 @@ def apply(
 	address_fields = set(frappe.parse_json(address_fields) or []) & ADDRESS_UPDATABLE
 
 	source = _load_source(key, tax_id, branch, online)
-	proposed = _proposed_party(source)
+	proposed = _proposed_party(source, party_type)
 	address_values = _proposed_address(source, party_type)
 
 	if action == "create":
